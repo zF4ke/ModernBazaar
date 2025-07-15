@@ -35,7 +35,7 @@ export const marketAnalysisCommand: Command = {
             }
 
             const { product, bestBuyOrder, bestSellOrder, averageBuyPrice, averageSellPrice, lastUpdated } = detailedInfo;
-            const { quick_status, buy_summary, sell_summary } = product;
+            const { quick_status, buy_orders, sell_orders } = product;
             
             const embed = new EmbedBuilder()
                 .setTitle(`📊 Market Analysis - ${formatItemName(itemId)}`)
@@ -44,9 +44,9 @@ export const marketAnalysisCommand: Command = {
                 .addFields(
                     {
                         name: '💰 Current Prices',
-                        value: `**Instant Buy:** ${bestBuyOrder ? formatCurrency(bestBuyOrder.price) : 'No orders'}\n` +
-                               `**Instant Sell:** ${bestSellOrder ? formatCurrency(bestSellOrder.price) : 'No orders'}\n` +
-                               `**Spread:** ${(bestBuyOrder && bestSellOrder) ? formatCurrency(bestBuyOrder.price - bestSellOrder.price) : 'N/A'}`,
+                        value: `**Instant Buy:** ${bestSellOrder ? formatCurrency(bestSellOrder.price) : 'No orders'}\n` +
+                               `**Instant Sell:** ${bestBuyOrder ? formatCurrency(bestBuyOrder.price) : 'No orders'}\n` +
+                               `**Spread:** ${(bestBuyOrder && bestSellOrder) ? formatCurrency(bestSellOrder.price - bestBuyOrder.price) : 'N/A'}`,
                         inline: true
                     },
                     {
@@ -66,9 +66,9 @@ export const marketAnalysisCommand: Command = {
                     }
                 );
 
-            // Add top buy orders
-            if (buy_summary.length > 0) {
-                const topBuyOrders = buy_summary
+            // Add top buy orders - Now using intuitive field names!
+            if (buy_orders.length > 0) {
+                const topBuyOrders = buy_orders
                     .slice(0, 5)
                     .map((order, index) => 
                         `**${index + 1}.** ${formatFullNumber(order.pricePerUnit)} (${order.amount.toLocaleString()} items, ${order.orders} orders)`
@@ -82,9 +82,9 @@ export const marketAnalysisCommand: Command = {
                 });
             }
 
-            // Add top sell orders
-            if (sell_summary.length > 0) {
-                const topSellOrders = sell_summary
+            // Add top sell orders - Now using intuitive field names!
+            if (sell_orders.length > 0) {
+                const topSellOrders = sell_orders
                     .slice(0, 5)
                     .map((order, index) => 
                         `**${index + 1}.** ${formatFullNumber(order.pricePerUnit)} (${order.amount.toLocaleString()} items, ${order.orders} orders)`
@@ -109,9 +109,9 @@ export const marketAnalysisCommand: Command = {
             }
             
             // Calculate price volatility indicator
-            if (buy_summary.length >= 3 && sell_summary.length >= 3) {
-                const buyRange = buy_summary[0].pricePerUnit - buy_summary[2].pricePerUnit;
-                const sellRange = sell_summary[2].pricePerUnit - sell_summary[0].pricePerUnit;
+            if (buy_orders.length >= 3 && sell_orders.length >= 3) {
+                const buyRange = buy_orders[0].pricePerUnit - buy_orders[2].pricePerUnit;
+                const sellRange = sell_orders[2].pricePerUnit - sell_orders[0].pricePerUnit;
                 const volatility = ((buyRange + sellRange) / 2) / quick_status.buyPrice * 100;
                 
                 const volatilityText = volatility >= 0 
@@ -131,7 +131,7 @@ export const marketAnalysisCommand: Command = {
 
             // Add trading recommendations
             let recommendation = '';
-            const spread = quick_status.buyPrice - quick_status.sellPrice;
+            const spread = quick_status.buyPrice - quick_status.sellPrice; // Buy price - sell price (correct)
             const spreadPercentage = (spread / quick_status.buyPrice) * 100;
 
             if (spreadPercentage > 5) {

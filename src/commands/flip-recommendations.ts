@@ -24,7 +24,7 @@ export const flipRecommendationsCommand: Command = {
                 .setDescription('Price calculation method')
                 .setRequired(false)
                 .addChoices(
-                    { name: 'Instant Orders (Default)', value: 'instant' },
+                    { name: 'Order Book Prices (Default)', value: 'instant' },
                     { name: 'Weighted Average (Top 2%)', value: 'weighted' }
                 )
         )
@@ -72,10 +72,10 @@ export const flipRecommendationsCommand: Command = {
                                 category === 'high-margin' ? 'High Margin' :
                                 category === 'high-volume' ? 'High Volume' : 'Low Risk';
 
-            const priceTypeTitle = priceType === 'instant' ? 'instant order prices' : 'weighted average prices (top 2%)';
+            const priceTypeTitle = priceType === 'instant' ? 'order book prices' : 'weighted average prices (top 2%)';
             const priceTypeNote = priceType === 'instant' ? 
-                '*Note: Uses instant buy/sell orders - may have limited quantities available*' :
-                '*Note: Uses realistic trading prices, not instant buy/sell orders*';
+                '*Note: Uses competitive order book prices - place orders and wait for execution*' :
+                '*Note: Uses realistic trading prices, not order book competition*';
 
             const embed = new EmbedBuilder()
                 .setTitle(`💰 Flip Recommendations - ${categoryTitle}`)
@@ -85,7 +85,7 @@ export const flipRecommendationsCommand: Command = {
 
             // Add top 3 as detailed fields
             const topOpportunities = opportunities.slice(0, 3);
-            const priceLabel = priceType === 'instant' ? 'Instant' : 'Weighted Avg';
+            const priceLabel = priceType === 'instant' ? 'Order Book' : 'Weighted Avg';
             topOpportunities.forEach((op, index) => {
                 const riskEmoji = op.riskLevel === 'LOW' ? '🟢' : op.riskLevel === 'MEDIUM' ? '🟡' : '🔴';
                 const liquidityEmoji = op.liquidityScore >= FLIPPING_ANALYSIS.LIQUIDITY_EMOJI_HIGH_THRESHOLD ? '💦' : 
@@ -117,7 +117,7 @@ export const flipRecommendationsCommand: Command = {
 
             // Add legend
             const priceExplanation = priceType === 'instant' ? 
-                'instant orders - limited quantities but immediate execution' :
+                'order book prices - place competitive buy/sell orders and wait for execution' :
                 'weighted averages (top 2% by volume) - realistic for bulk trading';
             
             embed.addFields({
@@ -125,7 +125,8 @@ export const flipRecommendationsCommand: Command = {
                 value: '🟢 Low Risk | 🟡 Medium Risk | 🔴 High Risk\n' +
                        '💦 High Liquidity | 💧 Medium Liquidity | 💤 Low Liquidity\n' +
                        '**Volume format:** Buy Volume / Sell Volume\n' +
-                       `**Prices:** ${priceExplanation}`,
+                       `**Prices:** ${priceExplanation}\n` +
+                       '**Strategy:** Place buy orders, wait for fill, then place sell orders',
                 inline: false
             });
 

@@ -190,26 +190,24 @@ export class CraftingService {
         return opportunities;
     }
 
-    /**
-     * Calculate price volatility between instant and weighted prices
-     */
     private static calculatePriceVolatility(product: any): number {
-        const { quick_status, buy_summary, sell_summary } = product;
+        const { quick_status, buy_orders, sell_orders } = product;
         
         // Need both instant and weighted data to calculate volatility
-        if (!buy_summary?.[0]?.pricePerUnit || !sell_summary?.[0]?.pricePerUnit || 
+        if (!buy_orders?.[0]?.pricePerUnit || !sell_orders?.[0]?.pricePerUnit || 
             !quick_status?.buyPrice || !quick_status?.sellPrice) {
             return 0;
         }
         
+        // Using intuitive field names! buy_orders = actual buy orders, sell_orders = actual sell orders
         // Compare instant vs weighted average prices
-        const instantBuyPrice = sell_summary[0].pricePerUnit;
-        const instantSellPrice = buy_summary[0].pricePerUnit;
-        const weightedBuyPrice = quick_status.sellPrice;
-        const weightedSellPrice = quick_status.buyPrice;
+        const instantBuyPrice = buy_orders[0].pricePerUnit;      // Instant sell price (highest buy order)
+        const instantSellPrice = sell_orders[0].pricePerUnit;    // Instant buy price (lowest sell order)
+        const weightedBuyPrice = quick_status.sellPrice;         // Weighted average sell price (what you pay to buy)
+        const weightedSellPrice = quick_status.buyPrice;         // Weighted average buy price (what you get when selling)
         
-        const buyPriceDiff = Math.abs(instantBuyPrice - weightedBuyPrice) / weightedBuyPrice * 100;
-        const sellPriceDiff = Math.abs(instantSellPrice - weightedSellPrice) / weightedSellPrice * 100;
+        const buyPriceDiff = Math.abs(instantSellPrice - weightedBuyPrice) / weightedBuyPrice * 100;
+        const sellPriceDiff = Math.abs(instantBuyPrice - weightedSellPrice) / weightedSellPrice * 100;
         
         return (buyPriceDiff + sellPriceDiff) / 2;
     }

@@ -3,6 +3,56 @@ import { HYPIXEL_API, ERROR_MESSAGES, MARKET_ANALYSIS } from "../constants";
 import { AutocompleteCacheService } from './autocomplete-cache.js';
 import { PricingStrategy } from './crafting.js';
 
+/**
+ * CRITICAL HYPIXEL API FIELD NAMING ISSUE:
+ * 
+ * The Hypixel Bazaar API has backwards field naming ONLY in order book fields:
+ * - sell_summary contains BUY ORDERS (what people want to buy for)
+ * - buy_summary contains SELL ORDERS (what people want to sell for)
+ * 
+ * However, quick_status fields are intuitive:
+ * - quick_status.sellPrice = weighted average sell price (what you pay to buy)
+ * - quick_status.buyPrice = weighted average buy price (what you get when selling)
+ * 
+ * We transform the API response to use intuitive field names:
+ * - buy_orders: actual buy orders (from sell_summary)
+ * - sell_orders: actual sell orders (from buy_summary)
+ * 
+ * This transformation happens in transformBazaarData() method.
+ */
+
+// Raw API response interface (with backwards field names)
+interface RawBazaarProduct {
+    product_id: string;
+    sell_summary: Array<{
+        amount: number;
+        pricePerUnit: number;
+        orders: number;
+    }>;
+    buy_summary: Array<{
+        amount: number;
+        pricePerUnit: number;
+        orders: number;
+    }>;
+    quick_status: {
+        productId: string;
+        sellPrice: number;
+        sellVolume: number;
+        sellMovingWeek: number;
+        sellOrders: number;
+        buyPrice: number;
+        buyVolume: number;
+        buyMovingWeek: number;
+        buyOrders: number;
+    };
+}
+
+interface RawBazaarResponse {
+    success: boolean;
+    lastUpdated: number;
+    products: Record<string, RawBazaarProduct>;
+}
+
 export class HypixelService {
     private static isInitialized = false;
 
@@ -49,12 +99,15 @@ export class HypixelService {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
-            const data = await response.json() as BazaarResponse;
+            const rawData = await response.json() as RawBazaarResponse;
             
-            if (!data.success) {
+            if (!rawData.success) {
                 console.error('❌ API returned unsuccessful response');
                 throw new Error("Bazaar API returned unsuccessful response");
             }
+            
+            // Transform the raw API response to our cleaner interface
+            const data = this.transformBazaarData(rawData);
             
             const itemCount = Object.keys(data.products).length;
             const dataAge = Date.now() - data.lastUpdated;
@@ -118,22 +171,22 @@ export class HypixelService {
                 let ingredientPrice = 0;
                 let resultPrice = 0;
                 
-                // Price for buying ingredients
+                // Price for buying ingredients - Now using intuitive field names!
                 if (pricingStrategy === PricingStrategy.BUY_ORDER_SELL_ORDER || pricingStrategy === PricingStrategy.BUY_ORDER_INSTANT_SELL) {
-                    // Buy orders for ingredients: we pay sell order prices
-                    ingredientPrice = product.sell_summary[0]?.pricePerUnit || 0;
+                    // Place buy orders for ingredients: we compete with other buyers
+                    ingredientPrice = product.sell_orders[0]?.pricePerUnit || 0; // Use sell orders (what we pay to buy)
                 } else {
-                    // Instant buy ingredients: we pay buy order prices
-                    ingredientPrice = product.buy_summary[0]?.pricePerUnit || 0;
+                    // Instant buy ingredients: we pay current buy order prices
+                    ingredientPrice = product.buy_orders[0]?.pricePerUnit || 0; // Use buy orders (instant buy price)
                 }
                 
                 // Price for selling results
                 if (pricingStrategy === PricingStrategy.BUY_ORDER_SELL_ORDER || pricingStrategy === PricingStrategy.INSTANT_BUY_SELL_ORDER) {
-                    // Sell orders for results: we get buy order prices
-                    resultPrice = product.buy_summary[0]?.pricePerUnit || 0;
+                    // Place sell orders for results: we compete with other sellers
+                    resultPrice = product.buy_orders[0]?.pricePerUnit || 0; // Use buy orders (what we get to sell)
                 } else {
-                    // Instant sell results: we get sell order prices
-                    resultPrice = product.sell_summary[0]?.pricePerUnit || 0;
+                    // Instant sell results: we get current sell order prices
+                    resultPrice = product.sell_orders[0]?.pricePerUnit || 0; // Use sell orders (instant sell price)
                 }
                 
                 result[itemId] = {
@@ -148,8 +201,9 @@ export class HypixelService {
 
     /**
      * Gets order book prices for multiple items (actual order prices, not weighted averages)
-     * buyPrice = highest buy order price (what you get when selling instantly)
-     * sellPrice = lowest sell order price (what you pay when buying instantly)
+     * IMPORTANT: Hypixel API fields are backwards! 
+     * buyPrice = instant sell price (what you get when selling instantly) - from sell_summary (buy orders)
+     * sellPrice = instant buy price (what you pay when buying instantly) - from buy_summary (sell orders)
      */
     static async getMultipleItemPrices(itemIds: string[]): Promise<Record<string, { buyPrice: number; sellPrice: number }>> {
         const bazaarData = await this.getBazaarPrices();
@@ -159,9 +213,9 @@ export class HypixelService {
             const product = bazaarData.products[itemId];
             if (product) {
                 result[itemId] = {
-                    // Use actual order book prices, not weighted averages
-                    buyPrice: product.buy_summary[0]?.pricePerUnit || 0, // Highest buy order
-                    sellPrice: product.sell_summary[0]?.pricePerUnit || 0 // Lowest sell order
+                    // Now using intuitive field names!
+                    buyPrice: product.buy_orders[0]?.pricePerUnit || 0,  // Instant sell price (highest buy order)
+                    sellPrice: product.sell_orders[0]?.pricePerUnit || 0 // Instant buy price (lowest sell order)
                 };
             }
         }
@@ -187,24 +241,24 @@ export class HypixelService {
             return null;
         }
         
-        // Get best orders
-        const bestBuyOrder = product.buy_summary[0] ? {
-            price: product.buy_summary[0].pricePerUnit,
-            amount: product.buy_summary[0].amount
+        // Get best orders - Now using intuitive field names!
+        const bestBuyOrder = product.buy_orders[0] ? {
+            price: product.buy_orders[0].pricePerUnit,
+            amount: product.buy_orders[0].amount
         } : undefined;
         
-        const bestSellOrder = product.sell_summary[0] ? {
-            price: product.sell_summary[0].pricePerUnit,
-            amount: product.sell_summary[0].amount
+        const bestSellOrder = product.sell_orders[0] ? {
+            price: product.sell_orders[0].pricePerUnit,
+            amount: product.sell_orders[0].amount
         } : undefined;
         
-        // Calculate average prices from top orders
-        const averageBuyPrice = product.buy_summary.length > 0 
-            ? product.buy_summary.slice(0, MARKET_ANALYSIS.AVERAGE_PRICE_ORDERS).reduce((sum, order) => sum + order.pricePerUnit, 0) / Math.min(MARKET_ANALYSIS.AVERAGE_PRICE_ORDERS, product.buy_summary.length)
+        // Calculate average prices from top orders - Using intuitive field names!
+        const averageBuyPrice = product.buy_orders.length > 0
+            ? product.buy_orders.slice(0, MARKET_ANALYSIS.AVERAGE_PRICE_ORDERS).reduce((sum: number, order: any) => sum + order.pricePerUnit, 0) / Math.min(MARKET_ANALYSIS.AVERAGE_PRICE_ORDERS, product.buy_orders.length)
             : undefined;
             
-        const averageSellPrice = product.sell_summary.length > 0
-            ? product.sell_summary.slice(0, MARKET_ANALYSIS.AVERAGE_PRICE_ORDERS).reduce((sum, order) => sum + order.pricePerUnit, 0) / Math.min(MARKET_ANALYSIS.AVERAGE_PRICE_ORDERS, product.sell_summary.length)
+        const averageSellPrice = product.sell_orders.length > 0
+            ? product.sell_orders.slice(0, MARKET_ANALYSIS.AVERAGE_PRICE_ORDERS).reduce((sum: number, order: any) => sum + order.pricePerUnit, 0) / Math.min(MARKET_ANALYSIS.AVERAGE_PRICE_ORDERS, product.sell_orders.length)
             : undefined;
         
         return {
@@ -214,6 +268,30 @@ export class HypixelService {
             averageBuyPrice,
             averageSellPrice,
             lastUpdated: bazaarData.lastUpdated
+        };
+    }
+
+    /**
+     * Transforms raw Hypixel API response to our cleaner interface
+     * Fixes the backwards field naming: sell_summary -> buy_orders, buy_summary -> sell_orders
+     */
+    private static transformBazaarData(rawData: RawBazaarResponse): BazaarResponse {
+        const transformedProducts: Record<string, BazaarProduct> = {};
+        
+        for (const [productId, rawProduct] of Object.entries(rawData.products)) {
+            transformedProducts[productId] = {
+                product_id: rawProduct.product_id,
+                // Fix backwards field names: sell_summary contains buy orders, buy_summary contains sell orders
+                buy_orders: rawProduct.sell_summary,   // sell_summary -> buy_orders
+                sell_orders: rawProduct.buy_summary,   // buy_summary -> sell_orders
+                quick_status: rawProduct.quick_status
+            };
+        }
+        
+        return {
+            success: rawData.success,
+            lastUpdated: rawData.lastUpdated,
+            products: transformedProducts
         };
     }
 }

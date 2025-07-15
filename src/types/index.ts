@@ -20,26 +20,30 @@ export interface BazaarResponse {
 
 export interface BazaarProduct {
     product_id: string;
-    sell_summary: Array<{
+    // Renamed from Hypixel's confusing field names for clarity:
+    // buy_orders (was sell_summary): actual buy orders from players wanting to buy
+    // sell_orders (was buy_summary): actual sell orders from players wanting to sell
+    buy_orders: Array<{
         amount: number;
         pricePerUnit: number;
         orders: number;
     }>;
-    buy_summary: Array<{
+    sell_orders: Array<{
         amount: number;
         pricePerUnit: number;
         orders: number;
     }>;
     quick_status: {
         productId: string;
-        sellPrice: number;
-        sellVolume: number;
+        // NOTE: quick_status field names are intuitive (unlike order book fields)
+        sellPrice: number;     // Weighted average sell price (what you pay to buy)
+        sellVolume: number;    // Volume of items being sold
         sellMovingWeek: number;
-        sellOrders: number;
-        buyPrice: number;
-        buyVolume: number;
+        sellOrders: number;    // Number of sell orders
+        buyPrice: number;      // Weighted average buy price (what you get when selling)
+        buyVolume: number;     // Volume of items being bought
         buyMovingWeek: number;
-        buyOrders: number;
+        buyOrders: number;     // Number of buy orders
     };
 }
 

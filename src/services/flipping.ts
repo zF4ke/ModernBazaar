@@ -38,23 +38,21 @@ export class FlippingService {
         return opportunities.slice(0, maxResults);
     }
 
-    /**
-     * Analyzes a single item for flipping potential
-     * Uses either instant orders or weighted average prices based on the specified type
-     */
     private static analyzeFlippingOpportunity(itemId: string, product: BazaarProduct, priceType: 'instant' | 'weighted' = 'instant'): FlippingOpportunity | null {
-        const { quick_status, buy_summary, sell_summary } = product;
+        const { quick_status, buy_orders, sell_orders } = product;
         
         let buyPrice: number;
         let sellPrice: number;
         
         if (priceType === 'instant') {
-            // Use instant order prices (highest buy order, lowest sell order)
-            if (!buy_summary?.[0]?.pricePerUnit || !sell_summary?.[0]?.pricePerUnit) {
+            // Use order book prices for realistic flipping (place orders and wait)
+            // buyPrice = what you pay placing a buy order (compete with other buy orders)
+            // sellPrice = what you get placing a sell order (compete with other sell orders)
+            if (!buy_orders?.[0]?.pricePerUnit || !sell_orders?.[0]?.pricePerUnit) {
                 return null;
             }
-            buyPrice = sell_summary[0].pricePerUnit; // Price you pay to buy instantly
-            sellPrice = buy_summary[0].pricePerUnit; // Price you get selling instantly
+            buyPrice = buy_orders[0].pricePerUnit;   // Highest buy order price (what you pay to place competitive buy order)
+            sellPrice = sell_orders[0].pricePerUnit; // Lowest sell order price (what you get to place competitive sell order)
         } else {
             // Use weighted average prices (top 2% by volume)
             if (!quick_status.buyPrice || !quick_status.sellPrice || quick_status.buyPrice <= 0 || quick_status.sellPrice <= 0) {
@@ -232,29 +230,29 @@ export class FlippingService {
     }
 
     /**
-     * Calculates price volatility by comparing instant vs weighted average prices
+     * Calculates price volatility by comparing order book vs weighted average prices
      * High volatility indicates market uncertainty (new items, trending, etc.)
      */
     private static calculatePriceVolatility(product: BazaarProduct, currentPriceType: 'instant' | 'weighted'): number {
-        const { quick_status, buy_summary, sell_summary } = product;
+        const { quick_status, buy_orders, sell_orders } = product;
         
         // Need both instant and weighted data to calculate volatility
-        if (!buy_summary?.[0]?.pricePerUnit || !sell_summary?.[0]?.pricePerUnit || 
+        if (!buy_orders?.[0]?.pricePerUnit || !sell_orders?.[0]?.pricePerUnit || 
             !quick_status.buyPrice || !quick_status.sellPrice) {
             return 0; // No volatility data available
         }
         
-        // Get instant prices
-        const instantBuyPrice = sell_summary[0].pricePerUnit; // What you pay to buy instantly
-        const instantSellPrice = buy_summary[0].pricePerUnit; // What you get selling instantly
+        // Get order book prices for flipping (what you pay/get placing orders)
+        const orderBuyPrice = buy_orders[0].pricePerUnit;   // What you pay placing buy orders (highest buy order)
+        const orderSellPrice = sell_orders[0].pricePerUnit; // What you get placing sell orders (lowest sell order)
         
         // Get weighted average prices
-        const weightedBuyPrice = quick_status.sellPrice; // Weighted avg buy price
-        const weightedSellPrice = quick_status.buyPrice; // Weighted avg sell price
+        const weightedBuyPrice = quick_status.sellPrice; // Weighted average sell price (what you pay to buy)
+        const weightedSellPrice = quick_status.buyPrice; // Weighted average buy price (what you get when selling)
         
-        // Calculate percentage differences
-        const buyPriceDiff = Math.abs(instantBuyPrice - weightedBuyPrice) / weightedBuyPrice * 100;
-        const sellPriceDiff = Math.abs(instantSellPrice - weightedSellPrice) / weightedSellPrice * 100;
+        // Calculate percentage differences between order book and weighted prices
+        const buyPriceDiff = Math.abs(orderBuyPrice - weightedBuyPrice) / weightedBuyPrice * 100;
+        const sellPriceDiff = Math.abs(orderSellPrice - weightedSellPrice) / weightedSellPrice * 100;
         
         // Return average volatility percentage
         return (buyPriceDiff + sellPriceDiff) / 2;

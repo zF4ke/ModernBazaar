@@ -119,8 +119,8 @@ export const craftFlippingCommand: Command = {
                 name: '📖 Legend',
                 value: '🟢 Low Risk (stable pricing) | 🟡 Medium Risk | 🔴 High Risk (volatile pricing)\n' +
                        '**Strategy:** Place buy orders for ingredients, craft items, place sell orders for results\n' +
-                       '**Cost:** Total cost using current sell order prices (what you pay in buy orders)\n' +
-                       '**Sell Price:** Revenue using current buy order prices (what you get in sell orders)\n' +
+                       '**Cost:** Total cost using current buy order prices (what you pay placing buy orders)\n' +
+                       '**Sell Price:** Revenue using current sell order prices (what you get placing sell orders)\n' +
                        '**Volatility:** Price difference between instant vs order book prices',
                 inline: false
             });
