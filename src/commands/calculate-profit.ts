@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, CommandInteraction, EmbedBuilder } from "discord.js";
 import { Command } from "../types";
 import { CraftingService, PricingStrategy } from "../services/crafting";
-import { formatCurrency, formatPercentage, formatItemName, formatEmbedField } from "../utils/formatting";
+import { formatCurrency, formatPercentage, formatItemName, formatEmbedField, formatFullNumber } from "../utils/formatting";
 
 export const calculateProfitCommand: Command = {
     data: new SlashCommandBuilder()
@@ -103,8 +103,26 @@ export const calculateProfitCommand: Command = {
 
             if (ingredientBreakdown) {
                 embed.addFields({
-                    name: '🧾 Ingredient Costs',
+                    name: '🧾 Ingredient Costs (Per Item)',
                     value: formatEmbedField(ingredientBreakdown),
+                    inline: false
+                });
+            }
+
+            // Add total ingredients needed for max craftable amount
+            if (calculation.maxCraftable > 0) {
+                const totalIngredientsNeeded = Object.entries(calculation.ingredientCosts)
+                    .map(([ingredient, cost]) => {
+                        const totalQuantity = cost.quantity * calculation.maxCraftable;
+                        const totalCost = cost.total * calculation.maxCraftable;
+                        const formattedName = formatItemName(ingredient);
+                        return `**${formattedName}:** ${formatFullNumber(totalQuantity)} items → ${formatCurrency(totalCost)}`;
+                    })
+                    .join('\n');
+
+                embed.addFields({
+                    name: `🛒 Shopping List (${formatFullNumber(calculation.maxCraftable)} crafts)`,
+                    value: formatEmbedField(totalIngredientsNeeded),
                     inline: false
                 });
             }

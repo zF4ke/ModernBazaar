@@ -95,7 +95,7 @@ export const craftFlippingCommand: Command = {
                     value: `**Profit:** ${formatCurrency(op.profitMargin)} per craft (${formatPercentage(op.profitPercentage)})\n` +
                            `**Cost:** ${formatCurrency(op.ingredientCost)} → **Sell:** ${formatCurrency(op.sellPrice)}\n` +
                            `**Can Craft:** ${op.maxCraftable.toLocaleString()} items → **Total Profit:** ${formatCurrency(op.totalProfit)}\n` +
-                           `**Score:** ${op.recommendationScore.toFixed(1)}/100${volatilityText}`,
+                           `**Score:** ${op.recommendationScore.toFixed(1)} ${volatilityText}`,
                     inline: true
                 });
             });

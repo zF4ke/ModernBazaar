@@ -14,7 +14,9 @@ export function setupInteractionEvent(client: ExtendedClient) {
                 const focusedOption = options.getFocused();
                 
                 try {
-                    const recipes = CraftingService.searchRecipes(focusedOption);
+                    // Normalize the search term by converting spaces to underscores to match recipe format
+                    const normalizedSearch = focusedOption.replace(/\s+/g, '_');
+                    const recipes = CraftingService.searchRecipes(normalizedSearch);
                     const choices = recipes
                         .slice(0, DISCORD_LIMITS.AUTOCOMPLETE_MAX_OPTIONS)
                         .map(recipe => ({
