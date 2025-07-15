@@ -78,9 +78,14 @@ export const craftFlippingCommand: Command = {
                 [PricingStrategy.INSTANT_BUY_INSTANT_SELL]: 'Instant Buy → Instant Sell'
             };
 
+            const isInstantBuyStrategy = pricingStrategy === PricingStrategy.INSTANT_BUY_SELL_ORDER || 
+                                       pricingStrategy === PricingStrategy.INSTANT_BUY_INSTANT_SELL ||
+                                       pricingStrategy === PricingStrategy.BUY_ORDER_INSTANT_SELL;
+            const depthNote = isInstantBuyStrategy ? '\n*Order book depth considered for realistic instant pricing*' : '';
+
             const embed = new EmbedBuilder()
                 .setTitle('🔨 Craft Flipping Opportunities')
-                .setDescription(`Top ${filteredOpportunities.length} crafting opportunities using **${strategyDescriptions[pricingStrategy]}** strategy with ${formatCurrency(budget)} budget${riskNote}`)
+                .setDescription(`Top ${filteredOpportunities.length} crafting opportunities using **${strategyDescriptions[pricingStrategy]}** strategy with ${formatCurrency(budget)} budget${riskNote}${depthNote}`)
                 .setColor(0x5D7B5D)
                 .setTimestamp();
 

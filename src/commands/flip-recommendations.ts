@@ -75,7 +75,7 @@ export const flipRecommendationsCommand: Command = {
             const priceTypeTitle = priceType === 'instant' ? 'order book prices' : 'weighted average prices (top 2%)';
             const priceTypeNote = priceType === 'instant' ? 
                 '*Note: Uses competitive order book prices - place orders and wait for execution*' :
-                '*Note: Uses realistic trading prices, not order book competition*';
+                '*Note: Uses realistic trading prices based on order book depth*';
 
             const embed = new EmbedBuilder()
                 .setTitle(`💰 Flip Recommendations - ${categoryTitle}`)

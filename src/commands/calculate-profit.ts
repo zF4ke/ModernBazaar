@@ -93,6 +93,20 @@ export const calculateProfitCommand: Command = {
                 )
                 .setTimestamp();
 
+            // Add depth-aware pricing information if used
+            if (calculation.depthAnalysis?.usedDepthAware) {
+                const depthInfo = calculation.depthAnalysis;
+                const depthStatus = depthInfo.feasible ? '✅ Market has sufficient depth' : '⚠️ Limited market depth detected';
+                const surchargeInfo = pricingStrategy.includes('instant_buy') ? '\n💰 **Includes 4% Hypixel surcharge** for instant buys' : '';
+                const depthText = `🔍 **Depth-Aware Pricing Used**\n${depthStatus}\nAnalyzed for ${depthInfo.estimatedCrafts} estimated crafts${surchargeInfo}`;
+                
+                embed.addFields({
+                    name: '📊 Market Depth Analysis',
+                    value: depthText,
+                    inline: false
+                });
+            }
+
             // Add ingredient breakdown
             const ingredientBreakdown = Object.entries(calculation.ingredientCosts)
                 .map(([ingredient, cost]) => {

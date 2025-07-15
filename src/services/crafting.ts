@@ -2,6 +2,7 @@ import { Recipe, CraftingCalculation } from "../types";
 import { HypixelService } from "./hypixel";
 import { RecipeDatabase } from "../data/recipes";
 import { ERROR_MESSAGES, FLIPPING_ANALYSIS } from "../constants";
+import { Logger } from "../utils/logger";
 
 export enum PricingStrategy {
     BUY_ORDER_SELL_ORDER = 'buy_order_sell_order',
@@ -32,7 +33,7 @@ export class CraftingService {
         itemName: string, 
         budget: number, 
         pricingStrategy: PricingStrategy = PricingStrategy.BUY_ORDER_SELL_ORDER
-    ): Promise<CraftingCalculation> {
+    ): Promise<CraftingCalculation & { depthAnalysis?: { usedDepthAware: boolean; estimatedCrafts?: number; feasible: boolean } }> {
         // Get recipe for the item
         const recipe = RecipeDatabase.getRecipe(itemName);
         if (!recipe) {
@@ -41,12 +42,100 @@ export class CraftingService {
         
         // Get all ingredient IDs
         const ingredientIds = Object.keys(recipe.ingredients);
-        
-        // Fetch current bazaar prices for all ingredients and the result item
         const allItemIds = [...ingredientIds, recipe.result.item];
-        const prices = await HypixelService.getMultipleItemPricesWithStrategy(allItemIds, pricingStrategy);
         
-        return this.calculateCraftingProfitWithPrices(itemName, budget, recipe, prices, pricingStrategy);
+        // Check if we need depth-aware pricing for instant strategies
+        const needsDepthAwareness = pricingStrategy === PricingStrategy.INSTANT_BUY_SELL_ORDER || 
+                                   pricingStrategy === PricingStrategy.INSTANT_BUY_INSTANT_SELL ||
+                                   pricingStrategy === PricingStrategy.BUY_ORDER_INSTANT_SELL;
+
+        let prices: Record<string, { ingredientPrice: number; resultPrice: number; feasible?: boolean; maxPossibleCrafts?: number }>;
+        let depthAnalysis: { usedDepthAware: boolean; estimatedCrafts?: number; feasible: boolean } = {
+            usedDepthAware: false,
+            feasible: true
+        };
+        
+        if (needsDepthAwareness) {
+            // Calculate quantities needed based on budget
+            const quantities: Record<string, number> = {};
+            
+            // Estimate how many crafts we could do with the budget
+            // First get simple prices to estimate ingredient cost
+            const simplePrices = await HypixelService.getMultipleItemPricesWithStrategy(allItemIds, pricingStrategy);
+            let totalIngredientCost = 0;
+            
+            for (const [ingredientId, quantity] of Object.entries(recipe.ingredients)) {
+                totalIngredientCost += (simplePrices[ingredientId]?.ingredientPrice || 0) * Number(quantity);
+            }
+            
+            const estimatedCrafts = totalIngredientCost > 0 ? Math.max(1, Math.floor(budget / totalIngredientCost)) : 1;
+            
+            // Set quantities for depth-aware calculation
+            quantities[recipe.result.item] = recipe.result.count * estimatedCrafts;
+            for (const [ingredientId, quantity] of Object.entries(recipe.ingredients)) {
+                quantities[ingredientId] = Number(quantity) * estimatedCrafts;
+            }
+            
+            Logger.verbose(`🔍 Using depth-aware pricing for ${itemName} with estimated ${estimatedCrafts} crafts`);
+            Logger.verbose(`⚠️ IMPORTANT: Instant buy prices include Hypixel's 4% surcharge for market stability`);
+            prices = await HypixelService.getDepthAwarePricing(allItemIds, pricingStrategy, quantities);
+            
+            // Check market limitations and adjust max crafts if needed
+            let maxCraftsByMarket = estimatedCrafts;
+            let marketLimitedBy: string[] = [];
+            
+            // Check ingredient market limitations
+            for (const [ingredientId, quantity] of Object.entries(recipe.ingredients)) {
+                const ingredientPricing = prices[ingredientId];
+                if (ingredientPricing?.maxPossibleCrafts !== undefined) {
+                    const maxCraftsForThisIngredient = Math.floor(ingredientPricing.maxPossibleCrafts / Number(quantity));
+                    if (maxCraftsForThisIngredient < maxCraftsByMarket) {
+                        maxCraftsByMarket = maxCraftsForThisIngredient;
+                        marketLimitedBy.push(`${ingredientId} (ingredient)`);
+                    }
+                }
+            }
+            
+            // Check result market limitations
+            const resultPricing = prices[recipe.result.item];
+            if (resultPricing?.maxPossibleCrafts !== undefined) {
+                const maxCraftsForResult = Math.floor(resultPricing.maxPossibleCrafts / recipe.result.count);
+                if (maxCraftsForResult < maxCraftsByMarket) {
+                    maxCraftsByMarket = maxCraftsForResult;
+                    marketLimitedBy.push(`${recipe.result.item} (result)`);
+                }
+            }
+            
+            if (marketLimitedBy.length > 0) {
+                Logger.verbose(`⚠️ Market depth limits crafting to ${maxCraftsByMarket} items (limited by: ${marketLimitedBy.join(', ')})`);
+            }
+            
+            // Check feasibility - now always feasible since we adjust quantities
+            const allFeasible = Object.values(prices).every(p => !p.hasOwnProperty('feasible') || p.feasible !== false);
+            
+            depthAnalysis = {
+                usedDepthAware: true,
+                estimatedCrafts: maxCraftsByMarket,
+                feasible: allFeasible && maxCraftsByMarket > 0
+            };
+        } else {
+            // Use simple pricing for order-based strategies
+            prices = await HypixelService.getMultipleItemPricesWithStrategy(allItemIds, pricingStrategy);
+        }
+        
+        const baseCalculation = this.calculateCraftingProfitWithPrices(
+            itemName, 
+            budget, 
+            recipe, 
+            prices, 
+            pricingStrategy,
+            depthAnalysis.usedDepthAware ? depthAnalysis.estimatedCrafts : undefined
+        );
+        
+        return {
+            ...baseCalculation,
+            depthAnalysis
+        };
     }
 
     /**
@@ -56,12 +145,15 @@ export class CraftingService {
         itemName: string, 
         budget: number, 
         recipe: any, 
-        prices: Record<string, { ingredientPrice: number; resultPrice: number }>,
-        pricingStrategy: PricingStrategy = PricingStrategy.BUY_ORDER_SELL_ORDER
+        prices: Record<string, { ingredientPrice: number; resultPrice: number; feasible?: boolean; maxPossibleCrafts?: number }>,
+        pricingStrategy: PricingStrategy = PricingStrategy.BUY_ORDER_SELL_ORDER,
+        maxCraftsByMarket?: number // Override for market depth limitations
     ): CraftingCalculation {
         // Calculate ingredient costs using pricing strategy
         const ingredientCosts: Record<string, { price: number; quantity: number; total: number }> = {};
         let totalIngredientCost = 0;
+        
+        Logger.verbose(`\n💰 CRAFTING COST BREAKDOWN for ${itemName}:`);
         
         for (const [ingredientId, quantity] of Object.entries(recipe.ingredients)) {
             // Use the ingredient price directly from the strategy-aware prices
@@ -69,6 +161,8 @@ export class CraftingService {
             
             const quantityNum = Number(quantity);
             const total = price * quantityNum;
+            
+            Logger.verbose(`   ${ingredientId}: ${quantityNum}x @ ${price.toFixed(2)} = ${total.toLocaleString()} coins`);
             
             ingredientCosts[ingredientId] = {
                 price,
@@ -82,14 +176,32 @@ export class CraftingService {
         // Get selling price of the crafted item from strategy-aware prices
         const sellingPrice = prices[recipe.result.item]?.resultPrice || 0;
         
+        Logger.verbose(`   📤 Sell ${recipe.result.item}: ${recipe.result.count}x @ ${sellingPrice.toFixed(2)} = ${(sellingPrice * recipe.result.count).toLocaleString()} coins`);
+        Logger.verbose(`   📊 Total ingredient cost: ${totalIngredientCost.toLocaleString()} coins`);
+        Logger.verbose(`   📈 Profit per craft: ${((sellingPrice * recipe.result.count) - totalIngredientCost).toLocaleString()} coins`);
+        
         // Calculate profit per item
         const profitPerItem = (sellingPrice * recipe.result.count) - totalIngredientCost;
         
         // Calculate how many items can be crafted with the budget
-        const maxCraftable = totalIngredientCost > 0 ? Math.floor(budget / totalIngredientCost) : 0;
+        const budgetBasedMax = totalIngredientCost > 0 ? Math.floor(budget / totalIngredientCost) : 0;
+        
+        // Use market limitation if provided and it's more restrictive
+        const maxCraftable = maxCraftsByMarket !== undefined ? 
+            Math.min(budgetBasedMax, maxCraftsByMarket) : 
+            budgetBasedMax;
+                        
+        Logger.verbose(`   💼 Budget allows: ${budgetBasedMax} crafts`);
+        if (maxCraftsByMarket !== undefined) {
+            Logger.verbose(`   📊 Market limits: ${maxCraftsByMarket} crafts`);
+        }
+        Logger.verbose(`   🎯 Final max craftable: ${maxCraftable} crafts`);
+
         
         // Calculate total profit
         const totalProfit = profitPerItem * maxCraftable;
+        
+        Logger.verbose(`   💎 Total profit: ${totalProfit.toLocaleString()} coins\n`);
         
         // Calculate profit percentage
         const profitPercentage = totalIngredientCost > 0 ? (profitPerItem / totalIngredientCost) * 100 : 0;
@@ -129,16 +241,74 @@ export class CraftingService {
             Object.keys(recipe.ingredients).forEach(ingredient => allItemIds.add(ingredient));
         });
 
-        // Fetch all prices at once with strategy-aware pricing
-        const prices = await HypixelService.getMultipleItemPricesWithStrategy(Array.from(allItemIds), pricingStrategy);
+        // Check if we need depth-aware pricing for instant strategies
+        const needsDepthAwareness = pricingStrategy === PricingStrategy.INSTANT_BUY_SELL_ORDER || 
+                                   pricingStrategy === PricingStrategy.INSTANT_BUY_INSTANT_SELL ||
+                                   pricingStrategy === PricingStrategy.BUY_ORDER_INSTANT_SELL;
+
+        let prices: Record<string, { ingredientPrice: number; resultPrice: number; feasible?: boolean; maxPossibleCrafts?: number }>;
+        
+        if (needsDepthAwareness) {
+            // Calculate quantities needed for ingredients based on budget
+            const quantities: Record<string, number> = {};
+            
+            // For depth-aware pricing, we need to estimate quantities
+            // We'll use a reasonable batch size for calculations
+            const estimatedCrafts = 100; // Estimate quantity for 100 crafts
+            
+            Object.entries(allRecipes).forEach(([itemName, recipe]) => {
+                // Add estimated quantity for result item
+                quantities[itemName] = recipe.result.count * estimatedCrafts;
+                
+                // Add estimated quantities for ingredients
+                Object.entries(recipe.ingredients).forEach(([ingredientId, ingredientQuantity]) => {
+                    quantities[ingredientId] = Number(ingredientQuantity) * estimatedCrafts;
+                });
+            });
+            
+            Logger.verbose(`🔍 Using depth-aware pricing for ${pricingStrategy} strategy with estimated quantities`);
+            prices = await HypixelService.getDepthAwarePricing(Array.from(allItemIds), pricingStrategy, quantities);
+        } else {
+            // Use simple pricing for order-based strategies
+            prices = await HypixelService.getMultipleItemPricesWithStrategy(Array.from(allItemIds), pricingStrategy);
+        }
 
         for (const [itemName, recipe] of Object.entries(allRecipes)) {
             try {
-                // Use optimized calculation with pre-fetched prices
-                const craftingCalc = this.calculateCraftingProfitWithPrices(itemName, budget, recipe, prices, pricingStrategy);
+                // Calculate market limitations if using depth-aware pricing
+                let maxCraftsByMarket: number | undefined;
                 
-                // Skip if not profitable or can't craft any items with the budget
-                if (/* craftingCalc.profitPerItem <= 0 || */ craftingCalc.maxCraftable === 0) {
+                if (needsDepthAwareness) {
+                    maxCraftsByMarket = 100; // Start with the estimated crafts value used above
+                    
+                    // Check ingredient market limitations
+                    for (const [ingredientId, quantity] of Object.entries(recipe.ingredients)) {
+                        const ingredientPricing = prices[ingredientId];
+                        if (ingredientPricing?.maxPossibleCrafts !== undefined) {
+                            const maxCraftsForThisIngredient = Math.floor(ingredientPricing.maxPossibleCrafts / Number(quantity));
+                            maxCraftsByMarket = Math.min(maxCraftsByMarket!, maxCraftsForThisIngredient);
+                        }
+                    }
+                    
+                    // Check result market limitations
+                    const resultPricing = prices[recipe.result.item];
+                    if (resultPricing?.maxPossibleCrafts !== undefined) {
+                        const maxCraftsForResult = Math.floor(resultPricing.maxPossibleCrafts / recipe.result.count);
+                        maxCraftsByMarket = Math.min(maxCraftsByMarket!, maxCraftsForResult);
+                    }
+                }
+                
+                // Use optimized calculation with pre-fetched prices and market limitations
+                const craftingCalc = this.calculateCraftingProfitWithPrices(itemName, budget, recipe, prices, pricingStrategy, maxCraftsByMarket);
+                
+                // Skip if not profitable, can't craft any items, or not feasible with depth-aware pricing
+                const resultPricing = prices[recipe.result.item];
+                const isFeasible = !resultPricing?.hasOwnProperty('feasible') || resultPricing.feasible !== false;
+                
+                if (craftingCalc.maxCraftable === 0 || !isFeasible) {
+                    if (!isFeasible) {
+                        Logger.verbose(`⚠️ Skipping ${itemName}: insufficient order book depth for instant strategy`);
+                    }
                     continue;
                 }
 

@@ -230,7 +230,7 @@ export class FlippingService {
     }
 
     /**
-     * Calculates price volatility by comparing order book vs weighted average prices
+     * Calculates price volatility by comparing instant vs weighted average prices
      * High volatility indicates market uncertainty (new items, trending, etc.)
      */
     private static calculatePriceVolatility(product: BazaarProduct, currentPriceType: 'instant' | 'weighted'): number {
