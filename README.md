@@ -10,6 +10,10 @@ A Discord bot for Hypixel SkyBlock bazaar trading and profit analysis.
 - Market analysis with order book data
 - Recipe database for crafting opportunities
 
+## 📚 [full documentation](./docs/README.md)
+
+want the complete guide? check out the [detailed docs](./docs/README.md) for in-depth explanations, examples, and troubleshooting.
+
 ## commands
 
 ### `/bazaar-price <item>`
