@@ -1,6 +1,7 @@
 import { BazaarResponse, BazaarProduct } from "../types";
 import { HYPIXEL_API, ERROR_MESSAGES, MARKET_ANALYSIS } from "../constants";
 import { AutocompleteCacheService } from './autocomplete-cache.js';
+import { PricingStrategy } from './crafting.js';
 
 export class HypixelService {
     private static isInitialized = false;
@@ -101,9 +102,54 @@ export class HypixelService {
     }
     
     /**
-     * Gets weighted average prices for multiple items (top 2% by volume)
-     * buyPrice = average price you can sell at instantly
-     * sellPrice = average price you pay to buy instantly
+     * Gets order book prices for multiple items with pricing strategy support
+     * Returns the correct prices based on the intended trading strategy
+     */
+    static async getMultipleItemPricesWithStrategy(
+        itemIds: string[], 
+        pricingStrategy: PricingStrategy
+    ): Promise<Record<string, { ingredientPrice: number; resultPrice: number }>> {
+        const bazaarData = await this.getBazaarPrices();
+        const result: Record<string, { ingredientPrice: number; resultPrice: number }> = {};
+        
+        for (const itemId of itemIds) {
+            const product = bazaarData.products[itemId];
+            if (product) {
+                let ingredientPrice = 0;
+                let resultPrice = 0;
+                
+                // Price for buying ingredients
+                if (pricingStrategy === PricingStrategy.BUY_ORDER_SELL_ORDER || pricingStrategy === PricingStrategy.BUY_ORDER_INSTANT_SELL) {
+                    // Buy orders for ingredients: we pay sell order prices
+                    ingredientPrice = product.sell_summary[0]?.pricePerUnit || 0;
+                } else {
+                    // Instant buy ingredients: we pay buy order prices
+                    ingredientPrice = product.buy_summary[0]?.pricePerUnit || 0;
+                }
+                
+                // Price for selling results
+                if (pricingStrategy === PricingStrategy.BUY_ORDER_SELL_ORDER || pricingStrategy === PricingStrategy.INSTANT_BUY_SELL_ORDER) {
+                    // Sell orders for results: we get buy order prices
+                    resultPrice = product.buy_summary[0]?.pricePerUnit || 0;
+                } else {
+                    // Instant sell results: we get sell order prices
+                    resultPrice = product.sell_summary[0]?.pricePerUnit || 0;
+                }
+                
+                result[itemId] = {
+                    ingredientPrice,
+                    resultPrice
+                };
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * Gets order book prices for multiple items (actual order prices, not weighted averages)
+     * buyPrice = highest buy order price (what you get when selling instantly)
+     * sellPrice = lowest sell order price (what you pay when buying instantly)
      */
     static async getMultipleItemPrices(itemIds: string[]): Promise<Record<string, { buyPrice: number; sellPrice: number }>> {
         const bazaarData = await this.getBazaarPrices();
@@ -113,8 +159,9 @@ export class HypixelService {
             const product = bazaarData.products[itemId];
             if (product) {
                 result[itemId] = {
-                    buyPrice: product.quick_status.buyPrice,
-                    sellPrice: product.quick_status.sellPrice
+                    // Use actual order book prices, not weighted averages
+                    buyPrice: product.buy_summary[0]?.pricePerUnit || 0, // Highest buy order
+                    sellPrice: product.sell_summary[0]?.pricePerUnit || 0 // Lowest sell order
                 };
             }
         }

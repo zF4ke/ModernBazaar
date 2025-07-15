@@ -44,7 +44,7 @@ export class CraftingService {
         
         // Fetch current bazaar prices for all ingredients and the result item
         const allItemIds = [...ingredientIds, recipe.result.item];
-        const prices = await HypixelService.getMultipleItemPrices(allItemIds);
+        const prices = await HypixelService.getMultipleItemPricesWithStrategy(allItemIds, pricingStrategy);
         
         return this.calculateCraftingProfitWithPrices(itemName, budget, recipe, prices, pricingStrategy);
     }
@@ -56,7 +56,7 @@ export class CraftingService {
         itemName: string, 
         budget: number, 
         recipe: any, 
-        prices: Record<string, { buyPrice: number; sellPrice: number }>,
+        prices: Record<string, { ingredientPrice: number; resultPrice: number }>,
         pricingStrategy: PricingStrategy = PricingStrategy.BUY_ORDER_SELL_ORDER
     ): CraftingCalculation {
         // Calculate ingredient costs using pricing strategy
@@ -64,15 +64,8 @@ export class CraftingService {
         let totalIngredientCost = 0;
         
         for (const [ingredientId, quantity] of Object.entries(recipe.ingredients)) {
-            // Choose price based on strategy for buying ingredients
-            let price = 0;
-            if (pricingStrategy === PricingStrategy.BUY_ORDER_SELL_ORDER || pricingStrategy === PricingStrategy.BUY_ORDER_INSTANT_SELL) {
-                // Use sellPrice for ingredients - we place buy orders at current sell order prices
-                price = prices[ingredientId]?.sellPrice || 0;
-            } else {
-                // Use buyPrice for ingredients - we instant buy at current buy order prices
-                price = prices[ingredientId]?.buyPrice || 0;
-            }
+            // Use the ingredient price directly from the strategy-aware prices
+            const price = prices[ingredientId]?.ingredientPrice || 0;
             
             const quantityNum = Number(quantity);
             const total = price * quantityNum;
@@ -86,15 +79,8 @@ export class CraftingService {
             totalIngredientCost += total;
         }
         
-        // Get selling price of the crafted item based on strategy
-        let sellingPrice = 0;
-        if (pricingStrategy === PricingStrategy.BUY_ORDER_SELL_ORDER || pricingStrategy === PricingStrategy.INSTANT_BUY_SELL_ORDER) {
-            // Use buyPrice - what others are willing to pay when we place sell orders
-            sellingPrice = prices[recipe.result.item]?.buyPrice || 0;
-        } else {
-            // Use sellPrice - instant sell to current buy orders
-            sellingPrice = prices[recipe.result.item]?.sellPrice || 0;
-        }
+        // Get selling price of the crafted item from strategy-aware prices
+        const sellingPrice = prices[recipe.result.item]?.resultPrice || 0;
         
         // Calculate profit per item
         const profitPerItem = (sellingPrice * recipe.result.count) - totalIngredientCost;
@@ -143,8 +129,8 @@ export class CraftingService {
             Object.keys(recipe.ingredients).forEach(ingredient => allItemIds.add(ingredient));
         });
 
-        // Fetch all prices at once
-        const prices = await HypixelService.getMultipleItemPrices(Array.from(allItemIds));
+        // Fetch all prices at once with strategy-aware pricing
+        const prices = await HypixelService.getMultipleItemPricesWithStrategy(Array.from(allItemIds), pricingStrategy);
 
         for (const [itemName, recipe] of Object.entries(allRecipes)) {
             try {
