@@ -56,7 +56,7 @@ const RECIPES: Record<string, Recipe> = {
     "NULL_OVOID": {
         ingredients: {
             "ENCHANTED_OBSIDIAN": 32,
-            "NULL_SPHERE": 64,
+            "NULL_SPHERE": 128,
         },
         result: {
             item: "NULL_OVOID",
