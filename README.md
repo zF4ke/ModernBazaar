@@ -1,0 +1,67 @@
+# Modern Hypixel Bazaar Bot
+
+A Discord bot for Hypixel SkyBlock bazaar trading and profit analysis.
+
+## features
+
+- Real-time bazaar price checking
+- Item flipping recommendations with profit analysis
+- Crafting profit calculator with multiple pricing strategies
+- Market analysis with order book data
+- Recipe database for crafting opportunities
+
+## commands
+
+### `/bazaar-price <item>`
+shows current buy/sell prices for any item
+
+### `/market-analysis <item>`
+detailed market analysis with order book data
+
+### `/flip-recommendations`
+finds the best items to flip based on profit margins
+- `category` - filter by item category
+- `budget` - your available budget
+- `count` - how many results to show
+
+### `/craft-flipping <budget>`
+finds the most profitable crafting recipes for your budget
+- `pricing-strategy` - how you want to buy/sell (default: buy orders → sell orders)
+- `count` - how many results to show (1-15)
+- `include-risky` - include volatile items
+
+### `/calculate-profit <item> <budget>`
+calculates profit for crafting a specific item
+- `pricing-strategy` - same as above
+
+### `/list-recipes`
+shows all available crafting recipes (add more in `src/data/recipes.ts`)
+- `search` - search for specific recipes
+
+### `/help`
+shows what each command does
+
+## pricing strategies
+
+- **buy orders → sell orders** - place buy orders for ingredients, sell orders for results (most profit)
+- **buy orders → instant sell** - place buy orders for ingredients, instant sell results
+- **instant buy → sell orders** - instant buy ingredients, sell orders for results  
+- **instant buy → instant sell** - instant buy ingredients, instant sell results (fastest)
+
+## setup
+
+1. clone this
+2. `npm install`
+3. add your discord bot token to `.env`
+4. `npm start`
+
+that's it. no api keys needed, uses public hypixel api.
+
+## notes
+
+- prices update in real time
+- results are sorted by total profit
+- high-risk items are filtered out by default
+- uses order book strategy by default (best profits)
+
+made this because i was tired of manually checking bazaar prices lol
