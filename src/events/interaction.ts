@@ -3,6 +3,7 @@ import { ExtendedClient } from "../types";
 import { CraftingService } from "../services/crafting";
 import { BazaarAutocompleteService } from "../services/autocomplete";
 import { DISCORD_LIMITS, ERROR_MESSAGES } from "../constants";
+import { handleNPCArbitrageButtons } from "../handlers/npc-arbitrage-buttons.js";
 
 export function setupInteractionEvent(client: ExtendedClient) {
     client.on(Events.InteractionCreate, async interaction => {
@@ -27,7 +28,11 @@ export function setupInteractionEvent(client: ExtendedClient) {
                     await interaction.respond(choices);
                 } catch (error) {
                     console.error('Error in autocomplete:', error);
-                    await interaction.respond([]);
+                    try {
+                        await interaction.respond([]);
+                    } catch (err) {
+                        //
+                    }
                 }
             } else if (commandName === 'bazaar-price' || commandName === 'market-analysis') {
                 const focusedOption = options.getFocused();
@@ -48,6 +53,25 @@ export function setupInteractionEvent(client: ExtendedClient) {
             return;
         }
         
+        // Handle button interactions
+        if (interaction.isButton()) {
+            try {
+                if (interaction.customId.startsWith('npc_arbitrage_')) {
+                    await handleNPCArbitrageButtons(interaction);
+                    return;
+                }
+            } catch (error) {
+                console.error('❌ Error handling button interaction:', error);
+                
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({
+                        content: 'There was an error processing your request.',
+                        ephemeral: true
+                    });
+                }
+            }
+        }
+        
         // Handle slash commands
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
@@ -58,13 +82,17 @@ export function setupInteractionEvent(client: ExtendedClient) {
             }
             
             try {
-                await command.execute(interaction);
+                try {
+                    await command.execute(interaction);
+                } catch (error) {
+                    //
+                }
             } catch (error) {
                 console.error('❌ Error executing command:', error);
                 
                 const errorMessage = {
                     content: ERROR_MESSAGES.COMMAND_ERROR,
-                    ephemeral: true
+                    ephemeral: true,
                 };
                 
                 if (interaction.replied || interaction.deferred) {

@@ -48,6 +48,20 @@ interface RawBazaarProduct {
     };
 }
 
+// NPC API response interface
+interface NPCApiResponse {
+    success: boolean;
+    lastUpdated: number;
+    items: Array<{
+        id: string;
+        name: string;
+        material: string;
+        npc_sell_price?: number;
+        category?: string;
+        tier?: string;
+    }>;
+}
+
 interface RawBazaarResponse {
     success: boolean;
     lastUpdated: number;
@@ -540,5 +554,39 @@ export class HypixelService {
         }
         
         return result;
+    }
+
+    /**
+     * Fetches NPC item data from Hypixel SkyBlock API
+     */
+    static async getNPCItemData(): Promise<NPCApiResponse> {
+        try {
+            Logger.verbose('🔄 Fetching NPC item data from Hypixel API...');
+            const startTime = Date.now();
+            
+            const response = await fetch(HYPIXEL_API.NPC_ITEMS_URL);
+
+            const fetchTime = Date.now() - startTime;
+            Logger.verbose(`📡 NPC API Response received in ${fetchTime}ms - Status: ${response.status}`);
+
+            if (!response.ok) {
+                Logger.error(`❌ NPC API Error: HTTP ${response.status} - ${response.statusText}`);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json() as NPCApiResponse;
+            
+            if (!data.success) {
+                Logger.error('❌ NPC API returned unsuccessful response');
+                throw new Error('API returned unsuccessful response');
+            }
+
+            Logger.verbose(`📦 Processing ${data.items?.length || 0} NPC items...`);
+            return data;
+
+        } catch (error) {
+            Logger.error('❌ Failed to fetch NPC item data:', error);
+            throw new Error(`Failed to fetch NPC data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
     }
 }

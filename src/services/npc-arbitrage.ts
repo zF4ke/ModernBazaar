@@ -1,0 +1,340 @@
+import { Logger } from '../utils/logger.js';
+import { npcArbitrageCacheService } from './npc-arbitrage-cache.js';
+
+export interface NPCItem {
+    id: string;
+    name: string;
+    material: string;
+    npc_sell_price: number;
+    category?: string;
+    tier?: string;
+}
+
+export interface ArbitrageOpportunity {
+    itemId: string;
+    itemName: string;
+    bazaarBuyPrice: number;
+    npcSellPrice: number;
+    profitPerItem: number;
+    profitMargin: number;
+    maxAffordable: number;
+    totalProfit: number;
+    feasible: boolean;
+}
+
+export class NPCArbitrageService {
+    /**
+     * Fetches fresh NPC item data from Hypixel API
+     */
+    static async fetchNPCItems(): Promise<Map<string, NPCItem>> {
+        try {
+            const { HypixelService } = await import('./hypixel.js');
+            const data = await HypixelService.getNPCItemData();
+
+            Logger.verbose(`✅ Successfully fetched ${data.items?.length || 0} items from Hypixel NPC API`);
+
+            const npcItems = new Map<string, NPCItem>();
+
+            // print number of items fetched
+            Logger.verbose(`🔍 Processing ${data.items?.length || 0} items with NPC sell prices...`);
+
+            // Process items with NPC sell prices
+            let itemsWithNPCPrices = 0;
+            for (const item of data.items || []) {
+                // if item has "salmon" in the id, log it
+                // if (item.id.includes('SALMON')) {
+                //     Logger.verbose(`🔍 Found item with "SALMON" in ID: ${item.id}`)
+                // };
+                if (item.npc_sell_price && item.npc_sell_price > 0) {
+                    npcItems.set(item.id, {
+                        id: item.id,
+                        name: item.name,
+                        material: item.material,
+                        npc_sell_price: item.npc_sell_price,
+                        category: item.category,
+                        tier: item.tier
+                    });
+                    itemsWithNPCPrices++;
+                }
+            }
+
+            Logger.verbose(`✅ Processed ${itemsWithNPCPrices} items with NPC sell prices`);
+
+            // export all items for debugging to a file
+            // const fs = await import('fs');
+            // const path = './npc-items-debug.json';
+            // fs.writeFileSync(path, JSON.stringify(Array.from(npcItems.entries()), null, 2));
+            // Logger.verbose(`✅ NPC items debug data written to ${path}`);
+            // Logger.verbose(`✅ Total NPC items with prices: ${npcItems.size}`);
+
+            return npcItems;
+
+        } catch (error) {
+            console.error('❌ Failed to fetch NPC item data:', error);
+            throw new Error(`Failed to fetch NPC data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * Finds profitable NPC arbitrage opportunities with pagination and caching
+     */
+    static async findArbitrageOpportunities(
+        budget: number,
+        page: number = 1,
+        itemsPerPage: number = 7,
+        strategy: 'instabuy' | 'buyorder' = 'instabuy',
+        forceRefresh: boolean = false
+    ): Promise<{ opportunities: ArbitrageOpportunity[], totalCount: number, totalPages: number, currentPage: number, totalProfit: number }> {
+        // Clear cache if this is a fresh command execution
+        if (forceRefresh) {
+            npcArbitrageCacheService.clearCacheForBudgetStrategy(budget, strategy);
+            Logger.verbose(`🗑️ Cleared cache for fresh command execution`);
+        }
+
+        // Check cache first (only if not forcing refresh)
+        const cached = npcArbitrageCacheService.getCachedResult(budget, strategy);
+        if (cached && !forceRefresh) {
+            Logger.verbose(`🚀 Using cached NPC arbitrage results for budget ${budget} and strategy ${strategy}`);
+            
+            // Calculate pagination from cached data
+            const totalCount = cached.totalCount;
+            const totalPages = cached.totalPages;
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const opportunities = cached.opportunities.slice(startIndex, endIndex);
+
+            return {
+                opportunities,
+                totalCount,
+                totalPages,
+                currentPage: page,
+                totalProfit: cached.totalProfit
+            };
+        }
+
+        Logger.verbose(`🔄 Fetching fresh NPC arbitrage data for budget ${budget} and strategy ${strategy}`);
+
+        // Always fetch fresh data if not cached
+        const npcItems = await this.fetchNPCItems();
+        const { HypixelService } = await import('./hypixel.js');
+        const bazaarData = await HypixelService.getBazaarPrices();
+
+        Logger.verbose(`\n🔍 ANALYZING ALL NPC ARBITRAGE OPPORTUNITIES`);
+        Logger.verbose(`💰 Budget: ${budget.toLocaleString()} coins`);
+        Logger.verbose(`📊 Checking ${npcItems.size} NPC items vs ${Object.keys(bazaarData.products).length} bazaar products...`);
+
+        const allOpportunities: ArbitrageOpportunity[] = [];
+        let itemsChecked = 0;
+        let profitableItems = 0;
+
+        for (const [itemId, npcItem] of npcItems) {
+            itemsChecked++;
+            
+            // Check if item exists in bazaar with required order types
+            const bazaarProduct = bazaarData.products[itemId];
+            if (!bazaarProduct) {
+                continue;
+            }
+
+            // Check if the required order type exists based on strategy
+            if (strategy === 'instabuy' && (!bazaarProduct.sell_orders || bazaarProduct.sell_orders.length === 0)) {
+                continue;
+            }
+            if (strategy === 'buyorder' && (!bazaarProduct.buy_orders || bazaarProduct.buy_orders.length === 0)) {
+                continue;
+            }
+
+            try {
+                // Use analyzeSpecificItem to avoid code duplication
+                const opportunity = await this.analyzeSpecificItem(itemId, budget, strategy, npcItems, bazaarData);
+                
+                if (opportunity) {
+                    profitableItems++;
+                    allOpportunities.push(opportunity);
+                    
+                    Logger.verbose(`💎 Found opportunity: ${opportunity.itemName} - Buy: ${opportunity.bazaarBuyPrice.toFixed(3)} → NPC: ${opportunity.npcSellPrice} = +${opportunity.profitPerItem.toFixed(3)} coins (${opportunity.profitMargin.toFixed(1)}%)`);
+                }
+            } catch (error) {
+                Logger.verbose(`⚠️ Error analyzing ${itemId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                continue;
+            }
+        }
+
+        Logger.verbose(`📊 Analysis complete: ${itemsChecked} items checked, ${profitableItems} profitable opportunities found`);
+
+        // Sort by total profit (descending) - most profitable first
+        allOpportunities.sort((a, b) => b.totalProfit - a.totalProfit);
+
+        // Calculate total profit across all opportunities
+        const totalProfit = allOpportunities.reduce((sum, opp) => sum + opp.totalProfit, 0);
+
+        // Cache the complete results
+        const totalCount = allOpportunities.length;
+        const totalPages = Math.ceil(totalCount / itemsPerPage);
+        
+        npcArbitrageCacheService.setCachedResult(budget, strategy, {
+            opportunities: allOpportunities,
+            totalCount,
+            totalPages,
+            totalProfit
+        });
+
+        Logger.verbose(`💾 Cached ${totalCount} opportunities for future pagination`);
+
+        // Calculate pagination for current request
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const opportunities = allOpportunities.slice(startIndex, endIndex);
+
+        return {
+            opportunities,
+            totalCount,
+            totalPages,
+            currentPage: page,
+            totalProfit
+        };
+    }
+
+    /**
+     * Gets detailed analysis for a specific item
+     */
+    static async analyzeSpecificItem(
+        itemId: string, 
+        budget: number, 
+        strategy: 'instabuy' | 'buyorder' = 'instabuy',
+        npcItems?: Map<string, NPCItem>,
+        bazaarData?: any
+    ): Promise<ArbitrageOpportunity | null> {
+        // Use provided data or fetch fresh data
+        const items = npcItems || await this.fetchNPCItems();
+        const npcItem = items.get(itemId);
+        
+        // if (itemId.includes('SALMON_OPAL')) {
+        //     Logger.info(`Found item with "SALMON_OPAL" in ID: ${itemId}`);
+        // }
+
+        if (!npcItem) {
+            return null;
+        }
+
+        let bazaar = bazaarData;
+        if (!bazaar) {
+            const { HypixelService } = await import('./hypixel.js');
+            bazaar = await HypixelService.getBazaarPrices();
+        }
+        
+        const bazaarProduct = bazaar.products[itemId];
+
+        if (!bazaarProduct || !bazaarProduct.sell_orders || bazaarProduct.sell_orders.length === 0) {
+
+            // if (itemId.includes('SALMON_OPAL')) {
+            //     Logger.info(`Discarding ${itemId} - not available on bazaar`);
+            // }   
+
+            throw new Error(`Item ${itemId} not available on bazaar`);
+        }
+
+        // Calculate buying cost based on strategy
+        let buyPrice: number;
+        let maxAffordable: number = 0;
+        
+        if (strategy === 'instabuy') {
+            // Calculate how many items we can buy profitably from sell orders (in order they appear)
+            let totalCost = 0;
+            let itemsBought = 0;
+            let remainingBudget = budget;
+            
+            // Consume sell orders in the order they appear (already sorted by price)
+            for (const order of bazaarProduct.sell_orders) {
+                const pricePerUnit = order.pricePerUnit;
+                // Add 4% tax for instant buy orders
+                const priceWithTax = pricePerUnit * 1.04;
+                
+                // Check if this price is still profitable after tax
+                if (priceWithTax >= npcItem.npc_sell_price) {
+                    break; // No longer profitable at this price
+                }
+                
+                // Calculate how many we can afford from this order (including tax)
+                const affordableFromOrder = Math.min(
+                    Math.floor(remainingBudget / priceWithTax),
+                    order.amount
+                );
+                
+                if (affordableFromOrder <= 0) {
+                    break; // Can't afford any more
+                }
+                
+                // Add these items to our purchase (cost includes tax)
+                const costFromOrder = affordableFromOrder * priceWithTax;
+                totalCost += costFromOrder;
+                itemsBought += affordableFromOrder;
+                remainingBudget -= costFromOrder;
+                
+                if (remainingBudget <= 0) {
+                    break; // No budget left
+                }
+            }
+            
+            if (itemsBought === 0) {
+                // No profitable items can be bought
+                return null;
+            }
+            
+            buyPrice = totalCost / itemsBought; // Weighted average price
+            maxAffordable = itemsBought;
+        } else {
+            // Buy order strategy - use highest buy order price (no tax for buy orders)
+            if (!bazaarProduct.buy_orders || bazaarProduct.buy_orders.length === 0) {
+                throw new Error(`Item ${itemId} has no buy orders available`);
+            }
+            
+            buyPrice = bazaarProduct.buy_orders[0].pricePerUnit;
+            
+            // Check if profitable at buy order price (no tax for buy orders)
+            if (buyPrice >= npcItem.npc_sell_price) {
+                return null; // Not profitable
+            }
+            
+            maxAffordable = Math.floor(budget / buyPrice);
+        }
+
+        // Calculate profit and validate
+        const profitPerItem = npcItem.npc_sell_price - buyPrice;
+        
+        if (profitPerItem <= 0 || maxAffordable <= 0) {
+            return null; // Not profitable or can't afford any
+        }
+
+        // if (itemId.includes('SALMON')) {
+        //     Logger.info(`� Analyzing ${npcItem.name} (${itemId}): Buy Price: ${buyPrice.toFixed(3)}, NPC Sell Price: ${npcItem.npc_sell_price}, Max Affordable: ${maxAffordable}`);
+        // }
+
+        const profitMargin = (profitPerItem / buyPrice) * 100;
+        const totalProfit = profitPerItem * maxAffordable;
+        const feasible = maxAffordable > 0 && profitPerItem > 0;
+
+        return {
+            itemId,
+            itemName: npcItem.name,
+            bazaarBuyPrice: buyPrice,
+            npcSellPrice: npcItem.npc_sell_price,
+            profitPerItem,
+            profitMargin,
+            maxAffordable,
+            totalProfit,
+            feasible
+        };
+    }
+
+    /**
+     * Gets cache statistics (no caching anymore, so always returns fresh info)
+     */
+    static getCacheStats(): { itemCount: number; lastUpdated: Date | null; cacheAge: number } {
+        return {
+            itemCount: 0, // We don't cache anymore
+            lastUpdated: new Date(), // Always fresh
+            cacheAge: 0 // Always fresh data
+        };
+    }
+}

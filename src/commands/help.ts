@@ -1,100 +1,196 @@
-import { SlashCommandBuilder, CommandInteraction, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, CommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags } from "discord.js";
 import { Command } from "../types";
+import { EMBED_COLORS } from "../constants";
+
+interface HelpPage {
+    title: string;
+    description: string;
+    commands: Array<{
+        name: string;
+        description: string;
+        usage?: string;
+    }>;
+}
 
 export const helpCommand: Command = {
     data: new SlashCommandBuilder()
         .setName('help')
-        .setDescription('Show information about bot commands and usage'),
+        .setDescription('show what this bot can do'),
 
     async execute(interaction: CommandInteraction) {
-        const embed = new EmbedBuilder()
-            .setTitle('🤖 Hypixel Bazaar Profit Calculator Bot')
-            .setDescription('Calculate crafting profits using real-time Hypixel Bazaar data!')
-            .setColor(0x5D7B5D)
-            .addFields(
-                {
-                    name: '🔨 `/calculate-profit`',
-                    value: 'Calculate profit for crafting a specific item using order book strategy\n' +
-                           '**Usage:** `/calculate-profit item:ENCHANTED_BREAD budget:1000000`\n' +
-                           '• `item`: The item you want to craft (use autocomplete)\n' +
-                           '• `budget`: Your total budget in coins\n' +
-                           '• Uses buy orders for ingredients and sell orders for results',
-                    inline: false
-                },
-                {
-                    name: '📜 `/list-recipes`',
-                    value: 'List all available crafting recipes\n' +
-                           '**Usage:** `/list-recipes [search:optional]`\n' +
-                           '• `search`: Optional search term to filter recipes',
-                    inline: false
-                },
-                {
-                    name: '💰 `/bazaar-price`',
-                    value: 'Check current bazaar prices for any item\n' +
-                           '**Usage:** `/bazaar-price item:WHEAT`\n' +
-                           '• `item`: The exact bazaar item ID to check',
-                    inline: false
-                },
-                {
-                    name: '📊 `/market-analysis`',
-                    value: 'Get detailed market analysis with order book data\n' +
-                           '**Usage:** `/market-analysis item:ENCHANTED_BREAD`\n' +
-                           '• `item`: The exact bazaar item ID to analyze\n' +
-                           '• Shows top buy/sell orders, market depth, and trading recommendations',
-                    inline: false
-                },
-                {
-                    name: '💸 `/flip-recommendations`',
-                    value: 'Get the best items to flip based on supply/demand and margins\n' +
-                           '**Usage:** `/flip-recommendations [category:all] [count:10]`\n' +
-                           '• `category`: Filter by All, High Margin, High Volume, or Low Risk\n' +
-                           '• `count`: Number of recommendations (1-20)\n' +
-                           '• Shows profit margins, volumes, and risk levels',
-                    inline: false
-                },
-                {
-                    name: '🔨 `/craft-flipping`',
-                    value: 'Analyze crafting recipes for flipping opportunities using order book strategy\n' +
-                           '**Usage:** `/craft-flipping budget:10000000 [count:10] [include-risky:false]`\n' +
-                           '• `budget`: Your total budget in coins (required)\n' +
-                           '• `count`: Number of opportunities to show (1-15)\n' +
-                           '• `include-risky`: Include volatile items with price uncertainty\n' +
-                           '• Uses buy orders for ingredients and sell orders for results\n' +
-                           '• Shows volatility-based risk levels and max craftable quantities',
-                    inline: false
-                },
-                {
-                    name: '❓ `/help`',
-                    value: 'Show this help message',
-                    inline: false
-                }
-            )
-            .addFields(
-                {
-                    name: '📊 Features',
-                    value: '• Real-time Hypixel Bazaar data\n' +
-                           '• Order book strategy profit calculations\n' +
-                           '• Ingredient cost breakdown with buy orders\n' +
-                           '• Budget-based crafting limits\n' +
-                           '• Recipe search functionality\n' +
-                           '• Market analysis with order book\n' +
-                           '• Flipping recommendations with risk analysis\n' +
-                           '• Craft flipping opportunities with budget constraints\n' +
-                           '• Trading insights and liquidity scores',
-                    inline: true
-                },
-                {
-                    name: '💡 Tips',
-                    value: '• Use autocomplete for item names\n' +
-                           '• Check recipes with `/list-recipes`\n' +
-                           '• Verify item IDs with `/bazaar-price`\n' +
-                           '• Budget format: 1000000 = 1M coins',
-                    inline: true
-                }
-            )
-            .setFooter({ text: 'Made with ❤️ for Hypixel SkyBlock players' })
-            .setTimestamp();
+        if (!interaction.isRepliable()) return;
 
-        await interaction.reply({ embeds: [embed] });
+        const pages: HelpPage[] = [
+            {
+                title: "🤖 bazaar bot",
+                description: "helps you make coins in hypixel skyblock\n\n*use the buttons below to navigate*",
+                commands: [
+                    {
+                        name: "💰 /bazaar-price",
+                        description: "check current item prices",
+                        usage: "/bazaar-price item:wheat"
+                    },
+                    {
+                        name: "📊 /market-analysis", 
+                        description: "detailed market breakdown",
+                        usage: "/market-analysis item:enchanted_bread"
+                    },
+                    {
+                        name: "🔄 /flip-recommendations",
+                        description: "find good items to flip",
+                        usage: "/flip-recommendations budget:1000000"
+                    }
+                ]
+            },
+            {
+                title: "🛠️ crafting methods",
+                description: "calculate profits from crafting items",
+                commands: [
+                    {
+                        name: "💰 /calculate-profit",
+                        description: "profit for one specific recipe",
+                        usage: "/calculate-profit item:enchanted_bread budget:500000"
+                    },
+                    {
+                        name: "⚡️ /craft-flipping",
+                        description: "best crafting opportunities",
+                        usage: "/craft-flipping budget:5000000 count:10"
+                    },
+                    {
+                        name: "📜 /list-recipes",
+                        description: "see all available recipes",
+                        usage: "/list-recipes search:diamond"
+                    }
+                ]
+            },
+            {
+                title: "💰 other money making methods",
+                description: "npc, etc",
+                commands: [
+                    {
+                        name: "🏪 /npc-arbitrage",
+                        description: "buy from bazaar, sell to npcs",
+                        usage: "/npc-arbitrage budget:100000 strategy:instabuy"
+                    }
+                ]
+            },
+            {
+                title: "⚙️ settings",
+                description: "bot configuration",
+                commands: [
+                    {
+                        name: "🔊 /verbose",
+                        description: "toggle debug info on/off",
+                        usage: "/verbose"
+                    }
+                ]
+            }
+        ];
+
+        let currentPage = 0;
+
+        const createEmbed = (pageIndex: number): EmbedBuilder => {
+            const page = pages[pageIndex];
+            const embed = new EmbedBuilder()
+                .setColor(EMBED_COLORS.SUCCESS)
+                .setTitle(page.title)
+                .setDescription(page.description);
+
+            if (page.commands.length > 0) {
+                const commandText = page.commands
+                    .map(cmd => {
+                        if (cmd.usage) {
+                            return `**${cmd.name}**\n${cmd.description}\n\`${cmd.usage}\``;
+                        } else {
+                            return `**${cmd.name}**\n${cmd.description}`;
+                        }
+                    })
+                    .join('\n\n');
+                
+                embed.addFields({
+                    name: ' ',
+                    value: commandText,
+                    inline: false
+                });
+            }
+
+            embed.setFooter({ 
+                text: `page ${pageIndex + 1}/${pages.length} • made because manually checking bazaar prices is boring` 
+            });
+
+            return embed;
+        };
+
+        const createButtons = (pageIndex: number): ActionRowBuilder<ButtonBuilder> => {
+            return new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('help_prev')
+                        .setLabel('◀️ Previous')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(pageIndex === 0),
+                    new ButtonBuilder()
+                        .setCustomId('help_next')
+                        .setLabel('▶️ Next')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(pageIndex === pages.length - 1)
+                );
+        };
+
+        const embed = createEmbed(currentPage);
+        const buttons = createButtons(currentPage);
+
+        const response = await interaction.reply({
+            embeds: [embed],
+            components: [buttons],
+        });
+
+        const collector = response.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            time: 300000 // 5 minutes
+        });
+
+        collector.on('collect', async (buttonInteraction) => {
+            if (buttonInteraction.user.id !== interaction.user.id) {
+                await buttonInteraction.reply({
+                    content: 'only the person who used the command can navigate',
+                    // ephemeral: true
+                    flags: MessageFlags.Ephemeral
+                });
+                return;
+            }
+
+            switch (buttonInteraction.customId) {
+                case 'help_prev':
+                    currentPage = Math.max(0, currentPage - 1);
+                    break;
+                case 'help_next':
+                    currentPage = Math.min(pages.length - 1, currentPage + 1);
+                    break;
+                case 'help_close':
+                    collector.stop();
+                    await buttonInteraction.update({
+                        embeds: [createEmbed(currentPage)],
+                        components: []
+                    });
+                    return;
+            }
+
+            await buttonInteraction.update({
+                embeds: [createEmbed(currentPage)],
+                components: [createButtons(currentPage)]
+            });
+        });
+
+        collector.on('end', async () => {
+            try {
+                await response.edit({
+                    embeds: [createEmbed(currentPage)],
+                    components: []
+                });
+            } catch (error) {
+                // Message might have been deleted, ignore
+            }
+        });
     }
 };

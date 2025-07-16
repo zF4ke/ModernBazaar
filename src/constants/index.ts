@@ -12,7 +12,10 @@ export const DISCORD_LIMITS = {
 
 // Hypixel API Configuration
 export const HYPIXEL_API = {
-    BAZAAR_URL: "https://api.hypixel.net/skyblock/bazaar",
+    // BAZAAR_URL: "https://api.hypixel.net/skyblock/bazaar",
+    // NPC_ITEMS_URL: "https://api.hypixel.net/skyblock/items",
+    BAZAAR_URL: "https://api.hypixel.net/v2/skyblock/bazaar",
+    NPC_ITEMS_URL: "https://api.hypixel.net/v2/resources/skyblock/items",
     REQUEST_TIMEOUT: 10000, // 10 seconds
     RETRY_ATTEMPTS: 3
 } as const;
@@ -79,4 +82,18 @@ export const SUCCESS_MESSAGES = {
     BOT_READY: "✅ Bot is ready! Logged in as",
     COMMANDS_REFRESHING: "🔄 Started refreshing application (/) commands...",
     COMMANDS_REFRESHED: "✅ Successfully reloaded application (/) commands."
+} as const;
+
+// Formatting Constants
+export const FORMATTING = {
+    THOUSAND_THRESHOLD: 1_000
+} as const;
+
+// Discord Embed Colors (Matte Theme)
+export const EMBED_COLORS = {
+    SUCCESS: 0x5D7B5D,      // Matte green - for positive results, profits
+    ERROR: 0x8B4B4B,        // Matte red - for errors, losses, failures  
+    WARNING: 0x8B7D6B,      // Matte yellow/brown - for warnings, no results
+    INFO: 0x7B6B8E,         // Matte purple - for neutral information
+    NEUTRAL: 0x6B8E7D       // Matte teal - for general information
 } as const;

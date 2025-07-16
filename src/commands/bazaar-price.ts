@@ -44,29 +44,29 @@ export const bazaarPriceCommand: Command = {
                 .addFields(
                     {
                         name: '🟢 Instant Buy Price',
-                        value: bestBuyOrder ? formatCurrency(bestBuyOrder.price) : 'No orders',
-                        inline: true
-                    },
-                    {
-                        name: '🔴 Instant Sell Price',
                         value: bestSellOrder ? formatCurrency(bestSellOrder.price) : 'No orders',
                         inline: true
                     },
                     {
+                        name: '🔴 Instant Sell Price',
+                        value: bestBuyOrder ? formatCurrency(bestBuyOrder.price) : 'No orders',
+                        inline: true
+                    },
+                    {
                         name: '📊 Spread',
-                        value: (bestBuyOrder && bestSellOrder) ? formatCurrency(bestBuyOrder.price - bestSellOrder.price) : 'N/A',
+                        value: (bestSellOrder && bestBuyOrder) ? formatCurrency(bestSellOrder.price - bestBuyOrder.price) : 'N/A',
                         inline: true
                     }
                 );
 
             // Add best order information if available
-            if (bestBuyOrder || bestSellOrder) {
+            if (bestSellOrder || bestBuyOrder) {
                 let orderInfo = '';
-                if (bestBuyOrder) {
-                    orderInfo += `**Best Buy Order:** ${formatCurrency(bestBuyOrder.price)} (${bestBuyOrder.amount.toLocaleString()} items)\n`;
-                }
                 if (bestSellOrder) {
-                    orderInfo += `**Best Sell Order:** ${formatCurrency(bestSellOrder.price)} (${bestSellOrder.amount.toLocaleString()} items)`;
+                    orderInfo += `**Best Sell Order:** ${formatCurrency(bestSellOrder.price)} (${bestSellOrder.amount.toLocaleString()} items)\n`;
+                }
+                if (bestBuyOrder) {
+                    orderInfo += `**Best Buy Order:** ${formatCurrency(bestBuyOrder.price)} (${bestBuyOrder.amount.toLocaleString()} items)`;
                 }
                 
                 embed.addFields({
@@ -79,7 +79,7 @@ export const bazaarPriceCommand: Command = {
             // Add weighted average prices (top 2% by volume)
             embed.addFields({
                 name: '⚖️ Weighted Average Prices (Top 2%)',
-                value: `**Buy Price:** ${formatCurrency(quick_status.buyPrice)}\n**Sell Price:** ${formatCurrency(quick_status.sellPrice)}`,
+                value: `**Buy Price:** ${formatCurrency(quick_status.sellPrice)}\n**Sell Price:** ${formatCurrency(quick_status.buyPrice)}`,
                 inline: false
             });
 

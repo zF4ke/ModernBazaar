@@ -2,7 +2,6 @@ require("dotenv").config();
 import { Client, GatewayIntentBits, Collection, Partials } from "discord.js";
 import { ExtendedClient, Command } from "./types";
 import { ERROR_MESSAGES } from "./constants";
-import { HypixelService } from "./services/hypixel";
 
 // Import commands
 import { calculateProfitCommand } from "./commands/calculate-profit";
@@ -11,10 +10,12 @@ import { bazaarPriceCommand } from "./commands/bazaar-price";
 import { marketAnalysisCommand } from "./commands/market-analysis";
 import { flipRecommendationsCommand } from "./commands/flip-recommendations";
 import { helpCommand } from "./commands/help";
+import { verboseCommand } from "./commands/verbose";
+import { npcArbitrageCommand } from "./commands/npc-arbitrage";
+import { craftFlippingCommand } from "./commands/craft-flipping";
 
 // Import events
 import { setupEvents } from "./events";
-import { craftFlippingCommand } from "./commands";
 
 const { Guilds, GuildMembers, GuildMessages, MessageContent } = GatewayIntentBits;
 const { User, Message, GuildMember, ThreadMember, Channel } = Partials;
@@ -34,7 +35,9 @@ const commands: Command[] = [
     marketAnalysisCommand,
     flipRecommendationsCommand,
     helpCommand,
-    craftFlippingCommand
+    craftFlippingCommand,
+    verboseCommand,
+    npcArbitrageCommand
 ];
 
 commands.forEach(command => {
