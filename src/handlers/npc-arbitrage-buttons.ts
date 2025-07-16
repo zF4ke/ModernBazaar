@@ -9,30 +9,61 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
     await interaction.deferUpdate();
 
     const parts = interaction.customId.split('_');
-    const action = parts[2]; // first, prev, next, last, or page
-    const budget = parseInt(parts[3]);
-    const strategy = parts[4] as 'instabuy' | 'buyorder';
-    const currentPageFromButton = parts[5] ? parseInt(parts[5]) : 1;
+    const action = parts[2]; // first, prev, next, last, page, or sort
+    
+    let budget: number;
+    let strategy: 'instabuy' | 'buyorder';
+    let currentPageFromButton: number;
+    let sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' = 'totalProfit';
+
+    if (action === 'sort') {
+        // Sort button: npc_arbitrage_sort_<sortType>_<budget>_<strategy>_<page>
+        const sortType = parts[3];
+        budget = parseInt(parts[4]);
+        strategy = parts[5] as 'instabuy' | 'buyorder';
+        currentPageFromButton = parts[6] ? parseInt(parts[6]) : 1;
+        sortBy = sortType as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable';
+    } else {
+        // Navigation button: npc_arbitrage_<action>_<budget>_<strategy>_[page]_[sortBy]
+        budget = parseInt(parts[3]);
+        strategy = parts[4] as 'instabuy' | 'buyorder';
+        
+        if (action === 'first') {
+            // npc_arbitrage_first_<budget>_<strategy>_<sortBy>
+            currentPageFromButton = 1; // Will be overridden anyway
+            sortBy = (parts[5] as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable') || 'totalProfit';
+        } else {
+            // npc_arbitrage_<action>_<budget>_<strategy>_<page>_<sortBy>
+            currentPageFromButton = parts[5] ? parseInt(parts[5]) : 1;
+            sortBy = (parts[6] as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable') || 'totalProfit';
+        }
+    }
 
     let targetPage = currentPageFromButton;
 
-    switch (action) {
-        case 'first':
-            targetPage = 1;
-            break;
-        case 'prev':
-            targetPage = Math.max(1, currentPageFromButton - 1);
-            break;
-        case 'next':
-            targetPage = currentPageFromButton + 1;
-            break;
-        case 'last':
-            // We need to get total pages, so we'll calculate it in the service call
-            targetPage = 999; // Will be corrected by the service
-            break;
-        case 'page':
-            // No change needed, just refresh current page
-            break;
+    if (action === 'sort') {
+        // Sort button clicked - stay on current page but change sort
+        targetPage = currentPageFromButton;
+    } else {
+        // Navigation button clicked
+        switch (action) {
+            case 'first':
+                targetPage = 1;
+                break;
+            case 'prev':
+                targetPage = Math.max(1, currentPageFromButton - 1);
+                break;
+            case 'next':
+                targetPage = currentPageFromButton + 1;
+                break;
+            case 'last':
+                // We need to get total pages, so we'll calculate it in the service call
+                targetPage = 999; // Will be corrected by the service
+                break;
+            case 'page':
+                // No change needed, just refresh current page
+                break;
+        }
     }
 
     try {
@@ -42,7 +73,8 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
             targetPage,
             7,
             strategy,
-            false // Don't force refresh - use cached data for button navigation
+            false, // Don't force refresh - use cached data for button navigation
+            sortBy
         );
 
         const { opportunities, totalCount, totalPages, currentPage, totalProfit } = result;
@@ -57,7 +89,8 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
                     totalPages,
                     7,
                     strategy,
-                    false // Don't force refresh
+                    false, // Don't force refresh
+                    sortBy
                 );
                 Object.assign(result, lastResult);
             }
@@ -76,10 +109,18 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
 
         // Build the embed
         const strategyText = strategy === 'instabuy' ? 'Instant Buy (depth-aware)' : 'Buy Orders (market price)';
+        const sortText = {
+            'totalProfit': 'total profit',
+            'profitMargin': 'profit margin %',
+            'profitPerItem': 'profit per item',
+            'weeklySellMovement': 'weekly volume',
+            'maxAffordable': 'max affordable'
+        }[sortBy];
+        
         const embed = new EmbedBuilder()
             .setColor(EMBED_COLORS.SUCCESS)
             .setTitle(`🏪 NPC Arbitrage Opportunities (${formatFullNumber(budget)} coins)`)
-            .setDescription(`**Strategy:** ${strategyText}\n**Buy from Bazaar → Sell to NPCs**\n\n📊 **Page ${result.currentPage} of ${result.totalPages}** • **${totalCount} total opportunities**\n\n*Results sorted by total profit*`);
+            .setDescription(`**Strategy:** ${strategyText}\n**Buy from Bazaar → Sell to NPCs**\n\n📊 **Page ${result.currentPage} of ${result.totalPages}** • **${totalCount} total opportunities**\n\n*Results sorted by ${sortText}*`);
 
         // Add opportunities
         let fieldValue = '';
@@ -115,36 +156,65 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
         .setTimestamp();
 
         // Create updated navigation buttons
-        const row = new ActionRowBuilder<ButtonBuilder>()
+        const navigationRow = new ActionRowBuilder<ButtonBuilder>()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`npc_arbitrage_first_${budget}_${strategy}`)
+                    .setCustomId(`npc_arbitrage_first_${budget}_${strategy}_${sortBy}`)
                     .setLabel('⏮️ First')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(result.currentPage === 1),
                 new ButtonBuilder()
-                    .setCustomId(`npc_arbitrage_prev_${budget}_${strategy}_${result.currentPage}`)
+                    .setCustomId(`npc_arbitrage_prev_${budget}_${strategy}_${result.currentPage}_${sortBy}`)
                     .setLabel('◀️ Previous')
                     .setStyle(ButtonStyle.Primary)
                     .setDisabled(result.currentPage === 1),
                 new ButtonBuilder()
-                    .setCustomId(`npc_arbitrage_page_${budget}_${strategy}_${result.currentPage}`)
+                    .setCustomId(`npc_arbitrage_page_${budget}_${strategy}_${result.currentPage}_${sortBy}`)
                     .setLabel(`Page ${result.currentPage}/${result.totalPages}`)
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(true),
                 new ButtonBuilder()
-                    .setCustomId(`npc_arbitrage_next_${budget}_${strategy}_${result.currentPage}`)
+                    .setCustomId(`npc_arbitrage_next_${budget}_${strategy}_${result.currentPage}_${sortBy}`)
                     .setLabel('Next ▶️')
                     .setStyle(ButtonStyle.Primary)
                     .setDisabled(result.currentPage === result.totalPages),
                 new ButtonBuilder()
-                    .setCustomId(`npc_arbitrage_last_${budget}_${strategy}_${result.totalPages}`)
+                    .setCustomId(`npc_arbitrage_last_${budget}_${strategy}_${result.currentPage}_${sortBy}`)
                     .setLabel('Last ⏭️')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(result.currentPage === result.totalPages)
             );
 
-        await interaction.editReply({ embeds: [embed], components: [row] });
+        // Create sort buttons (split into two rows - 3 and 2 buttons)
+        const sortRow1 = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_totalProfit_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('💰 Total Profit')
+                    .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_profitMargin_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('📊 Margin %')
+                    .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_profitPerItem_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('🪙 Margin Coins')
+                    .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary)
+            );
+
+        const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_weeklySellMovement_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('📦 Volume')
+                    .setStyle(sortBy === 'weeklySellMovement' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_maxAffordable_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('🛒 Max Affordable')
+                    .setStyle(sortBy === 'maxAffordable' ? ButtonStyle.Success : ButtonStyle.Secondary)
+            );
+
+        await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2] });
 
     } catch (error) {
         console.error('Error handling NPC arbitrage button:', error);

@@ -20,9 +20,32 @@ export interface ArbitrageOpportunity {
     maxAffordable: number;
     totalProfit: number;
     feasible: boolean;
+    weeklySellMovement: number;
 }
 
 export class NPCArbitrageService {
+    /**
+     * Sort opportunities by the specified criteria
+     */
+    static sortOpportunities(opportunities: ArbitrageOpportunity[], sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable'): ArbitrageOpportunity[] {
+        return opportunities.sort((a, b) => {
+            switch (sortBy) {
+                case 'totalProfit':
+                    return b.totalProfit - a.totalProfit; // Highest total profit first
+                case 'profitMargin':
+                    return b.profitMargin - a.profitMargin; // Highest profit margin first
+                case 'profitPerItem':
+                    return b.profitPerItem - a.profitPerItem; // Highest profit per item first
+                case 'weeklySellMovement':
+                    return b.weeklySellMovement - a.weeklySellMovement; // Highest weekly volume first
+                case 'maxAffordable':
+                    return b.maxAffordable - a.maxAffordable; // Highest max affordable first
+                default:
+                    return b.totalProfit - a.totalProfit; // Default to total profit
+            }
+        });
+    }
+
     /**
      * Fetches fresh NPC item data from Hypixel API
      */
@@ -83,7 +106,8 @@ export class NPCArbitrageService {
         page: number = 1,
         itemsPerPage: number = 7,
         strategy: 'instabuy' | 'buyorder' = 'instabuy',
-        forceRefresh: boolean = false
+        forceRefresh: boolean = false,
+        sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' = 'totalProfit'
     ): Promise<{ opportunities: ArbitrageOpportunity[], totalCount: number, totalPages: number, currentPage: number, totalProfit: number }> {
         // Clear cache if this is a fresh command execution
         if (forceRefresh) {
@@ -96,12 +120,15 @@ export class NPCArbitrageService {
         if (cached && !forceRefresh) {
             Logger.verbose(`🚀 Using cached NPC arbitrage results for budget ${budget} and strategy ${strategy}`);
             
-            // Calculate pagination from cached data
+            // Sort cached data according to the requested sort
+            const sortedOpportunities = this.sortOpportunities([...cached.opportunities], sortBy);
+            
+            // Calculate pagination from sorted cached data
             const totalCount = cached.totalCount;
             const totalPages = cached.totalPages;
             const startIndex = (page - 1) * itemsPerPage;
             const endIndex = startIndex + itemsPerPage;
-            const opportunities = cached.opportunities.slice(startIndex, endIndex);
+            const opportunities = sortedOpportunities.slice(startIndex, endIndex);
 
             return {
                 opportunities,
@@ -162,18 +189,18 @@ export class NPCArbitrageService {
 
         Logger.verbose(`📊 Analysis complete: ${itemsChecked} items checked, ${profitableItems} profitable opportunities found`);
 
-        // Sort by total profit (descending) - most profitable first
-        allOpportunities.sort((a, b) => b.totalProfit - a.totalProfit);
+        // Sort by total profit (descending) - most profitable first (default sort for caching)
+        const sortedOpportunities = this.sortOpportunities(allOpportunities, 'totalProfit');
 
         // Calculate total profit across all opportunities
-        const totalProfit = allOpportunities.reduce((sum, opp) => sum + opp.totalProfit, 0);
+        const totalProfit = sortedOpportunities.reduce((sum, opp) => sum + opp.totalProfit, 0);
 
-        // Cache the complete results
-        const totalCount = allOpportunities.length;
+        // Cache the complete results (always cache with default totalProfit sort)
+        const totalCount = sortedOpportunities.length;
         const totalPages = Math.ceil(totalCount / itemsPerPage);
         
         npcArbitrageCacheService.setCachedResult(budget, strategy, {
-            opportunities: allOpportunities,
+            opportunities: sortedOpportunities,
             totalCount,
             totalPages,
             totalProfit
@@ -181,10 +208,13 @@ export class NPCArbitrageService {
 
         Logger.verbose(`💾 Cached ${totalCount} opportunities for future pagination`);
 
-        // Calculate pagination for current request
+        // Apply the requested sorting for the return data
+        const finalSortedOpportunities = this.sortOpportunities([...sortedOpportunities], sortBy);
+
+        // Calculate pagination for current request from sorted data
         const startIndex = (page - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        const opportunities = allOpportunities.slice(startIndex, endIndex);
+        const opportunities = finalSortedOpportunities.slice(startIndex, endIndex);
 
         return {
             opportunities,
@@ -314,6 +344,9 @@ export class NPCArbitrageService {
         const totalProfit = profitPerItem * maxAffordable;
         const feasible = maxAffordable > 0 && profitPerItem > 0;
 
+        // Get weekly sell movement from bazaar data
+        const weeklySellMovement = bazaarProduct.quick_status?.sellMovingWeek || 0;
+
         return {
             itemId,
             itemName: npcItem.name,
@@ -323,7 +356,8 @@ export class NPCArbitrageService {
             profitMargin,
             maxAffordable,
             totalProfit,
-            feasible
+            feasible,
+            weeklySellMovement
         };
     }
 

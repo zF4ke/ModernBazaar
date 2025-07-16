@@ -36,6 +36,18 @@ export const npcArbitrageCommand: Command = {
                     { name: 'Instant Buy (4% surcharge)', value: 'instabuy' },
                     { name: 'Buy Orders (market price)', value: 'buyorder' }
                 )
+        )
+        .addStringOption(option =>
+            option.setName('sort')
+                .setDescription('Sort opportunities by different criteria')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'Total Profit (Default)', value: 'totalProfit' },
+                    { name: 'Profit Margin %', value: 'profitMargin' },
+                    { name: 'Profit per Item (Coins)', value: 'profitPerItem' },
+                    { name: 'Weekly Volume', value: 'weeklySellMovement' },
+                    { name: 'Max Affordable', value: 'maxAffordable' }
+                )
         ),
 
     async execute(interaction: CommandInteraction) {
@@ -53,6 +65,7 @@ export const npcArbitrageCommand: Command = {
             const page = interaction.options.getInteger('page') || 1;
             const specificItem = interaction.options.getString('item');
             const strategy = interaction.options.getString('strategy') || 'instabuy';
+            const sortBy = interaction.options.getString('sort') || 'totalProfit';
 
             if (specificItem) {
                 // Analyze specific item
@@ -125,7 +138,8 @@ export const npcArbitrageCommand: Command = {
                 page, 
                 7, // 7 items per page
                 strategy as 'instabuy' | 'buyorder',
-                true // Force refresh for new command execution
+                true, // Force refresh for new command execution
+                sortBy as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable'
             );
 
             const { opportunities, totalCount, totalPages, currentPage, totalProfit } = result;
@@ -154,10 +168,18 @@ export const npcArbitrageCommand: Command = {
 
             // Build results embed with compact organization and pagination
             const strategyText = strategy === 'instabuy' ? 'Instant Buy (depth-aware)' : 'Buy Orders (market price)';
+            const sortText = {
+                'totalProfit': 'total profit',
+                'profitMargin': 'profit margin %',
+                'profitPerItem': 'profit per item',
+                'weeklySellMovement': 'weekly volume',
+                'maxAffordable': 'max affordable'
+            }[sortBy];
+            
             const embed = new EmbedBuilder()
                 .setColor(EMBED_COLORS.SUCCESS)
                 .setTitle(`🏪 NPC Arbitrage Opportunities (${formatFullNumber(budget)} coins)`)
-                .setDescription(`**Strategy:** ${strategyText}\n**Buy from Bazaar → Sell to NPCs**\n\n📊 **Page ${currentPage} of ${totalPages}** • **${totalCount} total opportunities**\n\n*Results sorted by total profit*`);
+                .setDescription(`**Strategy:** ${strategyText}\n**Buy from Bazaar → Sell to NPCs**\n\n📊 **Page ${currentPage} of ${totalPages}** • **${totalCount} total opportunities**\n\n*Results sorted by ${sortText}*`);
 
             // Create compact table-like format with one item per line for better readability
             let fieldValue = '';
@@ -198,36 +220,65 @@ export const npcArbitrageCommand: Command = {
             .setTimestamp();
 
             // Create navigation buttons
-            const row = new ActionRowBuilder<ButtonBuilder>()
+            const navigationRow = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId(`npc_arbitrage_first_${budget}_${strategy}`)
+                        .setCustomId(`npc_arbitrage_first_${budget}_${strategy}_${sortBy}`)
                         .setLabel('⏮️ First')
                         .setStyle(ButtonStyle.Secondary)
                         .setDisabled(currentPage === 1),
                     new ButtonBuilder()
-                        .setCustomId(`npc_arbitrage_prev_${budget}_${strategy}_${currentPage}`)
+                        .setCustomId(`npc_arbitrage_prev_${budget}_${strategy}_${currentPage}_${sortBy}`)
                         .setLabel('◀️ Previous')
                         .setStyle(ButtonStyle.Primary)
                         .setDisabled(currentPage === 1),
                     new ButtonBuilder()
-                        .setCustomId(`npc_arbitrage_page_${budget}_${strategy}_${currentPage}`)
+                        .setCustomId(`npc_arbitrage_page_${budget}_${strategy}_${currentPage}_${sortBy}`)
                         .setLabel(`Page ${currentPage}/${totalPages}`)
                         .setStyle(ButtonStyle.Secondary)
                         .setDisabled(true),
                     new ButtonBuilder()
-                        .setCustomId(`npc_arbitrage_next_${budget}_${strategy}_${currentPage}`)
+                        .setCustomId(`npc_arbitrage_next_${budget}_${strategy}_${currentPage}_${sortBy}`)
                         .setLabel('Next ▶️')
                         .setStyle(ButtonStyle.Primary)
                         .setDisabled(currentPage === totalPages),
                     new ButtonBuilder()
-                        .setCustomId(`npc_arbitrage_last_${budget}_${strategy}_${totalPages}`)
+                        .setCustomId(`npc_arbitrage_last_${budget}_${strategy}_${currentPage}_${sortBy}`)
                         .setLabel('Last ⏭️')
                         .setStyle(ButtonStyle.Secondary)
                         .setDisabled(currentPage === totalPages)
                 );
 
-            await interaction.editReply({ embeds: [embed], components: [row] });
+            // Create sort buttons (split into two rows - 3 and 2 buttons)
+            const sortRow1 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_totalProfit_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('💰 Total Profit')
+                        .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_profitMargin_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('📊 Margin %')
+                        .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_profitPerItem_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('🪙 Margin Coins')
+                        .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                );
+
+            const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_weeklySellMovement_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('📦 Volume')
+                        .setStyle(sortBy === 'weeklySellMovement' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_maxAffordable_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('🛒 Max Affordable')
+                        .setStyle(sortBy === 'maxAffordable' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                );
+
+            await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2] });
 
         } catch (error) {
             // console.error('Error in npc-arbitrage command:', error);
@@ -260,8 +311,8 @@ export const npcArbitrageCommand: Command = {
             // }
         }
 
-        await interaction.editReply({
-            content: 'This command is currently under maintenance. Please check back later for updates.',
-        });
+        // await interaction.editReply({
+        //     content: 'This command is currently under maintenance. Please check back later for updates.',
+        // });
     }
 };
