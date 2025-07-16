@@ -105,7 +105,7 @@ export class NPCArbitrageService {
         budget: number,
         page: number = 1,
         itemsPerPage: number = 7,
-        strategy: 'instabuy' | 'buyorder' = 'instabuy',
+        strategy: 'instabuy' | 'buyorder' = 'buyorder',
         forceRefresh: boolean = false,
         sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' = 'totalProfit'
     ): Promise<{ opportunities: ArbitrageOpportunity[], totalCount: number, totalPages: number, currentPage: number, totalProfit: number }> {
@@ -178,8 +178,8 @@ export class NPCArbitrageService {
                 if (opportunity) {
                     profitableItems++;
                     allOpportunities.push(opportunity);
-                    
-                    Logger.verbose(`💎 Found opportunity: ${opportunity.itemName} - Buy: ${opportunity.bazaarBuyPrice.toFixed(3)} → NPC: ${opportunity.npcSellPrice} = +${opportunity.profitPerItem.toFixed(3)} coins (${opportunity.profitMargin.toFixed(1)}%)`);
+
+                    Logger.verbose(`💎 Found opportunity: ${opportunity.itemName} - Buy: ${opportunity.bazaarBuyPrice.toFixed(2)} → NPC: ${opportunity.npcSellPrice} = +${opportunity.profitPerItem.toFixed(2)} coins (${opportunity.profitMargin.toFixed(1)}%)`);
                 }
             } catch (error) {
                 Logger.verbose(`⚠️ Error analyzing ${itemId}: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -231,7 +231,7 @@ export class NPCArbitrageService {
     static async analyzeSpecificItem(
         itemId: string, 
         budget: number, 
-        strategy: 'instabuy' | 'buyorder' = 'instabuy',
+        strategy: 'instabuy' | 'buyorder' = 'buyorder',
         npcItems?: Map<string, NPCItem>,
         bazaarData?: any
     ): Promise<ArbitrageOpportunity | null> {
@@ -337,7 +337,7 @@ export class NPCArbitrageService {
         }
 
         // if (itemId.includes('SALMON')) {
-        //     Logger.info(`� Analyzing ${npcItem.name} (${itemId}): Buy Price: ${buyPrice.toFixed(3)}, NPC Sell Price: ${npcItem.npc_sell_price}, Max Affordable: ${maxAffordable}`);
+        //     Logger.info(`� Analyzing ${npcItem.name} (${itemId}): Buy Price: ${buyPrice.toFixed(2)}, NPC Sell Price: ${npcItem.npc_sell_price}, Max Affordable: ${maxAffordable}`);
         // }
 
         const profitMargin = (profitPerItem / buyPrice) * 100;

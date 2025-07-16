@@ -1,5 +1,6 @@
 import { BazaarResponse, BazaarProduct } from "../types";
 import { HypixelService } from "./hypixel";
+import { formatFullNumber, formatItemName } from "../utils/formatting";
 import { FLIPPING_ANALYSIS, MARKET_ANALYSIS } from "../constants";
 
 export interface FlippingOpportunity {
@@ -14,6 +15,8 @@ export interface FlippingOpportunity {
     riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
     recommendationScore: number;
     priceType: 'instant' | 'weighted';
+    weeklyBuyMovement: number;
+    weeklySellMovement: number;
 }
 
 export class FlippingService {
@@ -106,7 +109,9 @@ export class FlippingService {
             liquidityScore,
             riskLevel,
             recommendationScore,
-            priceType
+            priceType,
+            weeklyBuyMovement: quick_status.buyMovingWeek || 0,
+            weeklySellMovement: quick_status.sellMovingWeek
         };
     }
 

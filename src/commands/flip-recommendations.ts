@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, CommandInteraction, EmbedBuilder } from "discord.js";
 import { Command } from "../types";
 import { FlippingService } from "../services/flipping";
-import { formatCurrency, formatPercentage, formatItemName } from "../utils/formatting";
+import { formatCurrency, formatPercentage, formatItemName, formatHourlyMovement } from "../utils/formatting";
 import { FLIPPING_ANALYSIS } from "../constants";
 
 export const flipRecommendationsCommand: Command = {
@@ -96,7 +96,9 @@ export const flipRecommendationsCommand: Command = {
                     value: `**Profit:** ${formatCurrency(op.profitMargin)} (${formatPercentage(op.profitPercentage)})\n` +
                            `**${priceLabel} Buy:** ${formatCurrency(op.buyPrice)} → **Sell:** ${formatCurrency(op.sellPrice)}\n` +
                            `**Volume:** ${op.buyVolume.toLocaleString()} / ${op.sellVolume.toLocaleString()} ${liquidityEmoji}\n` +
-                           `**Score:** ${op.recommendationScore.toFixed(3)}/100`,
+                           `**📥 Hourly Instabuys:** ${formatHourlyMovement(op.weeklyBuyMovement)}/hr\n` +
+                           `**📤 Hourly Instasells:** ${formatHourlyMovement(op.weeklySellMovement)}/hr\n` +
+                           `**Score:** ${op.recommendationScore.toFixed(2)}/100`,
                     inline: true
                 });
             });
@@ -120,15 +122,15 @@ export const flipRecommendationsCommand: Command = {
                 'order book prices - place competitive buy/sell orders and wait for execution' :
                 'weighted averages (top 2% by volume) - realistic for bulk trading';
             
-            embed.addFields({
-                name: '📖 Legend',
-                value: '🟢 Low Risk | 🟡 Medium Risk | 🔴 High Risk\n' +
-                       '💦 High Liquidity | 💧 Medium Liquidity | 💤 Low Liquidity\n' +
-                       '**Volume format:** Buy Volume / Sell Volume\n' +
-                       `**Prices:** ${priceExplanation}\n` +
-                       '**Strategy:** Place buy orders, wait for fill, then place sell orders',
-                inline: false
-            });
+            // embed.addFields({
+            //     name: '📖 Legend',
+            //     value: '🟢 Low Risk | 🟡 Medium Risk | 🔴 High Risk\n' +
+            //            '💦 High Liquidity | 💧 Medium Liquidity | 💤 Low Liquidity\n' +
+            //            '**Volume format:** Buy Volume / Sell Volume\n' +
+            //            `**Prices:** ${priceExplanation}\n` +
+            //            '**Strategy:** Place buy orders, wait for fill, then place sell orders',
+            //     inline: false
+            // });
 
             // Add market summary
             const avgProfit = opportunities.reduce((sum, op) => sum + op.profitMargin, 0) / opportunities.length;

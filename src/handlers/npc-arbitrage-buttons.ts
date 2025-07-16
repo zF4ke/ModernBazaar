@@ -1,7 +1,9 @@
 import { ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { NPCArbitrageService } from '../services/npc-arbitrage.js';
 import { EMBED_COLORS } from '../constants/index.js';
-import { formatCurrency, formatFullNumber } from '../utils/formatting.js';
+import { formatCurrency, formatFullNumber, formatHourlyMovement } from '../utils/formatting.js';
+
+const ITEMS_PER_PAGE = 5;
 
 export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) {
     if (!interaction.customId.startsWith('npc_arbitrage_')) return;
@@ -71,7 +73,7 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
         const result = await NPCArbitrageService.findArbitrageOpportunities(
             budget,
             targetPage,
-            7,
+            ITEMS_PER_PAGE,
             strategy,
             false, // Don't force refresh - use cached data for button navigation
             sortBy
@@ -87,7 +89,7 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
                 const lastResult = await NPCArbitrageService.findArbitrageOpportunities(
                     budget,
                     totalPages,
-                    7,
+                    ITEMS_PER_PAGE,
                     strategy,
                     false, // Don't force refresh
                     sortBy
@@ -126,18 +128,19 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
         let fieldValue = '';
         for (let i = 0; i < result.opportunities.length; i++) {
             const opp = result.opportunities[i];
-            const globalRank = (result.currentPage - 1) * 7 + i + 1;
+            const globalRank = (result.currentPage - 1) * ITEMS_PER_PAGE + i + 1;
             const profitIcon = opp.profitPerItem > 1000 ? '🔥' : opp.profitPerItem > 100 ? '💰' : '💡';
             const totalCost = opp.maxAffordable * opp.bazaarBuyPrice;
             
             fieldValue += `${profitIcon} **#${globalRank}. ${opp.itemName}**\n`;
-            fieldValue += `Buy: ${opp.bazaarBuyPrice.toFixed(3)} → NPC: ${formatCurrency(opp.npcSellPrice)} `;
-            fieldValue += `(+${opp.profitPerItem.toFixed(3)} coins, ${opp.profitMargin.toFixed(1)}%)\n`;
-            fieldValue += `Max: ${formatFullNumber(opp.maxAffordable)} items (cost: ${formatCurrency(totalCost)}) = ${formatCurrency(opp.totalProfit)} total profit\n\n`;
+            fieldValue += `Buy: ${opp.bazaarBuyPrice.toFixed(2)} → NPC: ${formatCurrency(opp.npcSellPrice)} `;
+            fieldValue += `(+${opp.profitPerItem.toFixed(2)} coins, ${opp.profitMargin.toFixed(1)}%)\n`;
+            fieldValue += `Max: ${formatFullNumber(opp.maxAffordable)} items (cost: ${formatCurrency(totalCost)}) = ${formatCurrency(opp.totalProfit)} total profit\n`;
+            fieldValue += `📤 Hourly Instasells: ${formatHourlyMovement(opp.weeklySellMovement)}/hr\n\n`;
         }
 
         embed.addFields({
-            name: `💰 Top Opportunities (#${(result.currentPage - 1) * 7 + 1}-${Math.min(result.currentPage * 7, totalCount)})`,
+            name: `💰 Top Opportunities (#${(result.currentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(result.currentPage * ITEMS_PER_PAGE, totalCount)})`,
             value: fieldValue || 'No opportunities on this page.',
             inline: false
         });

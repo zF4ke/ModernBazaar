@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, CommandInteraction, EmbedBuilder } from "discord.js";
 import { Command } from "../types";
 import { HypixelService } from "../services/hypixel";
-import { formatCurrency, formatItemName, formatFullNumber } from "../utils/formatting";
+import { formatCurrency, formatItemName, formatFullNumber, formatHourlyMovement } from "../utils/formatting";
 
 export const marketAnalysisCommand: Command = {
     data: new SlashCommandBuilder()
@@ -57,11 +57,10 @@ export const marketAnalysisCommand: Command = {
                         inline: true
                     },
                     {
-                        name: '📈 Market Depth',
-                        value: `**Buy Orders:** ${quick_status.buyOrders.toLocaleString()}\n` +
-                               `**Sell Orders:** ${quick_status.sellOrders.toLocaleString()}\n` +
-                               `**Buy Volume:** ${quick_status.buyVolume.toLocaleString()}\n` +
-                               `**Sell Volume:** ${quick_status.sellVolume.toLocaleString()}`,
+                        name: '📈 Market Depth (Buy / Sell)',
+                        value: `**Orders:** ${quick_status.buyOrders.toLocaleString()} / ${quick_status.sellOrders.toLocaleString()}\n` +
+                               `**Volume:** ${quick_status.buyVolume.toLocaleString()} / ${quick_status.sellVolume.toLocaleString()}\n` +
+                               `**Hourly:** ${formatHourlyMovement(quick_status.buyMovingWeek)} / ${formatHourlyMovement(quick_status.sellMovingWeek)}`,
                         inline: true
                     }
                 );
@@ -115,9 +114,9 @@ export const marketAnalysisCommand: Command = {
                 const volatility = ((buyRange + sellRange) / 2) / quick_status.buyPrice * 100;
                 
                 const volatilityText = volatility >= 0 
-                    ? `${volatility.toFixed(3)}% (Higher price variation, more trading opportunities)`
-                    : `${volatility.toFixed(3)}% (Lower price variation, stable market)`;
-                
+                    ? `${volatility.toFixed(2)}% (Higher price variation, more trading opportunities)`
+                    : `${volatility.toFixed(2)}% (Lower price variation, stable market)`;
+
                 marketStats.push(`**Price Volatility:** ${volatilityText}`);
             }
 

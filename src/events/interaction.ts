@@ -31,7 +31,7 @@ export function setupInteractionEvent(client: ExtendedClient) {
                     try {
                         await interaction.respond([]);
                     } catch (err) {
-                        //
+                        // console.error('❌ Error responding to autocomplete:', err);
                     }
                 }
             } else if (commandName === 'bazaar-price' || commandName === 'market-analysis') {
@@ -86,6 +86,13 @@ export function setupInteractionEvent(client: ExtendedClient) {
                     await command.execute(interaction);
                 } catch (error) {
                     //
+                    console.error(`❌ Error executing command ${interaction.commandName}:`, error);
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({
+                            content: ERROR_MESSAGES.COMMAND_ERROR,
+                            ephemeral: true,
+                        });
+                    }
                 }
             } catch (error) {
                 console.error('❌ Error executing command:', error);

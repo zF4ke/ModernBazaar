@@ -5,17 +5,17 @@ import { NUMBER_FORMAT, DISCORD_LIMITS, MARKET_ANALYSIS } from "../constants";
  */
 export function formatCurrency(amount: number): string {
     if (amount >= NUMBER_FORMAT.BILLION_THRESHOLD) {
-        return `${(amount / NUMBER_FORMAT.BILLION_THRESHOLD).toFixed(3)}B`;
+        return `${(amount / NUMBER_FORMAT.BILLION_THRESHOLD).toFixed(2)}B`;
     } else if (amount >= NUMBER_FORMAT.MILLION_THRESHOLD) {
-        return `${(amount / NUMBER_FORMAT.MILLION_THRESHOLD).toFixed(3)}M`;
+        return `${(amount / NUMBER_FORMAT.MILLION_THRESHOLD).toFixed(2)}M`;
     } else if (amount >= NUMBER_FORMAT.THOUSAND_THRESHOLD) {
-        return `${(amount / NUMBER_FORMAT.THOUSAND_THRESHOLD).toFixed(3)}K`;
+        return `${(amount / NUMBER_FORMAT.THOUSAND_THRESHOLD).toFixed(2)}K`;
     }
     // For smaller numbers, use comma as thousand separator and dot for decimals
     if (amount % 1 === 0) {
         return Math.round(amount).toLocaleString('en-US');
     } else {
-        return amount.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 }
 
@@ -23,7 +23,7 @@ export function formatCurrency(amount: number): string {
  * Formats a percentage with at least 3 decimal precision
  */
 export function formatPercentage(percentage: number): string {
-    return `${percentage.toFixed(3)}%`;
+    return `${percentage.toFixed(2)}%`;
 }
 
 /**
@@ -108,18 +108,26 @@ export function getVolatilityLevel(volatilityPercentage: number): string {
  */
 export function formatLargeNumber(num: number): string {
     if (num >= NUMBER_FORMAT.BILLION_THRESHOLD) {
-        return `${(num / NUMBER_FORMAT.BILLION_THRESHOLD).toFixed(3)}B`;
+        return `${(num / NUMBER_FORMAT.BILLION_THRESHOLD).toFixed(2)}B`;
     } else if (num >= NUMBER_FORMAT.MILLION_THRESHOLD) {
-        return `${(num / NUMBER_FORMAT.MILLION_THRESHOLD).toFixed(3)}M`;
+        return `${(num / NUMBER_FORMAT.MILLION_THRESHOLD).toFixed(2)}M`;
     } else if (num >= NUMBER_FORMAT.THOUSAND_THRESHOLD) {
-        return `${(num / NUMBER_FORMAT.THOUSAND_THRESHOLD).toFixed(3)}K`;
+        return `${(num / NUMBER_FORMAT.THOUSAND_THRESHOLD).toFixed(2)}K`;
     }
     // For smaller numbers, use comma as thousand separator and dot for decimals
     if (num % 1 === 0) {
         return num.toLocaleString('en-US');
     } else {
-        return num.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+}
+
+/**
+ * Calculates hourly movement from weekly movement data
+ */
+export function formatHourlyMovement(weeklyMovement: number): string {
+    const hourlyMovement = weeklyMovement / (24 * 7); // 168 hours in a week
+    return formatLargeNumber(hourlyMovement);
 }
 
 /**
@@ -129,6 +137,6 @@ export function formatFullNumber(amount: number): string {
     if (amount % 1 === 0) {
         return Math.round(amount).toLocaleString('en-US');
     } else {
-        return amount.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 }

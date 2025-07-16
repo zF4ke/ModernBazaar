@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, CommandInteraction, EmbedBuilder } from "discord.js";
 import { Command } from "../types";
 import { HypixelService } from "../services/hypixel";
-import { formatCurrency, formatItemName } from "../utils/formatting";
+import { formatCurrency, formatItemName, formatHourlyMovement } from "../utils/formatting";
 
 export const bazaarPriceCommand: Command = {
     data: new SlashCommandBuilder()
@@ -129,6 +129,16 @@ export const bazaarPriceCommand: Command = {
                 {
                     name: '📊 Weekly Sell Movement',
                     value: quick_status.sellMovingWeek.toLocaleString(),
+                    inline: true
+                },
+                {
+                    name: '📥 Hourly Instabuys',
+                    value: formatHourlyMovement(quick_status.buyMovingWeek),
+                    inline: true
+                },
+                {
+                    name: '📤 Hourly Instasells',
+                    value: formatHourlyMovement(quick_status.sellMovingWeek),
                     inline: true
                 }
             );

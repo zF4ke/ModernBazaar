@@ -2,8 +2,10 @@ import { SlashCommandBuilder, CommandInteraction, EmbedBuilder, ChatInputCommand
 import { Command } from '../types/index.js';
 import { NPCArbitrageService, ArbitrageOpportunity } from '../services/npc-arbitrage.js';
 import { ERROR_MESSAGES, EMBED_COLORS } from '../constants/index.js';
-import { formatCurrency, formatFullNumber } from '../utils/formatting.js';
+import { formatCurrency, formatFullNumber, formatHourlyMovement } from '../utils/formatting.js';
 import { Logger } from '../utils/logger.js';
+
+const ITEMS_PER_PAGE = 5;
 
 export const npcArbitrageCommand: Command = {
     data: new SlashCommandBuilder()
@@ -18,7 +20,7 @@ export const npcArbitrageCommand: Command = {
         )
         .addIntegerOption(option =>
             option.setName('page')
-                .setDescription('Page number (7 opportunities per page)')
+                .setDescription('Page number (5 opportunities per page)')
                 .setRequired(false)
                 .setMinValue(1)
                 .setMaxValue(100)
@@ -64,7 +66,7 @@ export const npcArbitrageCommand: Command = {
             const budget = interaction.options.getInteger('budget', true);
             const page = interaction.options.getInteger('page') || 1;
             const specificItem = interaction.options.getString('item');
-            const strategy = interaction.options.getString('strategy') || 'instabuy';
+            const strategy = interaction.options.getString('strategy') || 'buyorder';
             const sortBy = interaction.options.getString('sort') || 'totalProfit';
 
             if (specificItem) {
@@ -96,12 +98,12 @@ export const npcArbitrageCommand: Command = {
                     .addFields(
                         {
                             name: '💸 Strategy & Costs',
-                            value: `**Strategy:** ${strategyText}\n**Bazaar Buy Price:** ${opportunity.bazaarBuyPrice.toFixed(3)} coins\n**NPC Sell Price:** ${formatCurrency(opportunity.npcSellPrice)} coins`,
+                            value: `**Strategy:** ${strategyText}\n**Bazaar Buy Price:** ${opportunity.bazaarBuyPrice.toFixed(2)} coins\n**NPC Sell Price:** ${formatCurrency(opportunity.npcSellPrice)} coins`,
                             inline: true
                         },
                         {
                             name: '💰 Profit Analysis',
-                            value: `**Profit per Item:** ${opportunity.profitPerItem > 0 ? '+' : ''}${opportunity.profitPerItem.toFixed(3)} coins\n**Profit Margin:** ${opportunity.profitMargin.toFixed(2)}%`,
+                            value: `**Profit per Item:** ${opportunity.profitPerItem > 0 ? '+' : ''}${opportunity.profitPerItem.toFixed(2)} coins\n**Profit Margin:** ${opportunity.profitMargin.toFixed(2)}%`,
                             inline: true
                         },
                         {
@@ -136,13 +138,15 @@ export const npcArbitrageCommand: Command = {
             const result = await NPCArbitrageService.findArbitrageOpportunities(
                 budget, 
                 page, 
-                7, // 7 items per page
+                ITEMS_PER_PAGE, // 5 items per page
                 strategy as 'instabuy' | 'buyorder',
                 true, // Force refresh for new command execution
                 sortBy as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable'
             );
 
             const { opportunities, totalCount, totalPages, currentPage, totalProfit } = result;
+
+            console.log(`Found ${totalCount} opportunities on page ${currentPage}/${totalPages} with budget ${budget} using strategy ${strategy}`);
 
             if (totalCount === 0) {
                 const cacheStats = NPCArbitrageService.getCacheStats();
@@ -162,6 +166,7 @@ export const npcArbitrageCommand: Command = {
                     await interaction.editReply({ embeds: [embed] });
                 } catch (error) {
                     //
+                    console.error('Failed to send no opportunities message:', error);
                 }
                 return;
             }
@@ -186,21 +191,22 @@ export const npcArbitrageCommand: Command = {
             
             for (let i = 0; i < opportunities.length; i++) {
                 const opp = opportunities[i];
-                const globalRank = (currentPage - 1) * 7 + i + 1; // Global ranking across all pages
+                const globalRank = (currentPage - 1) * ITEMS_PER_PAGE + i + 1; // Global ranking across all pages
                 const profitIcon = opp.profitPerItem > 1000 ? '🔥' : opp.profitPerItem > 100 ? '💰' : '💡';
                 
                 // Format: Buy: 1,040.123 → NPC: 2,000 (+960.123 coins, 92.3%)
                 // Max: 961,538x (cost: 1,000,000) = 923,076,480.123 total profit
                 const totalCost = opp.maxAffordable * opp.bazaarBuyPrice;
                 fieldValue += `${profitIcon} **#${globalRank}. ${opp.itemName}**\n`;
-                fieldValue += `Buy: ${opp.bazaarBuyPrice.toFixed(3)} → NPC: ${formatCurrency(opp.npcSellPrice)} `;
-                fieldValue += `(+${opp.profitPerItem.toFixed(3)} coins, ${opp.profitMargin.toFixed(1)}%)\n`;
-                fieldValue += `Max: ${formatFullNumber(opp.maxAffordable)} items (cost: ${formatCurrency(totalCost)}) = ${formatCurrency(opp.totalProfit)} total profit\n\n`;
+                fieldValue += `Buy: ${opp.bazaarBuyPrice.toFixed(2)} → NPC: ${formatCurrency(opp.npcSellPrice)} `;
+                fieldValue += `(+${opp.profitPerItem.toFixed(2)} coins, ${opp.profitMargin.toFixed(1)}%)\n`;
+                fieldValue += `Max: ${formatFullNumber(opp.maxAffordable)} items (cost: ${formatCurrency(totalCost)}) = ${formatCurrency(opp.totalProfit)} total profit\n`;
+                fieldValue += `📤 Hourly Instasells: ${formatHourlyMovement(opp.weeklySellMovement)}/hr\n\n`;
             }
 
-            // Add all opportunities in a single field since we have max 7 per page
+            // Add all opportunities in a single field since we have max 5 per page
             embed.addFields({
-                name: `� Top Opportunities (#${(currentPage - 1) * 7 + 1}-${Math.min(currentPage * 7, totalCount)})`,
+                name: `📋 Top Opportunities (#${(currentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(currentPage * ITEMS_PER_PAGE, totalCount)})`,
                 value: fieldValue || 'No opportunities on this page.',
                 inline: false
             });
@@ -281,7 +287,7 @@ export const npcArbitrageCommand: Command = {
             await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2] });
 
         } catch (error) {
-            // console.error('Error in npc-arbitrage command:', error);
+            console.error('Error in npc-arbitrage command:', error);
             
             // let errorMessage: string = ERROR_MESSAGES.COMMAND_ERROR;
             // let errorTitle = '❌ Error';
