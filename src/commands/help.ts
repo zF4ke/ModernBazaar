@@ -65,12 +65,38 @@ export const helpCommand: Command = {
             },
             {
                 title: "💰 other money making methods",
-                description: "npc, etc",
+                description: "npc arbitrage with smart sorting",
                 commands: [
                     {
                         name: "🏪 /npc-arbitrage",
-                        description: "buy from bazaar, sell to npcs",
-                        usage: "/npc-arbitrage budget:100000 strategy:instabuy"
+                        description: "buy from bazaar, sell to npcs for instant profit",
+                        usage: "/npc-arbitrage budget:100000 strategy:buyorder sort:balancedScore"
+                    }
+                ]
+            },
+            {
+                title: "🎯 npc arbitrage sorting",
+                description: "understanding the different sort options for /npc-arbitrage",
+                commands: [
+                    {
+                        name: "⭐ Balanced Score (Default)",
+                        description: "smart algorithm that balances profit, efficiency, and practicality\nfavors expensive items with high profits that don't require buying massive quantities"
+                    },
+                    {
+                        name: "💰 Total Profit",
+                        description: "highest total profit potential with your budget"
+                    },
+                    {
+                        name: "🪙 Profit per Item",
+                        description: "highest profit margin per individual item"
+                    },
+                    {
+                        name: "⏰ Profit per Hour",
+                        description: "estimated profit based on hourly instasell volume"
+                    },
+                    {
+                        name: "⚖️ Max/Instasell Ratio",
+                        description: "ratio of max affordable items to hourly instasells\nhigher ratio = less competition for sales"
                     }
                 ]
             },

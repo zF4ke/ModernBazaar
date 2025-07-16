@@ -9,6 +9,7 @@ A Discord bot for Hypixel SkyBlock bazaar trading and profit analysis.
 - Crafting profit calculator with multiple pricing strategies
 - Market analysis with order book data
 - Recipe database for crafting opportunities
+- NPC arbitrage with smart balanced scoring algorithm
 
 ## 📚 [full documentation](./docs/README.md)
 
@@ -41,6 +42,19 @@ calculates profit for crafting a specific item
 ### `/list-recipes`
 shows all available crafting recipes (add more in `src/data/recipes.ts`)
 - `search` - search for specific recipes
+
+### `/npc-arbitrage <budget>`
+finds items cheaper on bazaar than NPC sell price for instant profit
+- `strategy` - buying strategy (buy orders vs instant buy)
+- `sort` - sorting method (balanced score, total profit, profit per hour, etc.)
+- `page` - navigate through results
+- `item` - analyze a specific item
+
+**balanced score** (default): smart algorithm that finds the best opportunities by balancing:
+- high total profits (logarithmic scaling favors millions over thousands)  
+- expensive items with high profit per item (logarithmic scaling)
+- good instasell coverage ratio (capped at 3x for diminishing returns)
+- quantity penalty (favors fewer items to buy and manage)
 
 ### `/help`
 shows what each command does

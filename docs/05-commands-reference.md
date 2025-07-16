@@ -120,6 +120,56 @@ result:
 • enchanted_diamond_block (160 enchanted_diamonds)
 ```
 
+### `/npc-arbitrage <budget>`
+**what it does:** finds items cheaper on bazaar than NPC sell price for instant profit
+
+**options:**
+- `strategy` - buying strategy (default: buyorder)
+  - `buyorder` - place buy orders (cheaper, takes time)
+  - `instabuy` - instant buy (faster, 4% surcharge)
+- `sort` - sorting method (default: balancedScore)
+  - `balancedScore` - smart algorithm balancing all factors
+  - `totalProfit` - highest total profit potential
+  - `profitPerItem` - highest profit per individual item
+  - `profitPerHour` - based on hourly instasell volume
+  - `maxInstasellRatio` - ratio of affordable items to hourly sales
+  - `profitMargin` - highest percentage margin
+  - `weeklySellMovement` - highest volume items
+  - `maxAffordable` - most items you can buy
+- `page` - navigate through results (5 per page)
+- `item` - analyze a specific item
+
+```
+/npc-arbitrage budget:1000000 strategy:buyorder sort:balancedScore
+
+result:
+🏪 NPC Arbitrage Opportunities (1,000,000 coins)
+Strategy: Buy Orders (market price)
+Buy from Bazaar → Sell to NPCs
+
+📊 Page 1 of 4 • 18 total opportunities
+Results sorted by balanced score
+
+📋 Top Opportunities (#1-5)
+🔥 #1. Enchanted Salmon
+Buy: 850.00 → NPC: 1,280 (+430.00 coins, 50.6%)
+Max: 1,176 items (cost: 1,000,000) = 505,680 total profit
+📤 Hourly Instasells: 245/hr
+
+💰 #2. Sweet Berries  
+Buy: 2.10 → NPC: 3 (+0.90 coins, 42.9%)
+Max: 476,190 items (cost: 1,000,000) = 428,571 total profit
+📤 Hourly Instasells: 1,200/hr
+...
+```
+
+**balanced score explained:**
+the default sort uses a mathematical formula that finds the most practical opportunities:
+- logarithmic total profit weighting (favors millions over thousands)
+- logarithmic profit per item weighting (favors expensive items)
+- instasell coverage ratio (capped at 3x to avoid oversupply)
+- quantity penalty (favors buying fewer items for easier management)
+
 ### `/help`
 **what it does:** shows what each command does
 
