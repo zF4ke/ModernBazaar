@@ -44,11 +44,14 @@ export const npcArbitrageCommand: Command = {
                 .setDescription('Sort opportunities by different criteria')
                 .setRequired(false)
                 .addChoices(
-                    { name: 'Total Profit (Default)', value: 'totalProfit' },
+                    { name: 'Balanced Score (Default)', value: 'balancedScore' },
+                    { name: 'Total Profit', value: 'totalProfit' },
                     { name: 'Profit Margin %', value: 'profitMargin' },
                     { name: 'Profit per Item (Coins)', value: 'profitPerItem' },
                     { name: 'Weekly Volume', value: 'weeklySellMovement' },
-                    { name: 'Max Affordable', value: 'maxAffordable' }
+                    { name: 'Max Affordable', value: 'maxAffordable' },
+                    { name: 'Max/Instasell Ratio', value: 'maxInstasellRatio' },
+                    { name: 'Profit per Hour', value: 'profitPerHour' }
                 )
         ),
 
@@ -67,7 +70,7 @@ export const npcArbitrageCommand: Command = {
             const page = interaction.options.getInteger('page') || 1;
             const specificItem = interaction.options.getString('item');
             const strategy = interaction.options.getString('strategy') || 'buyorder';
-            const sortBy = interaction.options.getString('sort') || 'totalProfit';
+            const sortBy = interaction.options.getString('sort') || 'balancedScore';
 
             if (specificItem) {
                 // Analyze specific item
@@ -141,12 +144,12 @@ export const npcArbitrageCommand: Command = {
                 ITEMS_PER_PAGE, // 5 items per page
                 strategy as 'instabuy' | 'buyorder',
                 true, // Force refresh for new command execution
-                sortBy as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable'
+                sortBy as 'balancedScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour'
             );
 
             const { opportunities, totalCount, totalPages, currentPage, totalProfit } = result;
 
-            console.log(`Found ${totalCount} opportunities on page ${currentPage}/${totalPages} with budget ${budget} using strategy ${strategy}`);
+            //console.log(`Found ${totalCount} opportunities on page ${currentPage}/${totalPages} with budget ${budget} using strategy ${strategy}`);
 
             if (totalCount === 0) {
                 const cacheStats = NPCArbitrageService.getCacheStats();
@@ -174,11 +177,14 @@ export const npcArbitrageCommand: Command = {
             // Build results embed with compact organization and pagination
             const strategyText = strategy === 'instabuy' ? 'Instant Buy (depth-aware)' : 'Buy Orders (market price)';
             const sortText = {
+                'balancedScore': 'balanced score',
                 'totalProfit': 'total profit',
                 'profitMargin': 'profit margin %',
                 'profitPerItem': 'profit per item',
                 'weeklySellMovement': 'weekly volume',
-                'maxAffordable': 'max affordable'
+                'maxAffordable': 'max affordable',
+                'maxInstasellRatio': 'max/instasell ratio',
+                'profitPerHour': 'profit per hour'
             }[sortBy];
             
             const embed = new EmbedBuilder()
@@ -255,33 +261,45 @@ export const npcArbitrageCommand: Command = {
                         .setDisabled(currentPage === totalPages)
                 );
 
-            // Create sort buttons (split into two rows - 3 and 2 buttons)
+            // Create sort buttons (split into two rows - 4 and 4 buttons)
             const sortRow1 = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_balancedScore_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('⭐ Balanced Score')
+                        .setStyle(sortBy === 'balancedScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId(`npc_arbitrage_sort_totalProfit_${budget}_${strategy}_${currentPage}`)
                         .setLabel('💰 Total Profit')
                         .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
-                        .setCustomId(`npc_arbitrage_sort_profitMargin_${budget}_${strategy}_${currentPage}`)
-                        .setLabel('📊 Margin %')
-                        .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
-                    new ButtonBuilder()
                         .setCustomId(`npc_arbitrage_sort_profitPerItem_${budget}_${strategy}_${currentPage}`)
                         .setLabel('🪙 Margin Coins')
-                        .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                        .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_profitPerHour_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('⏰ Profit/Hour')
+                        .setStyle(sortBy === 'profitPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary)
                 );
 
             const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(
                     new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_profitMargin_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('📊 Margin %')
+                        .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
                         .setCustomId(`npc_arbitrage_sort_weeklySellMovement_${budget}_${strategy}_${currentPage}`)
-                        .setLabel('📦 Volume')
+                        .setLabel('📈 Volume')
                         .setStyle(sortBy === 'weeklySellMovement' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId(`npc_arbitrage_sort_maxAffordable_${budget}_${strategy}_${currentPage}`)
                         .setLabel('🛒 Max Affordable')
-                        .setStyle(sortBy === 'maxAffordable' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                        .setStyle(sortBy === 'maxAffordable' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_maxInstasellRatio_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('⚖️ Max/Instasell')
+                        .setStyle(sortBy === 'maxInstasellRatio' ? ButtonStyle.Success : ButtonStyle.Secondary)
                 );
 
             await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2] });

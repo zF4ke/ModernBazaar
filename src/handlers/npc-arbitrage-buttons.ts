@@ -16,7 +16,7 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
     let budget: number;
     let strategy: 'instabuy' | 'buyorder';
     let currentPageFromButton: number;
-    let sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' = 'totalProfit';
+    let sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'balancedScore' = 'balancedScore';
 
     if (action === 'sort') {
         // Sort button: npc_arbitrage_sort_<sortType>_<budget>_<strategy>_<page>
@@ -24,7 +24,7 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
         budget = parseInt(parts[4]);
         strategy = parts[5] as 'instabuy' | 'buyorder';
         currentPageFromButton = parts[6] ? parseInt(parts[6]) : 1;
-        sortBy = sortType as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable';
+        sortBy = sortType as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'balancedScore';
     } else {
         // Navigation button: npc_arbitrage_<action>_<budget>_<strategy>_[page]_[sortBy]
         budget = parseInt(parts[3]);
@@ -33,11 +33,11 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
         if (action === 'first') {
             // npc_arbitrage_first_<budget>_<strategy>_<sortBy>
             currentPageFromButton = 1; // Will be overridden anyway
-            sortBy = (parts[5] as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable') || 'totalProfit';
+            sortBy = (parts[5] as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'balancedScore') || 'balancedScore';
         } else {
             // npc_arbitrage_<action>_<budget>_<strategy>_<page>_<sortBy>
             currentPageFromButton = parts[5] ? parseInt(parts[5]) : 1;
-            sortBy = (parts[6] as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable') || 'totalProfit';
+            sortBy = (parts[6] as 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'balancedScore') || 'balancedScore';
         }
     }
 
@@ -112,11 +112,14 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
         // Build the embed
         const strategyText = strategy === 'instabuy' ? 'Instant Buy (depth-aware)' : 'Buy Orders (market price)';
         const sortText = {
+            'balancedScore': 'balanced score',
             'totalProfit': 'total profit',
             'profitMargin': 'profit margin %',
             'profitPerItem': 'profit per item',
             'weeklySellMovement': 'weekly volume',
-            'maxAffordable': 'max affordable'
+            'maxAffordable': 'max affordable',
+            'maxInstasellRatio': 'max/instasell ratio',
+            'profitPerHour': 'profit per hour'
         }[sortBy];
         
         const embed = new EmbedBuilder()
@@ -188,33 +191,45 @@ export async function handleNPCArbitrageButtons(interaction: ButtonInteraction) 
                     .setDisabled(result.currentPage === result.totalPages)
             );
 
-        // Create sort buttons (split into two rows - 3 and 2 buttons)
+        // Create sort buttons (split into two rows - 4 and 4 buttons)
         const sortRow1 = new ActionRowBuilder<ButtonBuilder>()
             .addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_balancedScore_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('⭐ Balanced Score')
+                    .setStyle(sortBy === 'balancedScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
                 new ButtonBuilder()
                     .setCustomId(`npc_arbitrage_sort_totalProfit_${budget}_${strategy}_${result.currentPage}`)
                     .setLabel('💰 Total Profit')
                     .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary),
                 new ButtonBuilder()
-                    .setCustomId(`npc_arbitrage_sort_profitMargin_${budget}_${strategy}_${result.currentPage}`)
-                    .setLabel('📊 Margin %')
-                    .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
-                new ButtonBuilder()
                     .setCustomId(`npc_arbitrage_sort_profitPerItem_${budget}_${strategy}_${result.currentPage}`)
                     .setLabel('🪙 Margin Coins')
-                    .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                    .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_profitPerHour_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('⏰ Profit/Hour')
+                    .setStyle(sortBy === 'profitPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary)
             );
 
         const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
             .addComponents(
                 new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_profitMargin_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('📊 Margin %')
+                    .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
                     .setCustomId(`npc_arbitrage_sort_weeklySellMovement_${budget}_${strategy}_${result.currentPage}`)
-                    .setLabel('📦 Volume')
+                    .setLabel('📈 Volume')
                     .setStyle(sortBy === 'weeklySellMovement' ? ButtonStyle.Success : ButtonStyle.Secondary),
                 new ButtonBuilder()
                     .setCustomId(`npc_arbitrage_sort_maxAffordable_${budget}_${strategy}_${result.currentPage}`)
                     .setLabel('🛒 Max Affordable')
-                    .setStyle(sortBy === 'maxAffordable' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                    .setStyle(sortBy === 'maxAffordable' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
+                    .setCustomId(`npc_arbitrage_sort_maxInstasellRatio_${budget}_${strategy}_${result.currentPage}`)
+                    .setLabel('⚖️ Max/Instasell')
+                    .setStyle(sortBy === 'maxInstasellRatio' ? ButtonStyle.Success : ButtonStyle.Secondary)
             );
 
         await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2] });

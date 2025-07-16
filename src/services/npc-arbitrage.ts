@@ -27,7 +27,7 @@ export class NPCArbitrageService {
     /**
      * Sort opportunities by the specified criteria
      */
-    static sortOpportunities(opportunities: ArbitrageOpportunity[], sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable'): ArbitrageOpportunity[] {
+    static sortOpportunities(opportunities: ArbitrageOpportunity[], sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'balancedScore'): ArbitrageOpportunity[] {
         return opportunities.sort((a, b) => {
             switch (sortBy) {
                 case 'totalProfit':
@@ -40,6 +40,29 @@ export class NPCArbitrageService {
                     return b.weeklySellMovement - a.weeklySellMovement; // Highest weekly volume first
                 case 'maxAffordable':
                     return b.maxAffordable - a.maxAffordable; // Highest max affordable first
+                case 'maxInstasellRatio':
+                    // Calculate ratio of maxAffordable to hourly instasells (weeklySellMovement / 168)
+                    const ratioA = a.maxAffordable / (a.weeklySellMovement / 168);
+                    const ratioB = b.maxAffordable / (b.weeklySellMovement / 168);
+                    return ratioB - ratioA; // Highest ratio first
+                case 'profitPerHour':
+                    // Calculate profit per hour: hourly instasells * profit per item
+                    const profitPerHourA = (a.weeklySellMovement / 168) * a.profitPerItem;
+                    const profitPerHourB = (b.weeklySellMovement / 168) * b.profitPerItem;
+                    return profitPerHourB - profitPerHourA; // Highest profit per hour first
+                case 'balancedScore':
+                    // Balanced Efficiency Score = 
+                    // (Total Profit Weight) × (Profit Per Item Weight) × (Instasell Coverage Ratio) × (Quantity Penalty)
+                    const calculateBalancedScore = (opp: ArbitrageOpportunity) => {
+                        const instasellRatio = (opp.weeklySellMovement / 168) / opp.maxAffordable;
+                        return Math.log10(opp.totalProfit + 1) *           // Logarithmic total profit (favors millions over thousands)
+                               Math.log10(opp.profitPerItem + 1) *         // Logarithmic profit per item (favors expensive items)
+                               Math.min(instasellRatio, 3) *               // Instasell coverage ratio (capped at 3x for diminishing returns)
+                               (1 / Math.log10(opp.maxAffordable + 1));    // Quantity penalty (favors fewer items to buy)
+                    };
+                    const scoreA = calculateBalancedScore(a);
+                    const scoreB = calculateBalancedScore(b);
+                    return scoreB - scoreA; // Highest balanced score first
                 default:
                     return b.totalProfit - a.totalProfit; // Default to total profit
             }
@@ -107,7 +130,7 @@ export class NPCArbitrageService {
         itemsPerPage: number = 7,
         strategy: 'instabuy' | 'buyorder' = 'buyorder',
         forceRefresh: boolean = false,
-        sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' = 'totalProfit'
+        sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'balancedScore' = 'balancedScore'
     ): Promise<{ opportunities: ArbitrageOpportunity[], totalCount: number, totalPages: number, currentPage: number, totalProfit: number }> {
         // Clear cache if this is a fresh command execution
         if (forceRefresh) {
