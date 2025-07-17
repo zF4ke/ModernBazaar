@@ -70,7 +70,7 @@ export const helpCommand: Command = {
                     {
                         name: "🏪 /npc-arbitrage",
                         description: "buy from bazaar, sell to npcs for instant profit",
-                        usage: "/npc-arbitrage budget:100000 strategy:buyorder sort:balancedScore"
+                        usage: "/npc-arbitrage budget:100000 strategy:buyorder sort:betaScore"
                     }
                 ]
             },
@@ -79,8 +79,12 @@ export const helpCommand: Command = {
                 description: "understanding the different sort options for /npc-arbitrage",
                 commands: [
                     {
-                        name: "⭐ Balanced Score (Default)",
-                        description: "smart algorithm that balances profit, efficiency, and practicality\nfavors expensive items with high profits that don't require buying massive quantities"
+                        name: "Balanced Score (Default)",
+                        description: "volume-focused algorithm with proven efficiency\nbalances total profit, volume considerations, and quantity management"
+                    },
+                    {
+                        name: "δ Delta Score",
+                        description: "advanced margin-focused algorithm with mathematical sophistication\nheavy emphasis on profit margins with elegant liquidity weighting"
                     },
                     {
                         name: "💰 Total Profit",
@@ -93,10 +97,6 @@ export const helpCommand: Command = {
                     {
                         name: "⏰ Profit per Hour",
                         description: "estimated profit based on hourly instasell volume"
-                    },
-                    {
-                        name: "⚖️ Max/Instasell Ratio",
-                        description: "ratio of max affordable items to hourly instasells\nhigher ratio = less competition for sales"
                     }
                 ]
             },

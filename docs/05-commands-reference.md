@@ -127,8 +127,9 @@ result:
 - `strategy` - buying strategy (default: buyorder)
   - `buyorder` - place buy orders (cheaper, takes time)
   - `instabuy` - instant buy (faster, 4% surcharge)
-- `sort` - sorting method (default: balancedScore)
-  - `balancedScore` - smart algorithm balancing all factors
+- `sort` - sorting method (default: betaScore)
+  - `betaScore` - balanced score algorithm with proven efficiency (default)
+  - `deltaScore` - advanced margin-focused algorithm with mathematical sophistication
   - `totalProfit` - highest total profit potential
   - `profitPerItem` - highest profit per individual item
   - `profitPerHour` - based on hourly instasell volume
@@ -140,7 +141,7 @@ result:
 - `item` - analyze a specific item
 
 ```
-/npc-arbitrage budget:1000000 strategy:buyorder sort:balancedScore
+/npc-arbitrage budget:1000000 strategy:buyorder sort:betaScore
 
 result:
 🏪 NPC Arbitrage Opportunities (1,000,000 coins)
@@ -163,12 +164,21 @@ Max: 476,190 items (cost: 1,000,000) = 428,571 total profit
 ...
 ```
 
-**balanced score explained:**
-the default sort uses a mathematical formula that finds the most practical opportunities:
-- logarithmic total profit weighting (favors millions over thousands)
-- logarithmic profit per item weighting (favors expensive items)
-- instasell coverage ratio (capped at 3x to avoid oversupply)
-- quantity penalty (favors buying fewer items for easier management)
+**scoring algorithms explained:**
+
+**Balanced Score** - volume-focused with proven efficiency (default):
+the reliable algorithm with balanced considerations for practical trading:
+- logarithmic total profit and profit per item scaling
+- balanced instasell coverage emphasis (up to 3x ratio cap)
+- logarithmic quantity penalty (favors manageable quantities)
+- proven track record for effective arbitrage opportunities
+
+**δ-score (delta)** - advanced margin-focused:
+sophisticated mathematical algorithm optimized for margin trading:
+- enhanced margin weighting with square root amplification
+- smooth liquidity curves using hyperbolic tangent functions
+- sigmoid efficiency bonuses for optimal quantity management
+- elegant mathematical caps instead of hard constraint filters
 
 ### `/help`
 **what it does:** shows what each command does

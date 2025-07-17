@@ -44,7 +44,8 @@ export const npcArbitrageCommand: Command = {
                 .setDescription('Sort opportunities by different criteria')
                 .setRequired(false)
                 .addChoices(
-                    { name: 'Balanced Score (Default)', value: 'balancedScore' },
+                    { name: 'Balanced Score (Default)', value: 'betaScore' },
+                    { name: 'δ-Score - Margin Focused', value: 'deltaScore' },
                     { name: 'Total Profit', value: 'totalProfit' },
                     { name: 'Profit Margin %', value: 'profitMargin' },
                     { name: 'Profit per Item (Coins)', value: 'profitPerItem' },
@@ -70,7 +71,7 @@ export const npcArbitrageCommand: Command = {
             const page = interaction.options.getInteger('page') || 1;
             const specificItem = interaction.options.getString('item');
             const strategy = interaction.options.getString('strategy') || 'buyorder';
-            const sortBy = interaction.options.getString('sort') || 'balancedScore';
+            const sortBy = interaction.options.getString('sort') || 'betaScore';
 
             if (specificItem) {
                 // Analyze specific item
@@ -144,7 +145,7 @@ export const npcArbitrageCommand: Command = {
                 ITEMS_PER_PAGE, // 5 items per page
                 strategy as 'instabuy' | 'buyorder',
                 true, // Force refresh for new command execution
-                sortBy as 'balancedScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour'
+                sortBy as 'deltaScore' | 'betaScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour'
             );
 
             const { opportunities, totalCount, totalPages, currentPage, totalProfit } = result;
@@ -177,7 +178,8 @@ export const npcArbitrageCommand: Command = {
             // Build results embed with compact organization and pagination
             const strategyText = strategy === 'instabuy' ? 'Instant Buy (depth-aware)' : 'Buy Orders (market price)';
             const sortText = {
-                'balancedScore': 'balanced score',
+                'betaScore': 'balanced score',
+                'deltaScore': 'δ-score (margin focused)',
                 'totalProfit': 'total profit',
                 'profitMargin': 'profit margin %',
                 'profitPerItem': 'profit per item',
@@ -261,33 +263,41 @@ export const npcArbitrageCommand: Command = {
                         .setDisabled(currentPage === totalPages)
                 );
 
-            // Create sort buttons (split into two rows - 4 and 4 buttons)
+            // Create sort buttons (split into three rows - 3 buttons each)
             const sortRow1 = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId(`npc_arbitrage_sort_balancedScore_${budget}_${strategy}_${currentPage}`)
+                        .setCustomId(`npc_arbitrage_sort_betaScore_${budget}_${strategy}_${currentPage}`)
                         .setLabel('⭐ Balanced Score')
-                        .setStyle(sortBy === 'balancedScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                        .setStyle(sortBy === 'betaScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_deltaScore_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('δ Delta Score')
+                        .setStyle(sortBy === 'deltaScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId(`npc_arbitrage_sort_totalProfit_${budget}_${strategy}_${currentPage}`)
                         .setLabel('💰 Total Profit')
-                        .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                        .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                );
+
+            const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
                     new ButtonBuilder()
                         .setCustomId(`npc_arbitrage_sort_profitPerItem_${budget}_${strategy}_${currentPage}`)
                         .setLabel('🪙 Margin Coins')
                         .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`npc_arbitrage_sort_profitMargin_${budget}_${strategy}_${currentPage}`)
+                        .setLabel('📊 Margin %')
+                        .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId(`npc_arbitrage_sort_profitPerHour_${budget}_${strategy}_${currentPage}`)
                         .setLabel('⏰ Profit/Hour')
                         .setStyle(sortBy === 'profitPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary)
                 );
 
-            const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
+            const sortRow3 = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`npc_arbitrage_sort_profitMargin_${budget}_${strategy}_${currentPage}`)
-                        .setLabel('📊 Margin %')
-                        .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
                         .setCustomId(`npc_arbitrage_sort_weeklySellMovement_${budget}_${strategy}_${currentPage}`)
                         .setLabel('📈 Volume')
@@ -302,7 +312,7 @@ export const npcArbitrageCommand: Command = {
                         .setStyle(sortBy === 'maxInstasellRatio' ? ButtonStyle.Success : ButtonStyle.Secondary)
                 );
 
-            await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2] });
+            await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2, sortRow3] });
 
         } catch (error) {
             console.error('Error in npc-arbitrage command:', error);

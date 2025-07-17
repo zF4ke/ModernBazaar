@@ -27,7 +27,7 @@ export class NPCArbitrageService {
     /**
      * Sort opportunities by the specified criteria
      */
-    static sortOpportunities(opportunities: ArbitrageOpportunity[], sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'balancedScore'): ArbitrageOpportunity[] {
+    static sortOpportunities(opportunities: ArbitrageOpportunity[], sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'betaScore' | 'deltaScore'): ArbitrageOpportunity[] {
         return opportunities.sort((a, b) => {
             switch (sortBy) {
                 case 'totalProfit':
@@ -50,19 +50,38 @@ export class NPCArbitrageService {
                     const profitPerHourA = (a.weeklySellMovement / 168) * a.profitPerItem;
                     const profitPerHourB = (b.weeklySellMovement / 168) * b.profitPerItem;
                     return profitPerHourB - profitPerHourA; // Highest profit per hour first
-                case 'balancedScore':
-                    // Balanced Efficiency Score = 
+                case 'betaScore':
+                    // Balanced Score: Volume-focused efficiency
                     // (Total Profit Weight) × (Profit Per Item Weight) × (Instasell Coverage Ratio) × (Quantity Penalty)
-                    const calculateBalancedScore = (opp: ArbitrageOpportunity) => {
+                    const calculateBetaScore = (opp: ArbitrageOpportunity) => {
                         const instasellRatio = (opp.weeklySellMovement / 168) / opp.maxAffordable;
                         return Math.log10(opp.totalProfit + 1) *           // Logarithmic total profit (favors millions over thousands)
                                Math.log10(opp.profitPerItem + 1) *         // Logarithmic profit per item (favors expensive items)
                                Math.min(instasellRatio, 3) *               // Instasell coverage ratio (capped at 3x for diminishing returns)
                                (1 / Math.log10(opp.maxAffordable + 1));    // Quantity penalty (favors fewer items to buy)
                     };
-                    const scoreA = calculateBalancedScore(a);
-                    const scoreB = calculateBalancedScore(b);
-                    return scoreB - scoreA; // Highest balanced score first
+                    const betaScoreA = calculateBetaScore(a);
+                    const betaScoreB = calculateBetaScore(b);
+                    return betaScoreB - betaScoreA; // Highest beta score first
+                case 'deltaScore':
+                    // δ-Score (Enhanced Mathematical): Advanced margin-focused scoring with elegant mathematical caps
+                    // Builds upon Balanced Score foundation with sophisticated margin emphasis and liquidity weighting
+                    const calculateDeltaScore = (opp: ArbitrageOpportunity) => {
+                        const hourlyInstasells = opp.weeklySellMovement / 168;
+                        const instasellRatio = hourlyInstasells / opp.maxAffordable;
+                        
+                        // Core mathematical components (no hard filters, pure mathematics)
+                        const marginScore = Math.log10(opp.profitMargin + 1) * Math.sqrt(opp.profitMargin / 100); // Enhanced margin weighting
+                        const profitScore = Math.pow(Math.log10(opp.profitPerItem + 1), 1.2);                    // Slightly favor higher profits
+                        const liquidityScore = Math.tanh(instasellRatio * 2) * 2;                                // Smooth liquidity curve (0-2 range)
+                        const efficiencyBonus = 1 / (1 + Math.exp(opp.maxAffordable / 10000 - 2));               // Sigmoid efficiency curve
+                        const volumeStability = Math.min(Math.log10(hourlyInstasells + 1), 3);                   // Capped volume consideration
+                        
+                        return marginScore * profitScore * liquidityScore * efficiencyBonus * volumeStability;
+                    };
+                    const deltaScoreA = calculateDeltaScore(a);
+                    const deltaScoreB = calculateDeltaScore(b);
+                    return deltaScoreB - deltaScoreA; // Highest delta score first
                 default:
                     return b.totalProfit - a.totalProfit; // Default to total profit
             }
@@ -130,7 +149,7 @@ export class NPCArbitrageService {
         itemsPerPage: number = 7,
         strategy: 'instabuy' | 'buyorder' = 'buyorder',
         forceRefresh: boolean = false,
-        sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'balancedScore' = 'balancedScore'
+        sortBy: 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'weeklySellMovement' | 'maxAffordable' | 'maxInstasellRatio' | 'profitPerHour' | 'betaScore' | 'deltaScore' = 'betaScore'
     ): Promise<{ opportunities: ArbitrageOpportunity[], totalCount: number, totalPages: number, currentPage: number, totalProfit: number }> {
         // Clear cache if this is a fresh command execution
         if (forceRefresh) {
