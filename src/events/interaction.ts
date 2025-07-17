@@ -4,6 +4,7 @@ import { CraftingService } from "../services/crafting";
 import { BazaarAutocompleteService } from "../services/autocomplete";
 import { DISCORD_LIMITS, ERROR_MESSAGES } from "../constants";
 import { handleNPCArbitrageButtons } from "../handlers/npc-arbitrage-buttons.js";
+import { handleFlipButtons } from "../handlers/flip-buttons.js";
 
 export function setupInteractionEvent(client: ExtendedClient) {
     client.on(Events.InteractionCreate, async interaction => {
@@ -58,6 +59,11 @@ export function setupInteractionEvent(client: ExtendedClient) {
             try {
                 if (interaction.customId.startsWith('npc_arbitrage_')) {
                     await handleNPCArbitrageButtons(interaction);
+                    return;
+                }
+                
+                if (interaction.customId.startsWith('flip_')) {
+                    await handleFlipButtons(interaction);
                     return;
                 }
             } catch (error) {

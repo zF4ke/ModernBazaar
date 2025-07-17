@@ -262,4 +262,160 @@ export class FlippingService {
         // Return average volatility percentage
         return (buyPriceDiff + sellPriceDiff) / 2;
     }
+
+    /**
+     * Enhanced flipping opportunities with pagination and advanced sorting
+     */
+    static async findFlippingOpportunities(
+        budget: number | null,
+        page: number = 1,
+        itemsPerPage: number = 5,
+        strategy: 'orderbook' | 'instant' = 'orderbook',
+        forceRefresh: boolean = false,
+        sortBy: 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel' = 'flipScore'
+    ): Promise<{ opportunities: FlippingOpportunity[], totalCount: number, totalPages: number, currentPage: number, totalProfit: number }> {
+        
+        const bazaarData = await HypixelService.getBazaarPrices();
+        const allOpportunities: FlippingOpportunity[] = [];
+
+        // Analyze all items
+        for (const [itemId, product] of Object.entries(bazaarData.products)) {
+            const priceType = strategy === 'orderbook' ? 'instant' : 'weighted';
+            const opportunity = this.analyzeFlippingOpportunity(itemId, product, priceType);
+            
+            if (opportunity && this.isViableOpportunity(opportunity)) {
+                // Add budget-specific calculations
+                if (budget) {
+                    const maxAffordable = Math.floor(budget / opportunity.buyPrice);
+                    (opportunity as any).maxAffordable = maxAffordable;
+                    (opportunity as any).totalPotentialProfit = maxAffordable * opportunity.profitMargin;
+                }
+                
+                // Enhanced scoring
+                this.enhanceOpportunityScoring(opportunity, budget);
+                allOpportunities.push(opportunity);
+            }
+        }
+
+        // Sort opportunities according to the specified criteria
+        const sortedOpportunities = this.sortFlippingOpportunities(allOpportunities, sortBy, budget);
+
+        // Calculate total profit across all opportunities
+        const totalProfit = budget ? 
+            sortedOpportunities.reduce((sum, opp) => {
+                const maxAffordable = Math.floor(budget / opp.buyPrice);
+                return sum + (maxAffordable * opp.profitMargin);
+            }, 0) :
+            sortedOpportunities.reduce((sum, opp) => sum + opp.profitMargin, 0);
+
+        // Calculate pagination
+        const totalCount = sortedOpportunities.length;
+        const totalPages = Math.ceil(totalCount / itemsPerPage);
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const opportunities = sortedOpportunities.slice(startIndex, endIndex);
+
+        return {
+            opportunities,
+            totalCount,
+            totalPages,
+            currentPage: page,
+            totalProfit
+        };
+    }
+
+    /**
+     * Enhanced scoring for flipping opportunities (heavily prioritizes volume over margins)
+     */
+    private static enhanceOpportunityScoring(opportunity: FlippingOpportunity, budget: number | null): void {
+        // Calculate realistic trading capacity per hour
+        const hourlyBuyVolume = opportunity.weeklyBuyMovement / 168; // Convert weekly to hourly
+        const hourlySellVolume = opportunity.weeklySellMovement / 168;
+        
+        // Realistic trading rate: you can trade up to the smaller volume, but account for market share
+        // Assume you can capture 10-30% of the market volume depending on your activity level
+        const marketShareFactor = 0.2; // 20% market share assumption
+        const realisticBuyRate = hourlyBuyVolume * marketShareFactor;
+        const realisticSellRate = hourlySellVolume * marketShareFactor;
+        
+        // Your actual trading rate is limited by the slower of buying or selling
+        let estimatedItemsPerHour = Math.min(realisticBuyRate, realisticSellRate);
+        let budgetLimited = false;
+        
+        // If budget is provided, cap by what you can afford per hour
+        if (budget) {
+            const maxAffordablePerHour = budget / opportunity.buyPrice; // Items you can afford with full budget
+            if (maxAffordablePerHour < estimatedItemsPerHour) {
+                estimatedItemsPerHour = maxAffordablePerHour;
+                budgetLimited = true;
+            }
+        }
+        
+        // Calculate estimated profit per hour
+        const estimatedProfitPerHour = estimatedItemsPerHour * opportunity.profitMargin;
+        
+        // Store these for display purposes
+        (opportunity as any).estimatedItemsPerHour = estimatedItemsPerHour;
+        (opportunity as any).estimatedProfitPerHour = estimatedProfitPerHour;
+        (opportunity as any).budgetLimited = budgetLimited;
+        
+        // Volume-focused flip score calculation
+        // Profit per hour component (60% weight) - this is what actually matters
+        const profitPerHourScore = Math.log10(estimatedProfitPerHour + 1) * 4; // 0-20 range typically
+        
+        // Volume component (25% weight) - trading velocity
+        const volumeScore = Math.log10(estimatedItemsPerHour + 1) * 2; // 0-10 range typically
+        
+        // Profit efficiency component (15% weight) - profit per item
+        const profitEfficiency = Math.log10(opportunity.profitMargin + 1) * 1.5; // 0-7.5 range typically
+        
+        // Combine with profit per hour being the primary factor
+        const flipScore = profitPerHourScore + volumeScore + profitEfficiency;
+        (opportunity as any).flipScore = flipScore;
+    }
+
+    /**
+     * Sort flipping opportunities by various criteria
+     */
+    private static sortFlippingOpportunities(
+        opportunities: FlippingOpportunity[], 
+        sortBy: 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel',
+        budget: number | null
+    ): FlippingOpportunity[] {
+        return opportunities.sort((a, b) => {
+            switch (sortBy) {
+                case 'flipScore':
+                    return ((b as any).flipScore || 0) - ((a as any).flipScore || 0);
+                case 'totalProfit':
+                    if (budget) {
+                        const aTotalProfit = Math.floor(budget / a.buyPrice) * a.profitMargin;
+                        const bTotalProfit = Math.floor(budget / b.buyPrice) * b.profitMargin;
+                        return bTotalProfit - aTotalProfit;
+                    }
+                    return b.profitMargin - a.profitMargin;
+                case 'profitMargin':
+                    return b.profitPercentage - a.profitPercentage;
+                case 'profitPerItem':
+                    return b.profitMargin - a.profitMargin;
+                case 'instabuyVolume':
+                    return b.weeklyBuyMovement - a.weeklyBuyMovement;
+                case 'instasellVolume':
+                    return b.weeklySellMovement - a.weeklySellMovement;
+                case 'combinedLiquidity':
+                    return b.liquidityScore - a.liquidityScore;
+                case 'riskLevel':
+                    // Sort by risk level: LOW first, then MEDIUM, then HIGH
+                    const riskOrder = { 'LOW': 0, 'MEDIUM': 1, 'HIGH': 2 };
+                    const aRisk = riskOrder[a.riskLevel];
+                    const bRisk = riskOrder[b.riskLevel];
+                    if (aRisk !== bRisk) {
+                        return aRisk - bRisk;
+                    }
+                    // If same risk level, sort by flip score
+                    return ((b as any).flipScore || 0) - ((a as any).flipScore || 0);
+                default:
+                    return ((b as any).flipScore || 0) - ((a as any).flipScore || 0);
+            }
+        });
+    }
 }

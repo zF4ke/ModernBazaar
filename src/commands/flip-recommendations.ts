@@ -1,159 +1,264 @@
-import { SlashCommandBuilder, CommandInteraction, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, CommandInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import { Command } from "../types";
-import { FlippingService } from "../services/flipping";
-import { formatCurrency, formatPercentage, formatItemName, formatHourlyMovement } from "../utils/formatting";
-import { FLIPPING_ANALYSIS } from "../constants";
+import { FlippingService, FlippingOpportunity } from "../services/flipping";
+import { formatCurrency, formatPercentage, formatItemName, formatHourlyMovement, formatFullNumber, formatLargeNumber } from "../utils/formatting";
+import { FLIPPING_ANALYSIS, EMBED_COLORS } from "../constants";
+
+const ITEMS_PER_PAGE = 4;
 
 export const flipRecommendationsCommand: Command = {
     data: new SlashCommandBuilder()
         .setName('flip-recommendations')
-        .setDescription('Get the best items to flip based on supply/demand and profit margins')
-        .addStringOption(option =>
-            option.setName('category')
-                .setDescription('Filter recommendations by category')
+        .setDescription('Get the best items to flip with advanced sorting and pagination')
+        .addIntegerOption(option =>
+            option.setName('budget')
+                .setDescription('Your available budget in coins (optional)')
                 .setRequired(false)
-                .addChoices(
-                    { name: 'All (Best Overall)', value: 'all' },
-                    { name: 'High Margin', value: 'high-margin' },
-                    { name: 'High Volume', value: 'high-volume' },
-                    { name: 'Low Risk', value: 'low-risk' }
-                )
-        )
-        .addStringOption(option =>
-            option.setName('price-type')
-                .setDescription('Price calculation method')
-                .setRequired(false)
-                .addChoices(
-                    { name: 'Order Book Prices (Default)', value: 'instant' },
-                    { name: 'Weighted Average (Top 2%)', value: 'weighted' }
-                )
+                .setMinValue(1000)
+                .setMaxValue(2000000000)
         )
         .addIntegerOption(option =>
-            option.setName('count')
-                .setDescription('Number of recommendations to show (1-20)')
+            option.setName('page')
+                .setDescription('Page number (5 opportunities per page)')
                 .setRequired(false)
                 .setMinValue(1)
-                .setMaxValue(20)
+                .setMaxValue(100)
+        )
+        .addStringOption(option =>
+            option.setName('strategy')
+                .setDescription('Trading strategy for profit calculations')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'Order Book Trading (Default)', value: 'orderbook' },
+                    { name: 'Instant Trading (4% tax)', value: 'instant' }
+                )
+        )
+        .addStringOption(option =>
+            option.setName('sort')
+                .setDescription('Sort opportunities by different criteria')
+                .setRequired(false)
+                .addChoices(
+                    { name: '⭐ Flip Score (Default) - Volume-Focused Efficiency', value: 'flipScore' },
+                    { name: 'Total Profit Potential', value: 'totalProfit' },
+                    { name: 'Profit Margin %', value: 'profitMargin' },
+                    { name: 'Profit per Item (Coins)', value: 'profitPerItem' },
+                    { name: 'Instabuy Volume', value: 'instabuyVolume' },
+                    { name: 'Instasell Volume', value: 'instasellVolume' },
+                    { name: 'Combined Liquidity', value: 'combinedLiquidity' },
+                    { name: 'Risk Level (Lowest First)', value: 'riskLevel' }
+                )
         ),
 
     async execute(interaction: CommandInteraction) {
         if (!interaction.isChatInputCommand()) return;
 
-        const category = interaction.options.getString('category') || 'all';
-        const priceType = interaction.options.getString('price-type') || 'instant';
-        const count = interaction.options.getInteger('count') || 10;
-
-        await interaction.deferReply();
+        // Always defer reply for long-running operations
+        try {
+            await interaction.deferReply();
+        } catch (error) {
+            //console.error('Failed to defer reply:', error);
+        }
 
         try {
-            let opportunities;
-            
-            if (category === 'all') {
-                opportunities = await FlippingService.getBestFlippingOpportunities(count, priceType as 'instant' | 'weighted');
-            } else {
-                opportunities = await FlippingService.getFlippingOpportunitiesByCategory(
-                    category as 'high-margin' | 'high-volume' | 'low-risk',
-                    priceType as 'instant' | 'weighted'
-                );
-                opportunities = opportunities.slice(0, count);
-            }
+            const budget = interaction.options.getInteger('budget');
+            const page = interaction.options.getInteger('page') || 1;
+            const strategy = interaction.options.getString('strategy') || 'orderbook';
+            const sortBy = interaction.options.getString('sort') || 'flipScore';
 
-            if (opportunities.length === 0) {
+            // Get enhanced flipping opportunities with pagination
+            const result = await FlippingService.findFlippingOpportunities(
+                budget,
+                page,
+                ITEMS_PER_PAGE,
+                strategy as 'orderbook' | 'instant',
+                true, // Force refresh for new command execution
+                sortBy as 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel'
+            );
+
+            const { opportunities, totalCount, totalPages, currentPage, totalProfit } = result;
+
+            if (totalCount === 0) {
                 const embed = new EmbedBuilder()
-                    .setTitle('📊 No Flipping Opportunities')
+                    .setColor(EMBED_COLORS.WARNING)
+                    .setTitle('📊 No Flipping Opportunities Found')
                     .setDescription('No profitable flipping opportunities found with the current criteria.')
-                    .setColor(0x8B7D6B);
+                    .addFields({
+                        name: '💡 Tips',
+                        value: budget ? 
+                            `• Try increasing your budget from ${formatFullNumber(budget)} coins\n• Check back later when market conditions change\n• Consider different trading strategies` :
+                            '• Add a budget parameter to see more personalized results\n• Check back later when market conditions change\n• Different sorting methods may reveal opportunities',
+                        inline: false
+                    })
+                    .setTimestamp();
 
                 await interaction.editReply({ embeds: [embed] });
                 return;
             }
 
-            const categoryTitle = category === 'all' ? 'Best Overall' : 
-                                category === 'high-margin' ? 'High Margin' :
-                                category === 'high-volume' ? 'High Volume' : 'Low Risk';
-
-            const priceTypeTitle = priceType === 'instant' ? 'order book prices' : 'weighted average prices (top 2%)';
-            const priceTypeNote = priceType === 'instant' ? 
-                '*Note: Uses competitive order book prices - place orders and wait for execution*' :
-                '*Note: Uses realistic trading prices based on order book depth*';
-
+            // Build results embed with compact organization and pagination
+            const strategyText = strategy === 'instant' ? 'Instant Trading (4% tax)' : 'Order Book Trading (no tax)';
+            const sortText = {
+                'flipScore': 'flip score (volume-focused efficiency)',
+                'totalProfit': 'total profit potential',
+                'profitMargin': 'profit margin %',
+                'profitPerItem': 'profit per item',
+                'instabuyVolume': 'instabuy volume',
+                'instasellVolume': 'instasell volume',
+                'combinedLiquidity': 'combined liquidity',
+                'riskLevel': 'risk level (lowest first)'
+            }[sortBy];
+            
             const embed = new EmbedBuilder()
-                .setTitle(`💰 Flip Recommendations - ${categoryTitle}`)
-                .setDescription(`Top ${opportunities.length} flipping opportunities based on **${priceTypeTitle}**\n\n${priceTypeNote}`)
-                .setColor(0x5D7B5D)
-                .setTimestamp();
+                .setColor(EMBED_COLORS.SUCCESS)
+                .setTitle(`💰 Flip Recommendations${budget ? ` (${formatFullNumber(budget)} coins)` : ''}`)
+                .setDescription(`**Strategy:** ${strategyText}\n${budget ? `**Budget:** ${formatFullNumber(budget)} coins\n` : ''}**Buy Low → Sell High on Bazaar**\n\n📊 **Page ${currentPage} of ${totalPages}** • **${totalCount} total opportunities**\n\n*Results sorted by ${sortText}*`);
 
-            // Add top 3 as detailed fields
-            const topOpportunities = opportunities.slice(0, 3);
-            const priceLabel = priceType === 'instant' ? 'Order Book' : 'Weighted Avg';
-            topOpportunities.forEach((op, index) => {
-                const riskEmoji = op.riskLevel === 'LOW' ? '🟢' : op.riskLevel === 'MEDIUM' ? '🟡' : '🔴';
-                const liquidityEmoji = op.liquidityScore >= FLIPPING_ANALYSIS.LIQUIDITY_EMOJI_HIGH_THRESHOLD ? '💦' : 
-                                      op.liquidityScore >= FLIPPING_ANALYSIS.LIQUIDITY_EMOJI_MEDIUM_THRESHOLD ? '💧' : '💤';
+            // Create compact table-like format with one item per line for better readability
+            let fieldValue = '';
+            
+            for (let i = 0; i < opportunities.length; i++) {
+                const opp = opportunities[i];
+                const globalRank = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
+                const riskEmoji = opp.riskLevel === 'LOW' ? '🟢' : opp.riskLevel === 'MEDIUM' ? '🟡' : '🔴';
+                const liquidityEmoji = opp.liquidityScore >= 80 ? '💦' : opp.liquidityScore >= 50 ? '💧' : '💤';
                 
-                embed.addFields({
-                    name: `${index + 1}. ${formatItemName(op.itemId)} ${riskEmoji}`,
-                    value: `**Profit:** ${formatCurrency(op.profitMargin)} (${formatPercentage(op.profitPercentage)})\n` +
-                           `**${priceLabel} Buy:** ${formatCurrency(op.buyPrice)} → **Sell:** ${formatCurrency(op.sellPrice)}\n` +
-                           `**Volume:** ${op.buyVolume.toLocaleString()} / ${op.sellVolume.toLocaleString()} ${liquidityEmoji}\n` +
-                           `**📥 Hourly Instabuys:** ${formatHourlyMovement(op.weeklyBuyMovement)}/hr\n` +
-                           `**📤 Hourly Instasells:** ${formatHourlyMovement(op.weeklySellMovement)}/hr\n` +
-                           `**Score:** ${op.recommendationScore.toFixed(2)}/100`,
-                    inline: true
-                });
-            });
-
-            // Add remaining items as a list
-            if (opportunities.length > 3) {
-                const remainingItems = opportunities.slice(3).map((op, index) => {
-                    const riskEmoji = op.riskLevel === 'LOW' ? '🟢' : op.riskLevel === 'MEDIUM' ? '🟡' : '🔴';
-                    return `**${index + 4}.** ${formatItemName(op.itemId)} ${riskEmoji} - ${formatCurrency(op.profitMargin)} (${formatPercentage(op.profitPercentage)})`;
-                }).join('\n');
-
-                embed.addFields({
-                    name: `📋 Other Opportunities (${opportunities.length - 3} more)`,
-                    value: remainingItems.length > 1000 ? remainingItems.substring(0, 1000) + '...' : remainingItems,
-                    inline: false
-                });
+                fieldValue += `${riskEmoji} **#${globalRank}. ${formatItemName(opp.itemId)}** ${liquidityEmoji}\n`;
+                fieldValue += `Buy: ${formatCurrency(opp.buyPrice)} → Sell: ${formatCurrency(opp.sellPrice)} `;
+                fieldValue += `(+${formatCurrency(opp.profitMargin)}, ${formatPercentage(opp.profitPercentage)})\n`;
+                
+                if (budget) {
+                    const maxAffordable = Math.floor(budget / opp.buyPrice);
+                    const totalPotentialProfit = maxAffordable * opp.profitMargin;
+                    fieldValue += `Max: ${formatFullNumber(maxAffordable)} items = ${formatCurrency(totalPotentialProfit)} total profit\n`;
+                }
+                
+                fieldValue += `📥 Instabuy: ${formatHourlyMovement(opp.weeklyBuyMovement)}/hr • `;
+                fieldValue += `📤 Instasell: ${formatHourlyMovement(opp.weeklySellMovement)}/hr\n`;
+                
+                const budgetWarning = (opp as any).budgetLimited ? ' ⚠️ budget limited' : '';
+                fieldValue += `⚡ Est. ${formatLargeNumber((opp as any).estimatedItemsPerHour)}/hr tradeable (${formatCurrency((opp as any).estimatedProfitPerHour)}/hr profit)${budgetWarning}\n\n`;
             }
 
-            // Add legend
-            const priceExplanation = priceType === 'instant' ? 
-                'order book prices - place competitive buy/sell orders and wait for execution' :
-                'weighted averages (top 2% by volume) - realistic for bulk trading';
-            
-            // embed.addFields({
-            //     name: '📖 Legend',
-            //     value: '🟢 Low Risk | 🟡 Medium Risk | 🔴 High Risk\n' +
-            //            '💦 High Liquidity | 💧 Medium Liquidity | 💤 Low Liquidity\n' +
-            //            '**Volume format:** Buy Volume / Sell Volume\n' +
-            //            `**Prices:** ${priceExplanation}\n` +
-            //            '**Strategy:** Place buy orders, wait for fill, then place sell orders',
-            //     inline: false
-            // });
-
-            // Add market summary
-            const avgProfit = opportunities.reduce((sum, op) => sum + op.profitMargin, 0) / opportunities.length;
-            const avgMargin = opportunities.reduce((sum, op) => sum + op.profitPercentage, 0) / opportunities.length;
-            const lowRiskCount = opportunities.filter(op => op.riskLevel === 'LOW').length;
-
+            // Add all opportunities in a single field since we have max 5 per page
             embed.addFields({
-                name: '📊 Market Summary',
-                value: `**Average Profit:** ${formatCurrency(avgProfit)}\n` +
-                       `**Average Margin:** ${formatPercentage(avgMargin)}\n` +
-                       `**Low Risk Items:** ${lowRiskCount}/${opportunities.length}`,
+                name: `📋 Top Opportunities (#${(currentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(currentPage * ITEMS_PER_PAGE, totalCount)})`,
+                value: fieldValue || 'No opportunities on this page.',
                 inline: false
             });
 
-            await interaction.editReply({ embeds: [embed] });
+            // Calculate total profit for current page
+            const currentPageProfit = budget ? 
+                opportunities.reduce((sum: number, opp: FlippingOpportunity) => {
+                    const maxAffordable = Math.floor(budget / opp.buyPrice);
+                    return sum + (maxAffordable * opp.profitMargin);
+                }, 0) : 
+                opportunities.reduce((sum: number, opp: FlippingOpportunity) => sum + opp.profitMargin, 0);
+            
+            const avgRisk = opportunities.filter((opp: FlippingOpportunity) => opp.riskLevel === 'LOW').length;
+            
+            embed.addFields({
+                name: '📈 Summary',
+                value: `**Page:** ${currentPage} of ${totalPages}\n` +
+                       `**${budget ? 'Page Profit Potential' : 'Page Avg Profit'}:** ${formatCurrency(currentPageProfit)}${budget ? '' : ' per item'}\n` +
+                       `**${budget ? 'Total Profit Potential' : 'Total Opportunities'}:** ${budget ? formatCurrency(totalProfit) : totalCount}\n` +
+                       `**Low Risk Items:** ${avgRisk}/${opportunities.length}`,
+                inline: false
+            });
+
+            embed.setFooter({ 
+                text: `💡 Use navigation buttons or page:<number> • ${strategy === 'instant' ? 'Includes 4% bazaar tax' : 'Place orders and wait'}` 
+            })
+            .setTimestamp();
+
+            // Create navigation buttons
+            const navigationRow = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`flip_first_${budget || 0}_${strategy}_${sortBy}`)
+                        .setLabel('⏮️ First')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(currentPage === 1),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_prev_${budget || 0}_${strategy}_${currentPage}_${sortBy}`)
+                        .setLabel('◀️ Previous')
+                        .setStyle(ButtonStyle.Primary)
+                        .setDisabled(currentPage === 1),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_page_${budget || 0}_${strategy}_${currentPage}_${sortBy}`)
+                        .setLabel(`Page ${currentPage}/${totalPages}`)
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(true),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_next_${budget || 0}_${strategy}_${currentPage}_${sortBy}`)
+                        .setLabel('Next ▶️')
+                        .setStyle(ButtonStyle.Primary)
+                        .setDisabled(currentPage === totalPages),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_last_${budget || 0}_${strategy}_${currentPage}_${sortBy}`)
+                        .setLabel('Last ⏭️')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(currentPage === totalPages)
+                );
+
+            // Create sort buttons (3-3-3 layout)
+            const sortRow1 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`flip_sort_flipScore_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('⭐ Flip Score')
+                        .setStyle(sortBy === 'flipScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_sort_totalProfit_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('💰 Total Profit')
+                        .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_sort_profitMargin_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('📊 Margin %')
+                        .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                );
+
+            const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`flip_sort_profitPerItem_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('🪙 Profit/Item')
+                        .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_sort_combinedLiquidity_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('💧 Liquidity')
+                        .setStyle(sortBy === 'combinedLiquidity' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_sort_instabuyVolume_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('📥 Instabuy Vol')
+                        .setStyle(sortBy === 'instabuyVolume' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                );
+
+            const sortRow3 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`flip_sort_instasellVolume_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('📤 Instasell Vol')
+                        .setStyle(sortBy === 'instasellVolume' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_sort_riskLevel_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('🟢 Low Risk')
+                        .setStyle(sortBy === 'riskLevel' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId(`flip_refresh_${budget || 0}_${strategy}_${currentPage}_${sortBy}`)
+                        .setLabel('🔄 Refresh')
+                        .setStyle(ButtonStyle.Primary)
+                );
+
+            await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2, sortRow3] });
 
         } catch (error) {
-            console.error('Error getting flip recommendations:', error);
+            console.error('Error in flip-recommendations command:', error);
             
             const errorEmbed = new EmbedBuilder()
                 .setTitle('❌ Error')
-                .setDescription(error instanceof Error ? error.message : 'Failed to analyze flipping opportunities. Please try again later.')
-                .setColor(0x8B4B4B);
+                .setDescription('Failed to analyze flipping opportunities. Please try again later.')
+                .setColor(EMBED_COLORS.ERROR)
+                .setTimestamp();
 
             await interaction.editReply({ embeds: [errorEmbed] });
         }
