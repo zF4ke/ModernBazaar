@@ -5,6 +5,7 @@ import { BazaarAutocompleteService } from "../services/autocomplete";
 import { DISCORD_LIMITS, ERROR_MESSAGES } from "../constants";
 import { handleNPCArbitrageButtons } from "../handlers/npc-arbitrage-buttons.js";
 import { handleFlipButtons } from "../handlers/flip-buttons.js";
+import { handleManipulationButtons } from "../handlers/manipulation-buttons.js";
 
 export function setupInteractionEvent(client: ExtendedClient) {
     client.on(Events.InteractionCreate, async interaction => {
@@ -66,8 +67,32 @@ export function setupInteractionEvent(client: ExtendedClient) {
                     await handleFlipButtons(interaction);
                     return;
                 }
+                
+                if (interaction.customId.startsWith('manip_')) {
+                    await handleManipulationButtons(interaction);
+                    return;
+                }
             } catch (error) {
                 console.error('❌ Error handling button interaction:', error);
+                
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({
+                        content: 'There was an error processing your request.',
+                        ephemeral: true
+                    });
+                }
+            }
+        }
+        
+        // Handle select menu interactions
+        if (interaction.isStringSelectMenu()) {
+            try {
+                if (interaction.customId.startsWith("manip_")) {
+                    await handleManipulationButtons(interaction);
+                    return;
+                }
+            } catch (error) {
+                console.error('❌ Error handling select menu interaction:', error);
                 
                 if (!interaction.replied && !interaction.deferred) {
                     await interaction.reply({

@@ -13,6 +13,7 @@ import { helpCommand } from "./commands/help";
 import { verboseCommand } from "./commands/verbose";
 import { npcArbitrageCommand } from "./commands/npc-arbitrage";
 import { craftFlippingCommand } from "./commands/craft-flipping";
+import { bazaarManipulationCommand } from "./commands/bazaar-manipulation";
 
 // Import events
 import { setupEvents } from "./events";
@@ -37,7 +38,8 @@ const commands: Command[] = [
     helpCommand,
     craftFlippingCommand,
     verboseCommand,
-    npcArbitrageCommand
+    npcArbitrageCommand,
+    bazaarManipulationCommand
 ];
 
 commands.forEach(command => {

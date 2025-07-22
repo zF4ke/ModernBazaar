@@ -16,7 +16,7 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
     let budget: number | null;
     let strategy: 'orderbook' | 'instant';
     let currentPageFromButton: number;
-    let sortBy: 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel' = 'flipScore';
+    let sortBy: 'flipScore' | 'competitionAwareFlipScore' | 'competition' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'profitPerHour' | 'instabuyVolume' | 'instasellVolume' | 'instaboughtPerHour' | 'instasoldPerHour' | 'riskLevel' = 'flipScore';
 
     if (action === 'sort') {
         // Sort button: flip_sort_<sortType>_<budget>_<strategy>_<page>
@@ -24,13 +24,13 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
         budget = parseInt(parts[3]) || null;
         strategy = parts[4] as 'orderbook' | 'instant';
         currentPageFromButton = parts[5] ? parseInt(parts[5]) : 1;
-        sortBy = sortType as 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel';
+        sortBy = sortType as 'flipScore' | 'competitionAwareFlipScore' | 'competition' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'profitPerHour' | 'instabuyVolume' | 'instasellVolume' | 'instaboughtPerHour' | 'instasoldPerHour' | 'riskLevel';
     } else if (action === 'refresh') {
         // Refresh button: flip_refresh_<budget>_<strategy>_<page>_<sortBy>
         budget = parseInt(parts[2]) || null;
         strategy = parts[3] as 'orderbook' | 'instant';
         currentPageFromButton = parts[4] ? parseInt(parts[4]) : 1;
-        sortBy = (parts[5] as 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel') || 'flipScore';
+        sortBy = (parts[5] as 'flipScore' | 'competitionAwareFlipScore' | 'competition' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'profitPerHour' | 'instabuyVolume' | 'instasellVolume' | 'instaboughtPerHour' | 'instasoldPerHour' | 'riskLevel') || 'flipScore';
     } else {
         // Navigation button: flip_<action>_<budget>_<strategy>_[page]_[sortBy]
         budget = parseInt(parts[2]) || null;
@@ -39,13 +39,16 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
         if (action === 'first') {
             // flip_first_<budget>_<strategy>_<sortBy>
             currentPageFromButton = 1; // Will be overridden anyway
-            sortBy = (parts[4] as 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel') || 'flipScore';
+            sortBy = (parts[4] as 'flipScore' | 'competitionAwareFlipScore' | 'competition' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'profitPerHour' | 'instabuyVolume' | 'instasellVolume' | 'instaboughtPerHour' | 'instasoldPerHour' | 'riskLevel') || 'flipScore';
         } else {
             // flip_<action>_<budget>_<strategy>_<page>_<sortBy>
             currentPageFromButton = parts[4] ? parseInt(parts[4]) : 1;
-            sortBy = (parts[5] as 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel') || 'flipScore';
+            sortBy = (parts[5] as 'flipScore' | 'competitionAwareFlipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'profitPerHour' | 'instabuyVolume' | 'instasellVolume' | 'instaboughtPerHour' | 'instasoldPerHour' | 'riskLevel') || 'flipScore';
         }
     }
+
+    // Determine items per page based on sort type
+    const itemsPerPage = sortBy === 'competition' ? 3 : ITEMS_PER_PAGE;
 
     let targetPage = currentPageFromButton;
 
@@ -79,7 +82,7 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
         const result = await FlippingService.findFlippingOpportunities(
             budget,
             targetPage,
-            ITEMS_PER_PAGE,
+            itemsPerPage,
             strategy,
             false, // Don't force refresh - this would be expensive for button clicks
             sortBy
@@ -95,7 +98,7 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
                 const lastResult = await FlippingService.findFlippingOpportunities(
                     budget,
                     totalPages,
-                    ITEMS_PER_PAGE,
+                    itemsPerPage,
                     strategy,
                     false,
                     sortBy
@@ -119,12 +122,16 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
         const strategyText = strategy === 'instant' ? 'Instant Trading (4% tax)' : 'Order Book Trading (no tax)';
         const sortText = {
             'flipScore': 'flip score (volume-focused efficiency)',
+            'competitionAwareFlipScore': 'competition-aware flip score (low competition prioritized)',
+            'competition': 'competition level (highest first)',
             'totalProfit': 'total profit potential',
             'profitMargin': 'profit margin %',
             'profitPerItem': 'profit per item',
+            'profitPerHour': 'profit per hour',
             'instabuyVolume': 'instabuy volume',
             'instasellVolume': 'instasell volume',
-            'combinedLiquidity': 'combined liquidity',
+            'instaboughtPerHour': 'most instabought per hour',
+            'instasoldPerHour': 'most instasold per hour',
             'riskLevel': 'risk level (lowest first)'
         }[sortBy];
         
@@ -137,13 +144,20 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
         let fieldValue = '';
         for (let i = 0; i < result.opportunities.length; i++) {
             const opp = result.opportunities[i];
-            const globalRank = (result.currentPage - 1) * ITEMS_PER_PAGE + i + 1;
+            const globalRank = (result.currentPage - 1) * itemsPerPage + i + 1;
             const riskEmoji = opp.riskLevel === 'LOW' ? '🟢' : opp.riskLevel === 'MEDIUM' ? '🟡' : '🔴';
             const liquidityEmoji = opp.liquidityScore >= 80 ? '💦' : opp.liquidityScore >= 50 ? '💧' : '💤';
             
             fieldValue += `${riskEmoji} **#${globalRank}. ${formatItemName(opp.itemId)}** ${liquidityEmoji}\n`;
             fieldValue += `Buy: ${formatCurrency(opp.buyPrice)} → Sell: ${formatCurrency(opp.sellPrice)} `;
             fieldValue += `(+${formatCurrency(opp.profitMargin)}, ${formatPercentage(opp.profitPercentage)})\n`;
+            
+            // Show competition score if sorting by competition
+            if (sortBy === 'competition') {
+                const enhancedOpp = opp as any;
+                const competitionEmoji = enhancedOpp.competitionScore <= 20 ? '🟢' : enhancedOpp.competitionScore <= 50 ? '🟡' : '🔴';
+                fieldValue += `${competitionEmoji} **Competition Score:** ${enhancedOpp.competitionScore.toFixed(1)}/100 (lower = less competitive)\n`;
+            }
             
             if (budget) {
                 const maxAffordable = Math.floor(budget / opp.buyPrice);
@@ -159,7 +173,7 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
         }
 
         embed.addFields({
-            name: `💰 Top Opportunities (#${(result.currentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(result.currentPage * ITEMS_PER_PAGE, totalCount)})`,
+            name: `💰 Top Opportunities (#${(result.currentPage - 1) * itemsPerPage + 1}-${Math.min(result.currentPage * itemsPerPage, totalCount)})`,
             value: fieldValue || 'No opportunities on this page.',
             inline: false
         });
@@ -226,45 +240,53 @@ export async function handleFlipButtons(interaction: ButtonInteraction) {
                     .setLabel('⭐ Flip Score')
                     .setStyle(sortBy === 'flipScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
                 new ButtonBuilder()
+                    .setCustomId(`flip_sort_competitionAwareFlipScore_${budget || 0}_${strategy}_${result.currentPage}`)
+                    .setLabel('🏆 Competition-Aware')
+                    .setStyle(sortBy === 'competitionAwareFlipScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
                     .setCustomId(`flip_sort_totalProfit_${budget || 0}_${strategy}_${result.currentPage}`)
                     .setLabel('💰 Total Profit')
-                    .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary),
-                new ButtonBuilder()
-                    .setCustomId(`flip_sort_profitMargin_${budget || 0}_${strategy}_${result.currentPage}`)
-                    .setLabel('📊 Margin %')
-                    .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                    .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary)
             );
 
         const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
             .addComponents(
                 new ButtonBuilder()
+                    .setCustomId(`flip_sort_profitMargin_${budget || 0}_${strategy}_${result.currentPage}`)
+                    .setLabel('📊 Margin %')
+                    .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
                     .setCustomId(`flip_sort_profitPerItem_${budget || 0}_${strategy}_${result.currentPage}`)
                     .setLabel('🪙 Profit/Item')
                     .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary),
                 new ButtonBuilder()
-                    .setCustomId(`flip_sort_combinedLiquidity_${budget || 0}_${strategy}_${result.currentPage}`)
-                    .setLabel('💧 Liquidity')
-                    .setStyle(sortBy === 'combinedLiquidity' ? ButtonStyle.Success : ButtonStyle.Secondary),
-                new ButtonBuilder()
-                    .setCustomId(`flip_sort_instabuyVolume_${budget || 0}_${strategy}_${result.currentPage}`)
-                    .setLabel('📥 Instabuy Vol')
-                    .setStyle(sortBy === 'instabuyVolume' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                    .setCustomId(`flip_sort_profitPerHour_${budget || 0}_${strategy}_${result.currentPage}`)
+                    .setLabel('⏰ Profit/Hr')
+                    .setStyle(sortBy === 'profitPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                // instasold per hour
+                .setCustomId(`flip_sort_instasoldPerHour_${budget || 0}_${strategy}_${result.currentPage}`)
+                .setLabel('⏰ Instasold/Hr')
+                .setStyle(sortBy === 'instasoldPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary)
             );
 
         const sortRow3 = new ActionRowBuilder<ButtonBuilder>()
             .addComponents(
                 new ButtonBuilder()
+                    .setCustomId(`flip_sort_instabuyVolume_${budget || 0}_${strategy}_${result.currentPage}`)
+                    .setLabel('📥 Instabuy Vol')
+                    .setStyle(sortBy === 'instabuyVolume' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                new ButtonBuilder()
                     .setCustomId(`flip_sort_instasellVolume_${budget || 0}_${strategy}_${result.currentPage}`)
                     .setLabel('📤 Instasell Vol')
                     .setStyle(sortBy === 'instasellVolume' ? ButtonStyle.Success : ButtonStyle.Secondary),
                 new ButtonBuilder()
-                    .setCustomId(`flip_sort_riskLevel_${budget || 0}_${strategy}_${result.currentPage}`)
-                    .setLabel('🟢 Low Risk')
-                    .setStyle(sortBy === 'riskLevel' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    .setCustomId(`flip_sort_instaboughtPerHour_${budget || 0}_${strategy}_${result.currentPage}`)
+                    .setLabel('⏰ Instabought/Hr')
+                    .setStyle(sortBy === 'instaboughtPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary),
                 new ButtonBuilder()
-                    .setCustomId(`flip_refresh_${budget || 0}_${strategy}_${result.currentPage}_${sortBy}`)
-                    .setLabel('🔄 Refresh')
-                    .setStyle(ButtonStyle.Primary)
+                    .setCustomId(`flip_sort_competition_${budget || 0}_${strategy}_${result.currentPage}`)
+                    .setLabel('🥊 Competition')
+                    .setStyle(sortBy === 'competition' ? ButtonStyle.Success : ButtonStyle.Secondary)
             );
 
         await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2, sortRow3] });

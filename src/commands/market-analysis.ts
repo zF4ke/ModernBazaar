@@ -59,7 +59,7 @@ export const marketAnalysisCommand: Command = {
                     {
                         name: '📈 Market Depth (Buy / Sell)',
                         value: `**Orders:** ${quick_status.buyOrders.toLocaleString()} / ${quick_status.sellOrders.toLocaleString()}\n` +
-                               `**Volume:** ${quick_status.buyVolume.toLocaleString()} / ${quick_status.sellVolume.toLocaleString()}\n` +
+                               `**Volume:** ${quick_status.totalItemsInBuyOrders.toLocaleString()} / ${quick_status.totalItemsInSellOrders.toLocaleString()}\n` +
                                `**Hourly:** ${formatHourlyMovement(quick_status.buyMovingWeek)} / ${formatHourlyMovement(quick_status.sellMovingWeek)}`,
                         inline: true
                     }
@@ -141,9 +141,9 @@ export const marketAnalysisCommand: Command = {
                 recommendation = '📉 **Low spread** - Limited profit potential (small difference between buy/sell prices)';
             }
 
-            if (quick_status.buyVolume > 10000 && quick_status.sellVolume > 10000) {
+            if (quick_status.totalItemsInBuyOrders > 10000 && quick_status.totalItemsInSellOrders > 10000) {
                 recommendation += '\n✅ **High liquidity** - Easy to buy/sell large quantities';
-            } else if (quick_status.buyVolume < 1000 || quick_status.sellVolume < 1000) {
+            } else if (quick_status.totalItemsInBuyOrders < 1000 || quick_status.totalItemsInSellOrders < 1000) {
                 recommendation += '\n⚠️ **Low liquidity** - May be difficult to trade large amounts';
             }
 

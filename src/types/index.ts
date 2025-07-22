@@ -35,13 +35,13 @@ export interface BazaarProduct {
     }>;
     quick_status: {
         productId: string;
-        // NOTE: quick_status field names are intuitive (unlike order book fields)
+        // Clear, intuitive field names (fixed from backwards API naming)
         sellPrice: number;     // Weighted average sell price (what you pay to buy)
-        sellVolume: number;    // Volume of items being sold
+        totalItemsInSellOrders: number;    // Total items available in sell orders
         sellMovingWeek: number;
         sellOrders: number;    // Number of sell orders
         buyPrice: number;      // Weighted average buy price (what you get when selling)
-        buyVolume: number;     // Volume of items being bought
+        totalItemsInBuyOrders: number;     // Total items wanted in buy orders
         buyMovingWeek: number;
         buyOrders: number;     // Number of buy orders
     };

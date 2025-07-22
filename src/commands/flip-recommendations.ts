@@ -39,12 +39,17 @@ export const flipRecommendationsCommand: Command = {
                 .setRequired(false)
                 .addChoices(
                     { name: '⭐ Flip Score (Default) - Volume-Focused Efficiency', value: 'flipScore' },
+                    { name: '🏆 Competition-Aware Score - Prioritizes Low Competition', value: 'competitionAwareFlipScore' },
+                    { name: '🥊 Competition Only - Most Competitive First', value: 'competition' },
                     { name: 'Total Profit Potential', value: 'totalProfit' },
                     { name: 'Profit Margin %', value: 'profitMargin' },
                     { name: 'Profit per Item (Coins)', value: 'profitPerItem' },
+                    { name: 'Profit per Hour (X/hr profit)', value: 'profitPerHour' },
                     { name: 'Instabuy Volume', value: 'instabuyVolume' },
                     { name: 'Instasell Volume', value: 'instasellVolume' },
-                    { name: 'Combined Liquidity', value: 'combinedLiquidity' },
+                    { name: 'Most Instabought per Hour', value: 'instaboughtPerHour' },
+                    // { name: 'Combined Liquidity', value: 'combinedLiquidity' },
+                    { name: 'Most Instasold per Hour', value: 'instasoldPerHour' },
                     { name: 'Risk Level (Lowest First)', value: 'riskLevel' }
                 )
         ),
@@ -65,14 +70,17 @@ export const flipRecommendationsCommand: Command = {
             const strategy = interaction.options.getString('strategy') || 'orderbook';
             const sortBy = interaction.options.getString('sort') || 'flipScore';
 
+            // Determine items per page based on sort type
+            const itemsPerPage = sortBy === 'competition' ? 3 : ITEMS_PER_PAGE;
+
             // Get enhanced flipping opportunities with pagination
             const result = await FlippingService.findFlippingOpportunities(
                 budget,
                 page,
-                ITEMS_PER_PAGE,
+                itemsPerPage,
                 strategy as 'orderbook' | 'instant',
                 true, // Force refresh for new command execution
-                sortBy as 'flipScore' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'instabuyVolume' | 'instasellVolume' | 'combinedLiquidity' | 'riskLevel'
+                sortBy as 'flipScore' | 'competitionAwareFlipScore' | 'competition' | 'totalProfit' | 'profitMargin' | 'profitPerItem' | 'profitPerHour' | 'instabuyVolume' | 'instasellVolume' | 'instaboughtPerHour' | 'instasoldPerHour' | 'riskLevel'
             );
 
             const { opportunities, totalCount, totalPages, currentPage, totalProfit } = result;
@@ -99,12 +107,17 @@ export const flipRecommendationsCommand: Command = {
             const strategyText = strategy === 'instant' ? 'Instant Trading (4% tax)' : 'Order Book Trading (no tax)';
             const sortText = {
                 'flipScore': 'flip score (volume-focused efficiency)',
+                'competitionAwareFlipScore': 'competition-aware flip score (low competition prioritized)',
+                'competition': 'competition level (highest first)',
                 'totalProfit': 'total profit potential',
                 'profitMargin': 'profit margin %',
                 'profitPerItem': 'profit per item',
+                'profitPerHour': 'profit per hour',
                 'instabuyVolume': 'instabuy volume',
                 'instasellVolume': 'instasell volume',
-                'combinedLiquidity': 'combined liquidity',
+                'instaboughtPerHour': 'most instabought per hour',
+                'instasoldPerHour': 'most instasold per hour',
+                // 'combinedLiquidity': 'combined liquidity',
                 'riskLevel': 'risk level (lowest first)'
             }[sortBy];
             
@@ -118,13 +131,20 @@ export const flipRecommendationsCommand: Command = {
             
             for (let i = 0; i < opportunities.length; i++) {
                 const opp = opportunities[i];
-                const globalRank = (currentPage - 1) * ITEMS_PER_PAGE + i + 1;
+                const globalRank = (currentPage - 1) * itemsPerPage + i + 1;
                 const riskEmoji = opp.riskLevel === 'LOW' ? '🟢' : opp.riskLevel === 'MEDIUM' ? '🟡' : '🔴';
                 const liquidityEmoji = opp.liquidityScore >= 80 ? '💦' : opp.liquidityScore >= 50 ? '💧' : '💤';
                 
                 fieldValue += `${riskEmoji} **#${globalRank}. ${formatItemName(opp.itemId)}** ${liquidityEmoji}\n`;
                 fieldValue += `Buy: ${formatCurrency(opp.buyPrice)} → Sell: ${formatCurrency(opp.sellPrice)} `;
                 fieldValue += `(+${formatCurrency(opp.profitMargin)}, ${formatPercentage(opp.profitPercentage)})\n`;
+                
+                // Show competition score if sorting by competition
+                if (sortBy === 'competition') {
+                    const enhancedOpp = opp as any;
+                    const competitionEmoji = enhancedOpp.competitionScore <= 20 ? '🟢' : enhancedOpp.competitionScore <= 50 ? '🟡' : '🔴';
+                    fieldValue += `${competitionEmoji} **Competition Score:** ${enhancedOpp.competitionScore.toFixed(1)}/100 (lower = less competitive)\n`;
+                }
                 
                 if (budget) {
                     const maxAffordable = Math.floor(budget / opp.buyPrice);
@@ -136,12 +156,12 @@ export const flipRecommendationsCommand: Command = {
                 fieldValue += `📤 Instasell: ${formatHourlyMovement(opp.weeklySellMovement)}/hr\n`;
                 
                 const budgetWarning = (opp as any).budgetLimited ? ' ⚠️ budget limited' : '';
-                fieldValue += `⚡ Est. ${formatLargeNumber((opp as any).estimatedItemsPerHour)}/hr tradeable (${formatCurrency((opp as any).estimatedProfitPerHour)}/hr profit)${budgetWarning}\n\n`;
+                fieldValue += `⚡ Est. ${formatFullNumber((opp as any).estimatedItemsPerHour)}/hr tradeable (${formatCurrency((opp as any).estimatedProfitPerHour)}/hr profit)${budgetWarning}\n\n`;
             }
 
             // Add all opportunities in a single field since we have max 5 per page
             embed.addFields({
-                name: `📋 Top Opportunities (#${(currentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(currentPage * ITEMS_PER_PAGE, totalCount)})`,
+                name: `📋 Top Opportunities (#${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, totalCount)})`,
                 value: fieldValue || 'No opportunities on this page.',
                 inline: false
             });
@@ -208,45 +228,58 @@ export const flipRecommendationsCommand: Command = {
                         .setLabel('⭐ Flip Score')
                         .setStyle(sortBy === 'flipScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
+                        .setCustomId(`flip_sort_competitionAwareFlipScore_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('🏆 Competition-Aware')
+                        .setStyle(sortBy === 'competitionAwareFlipScore' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
                         .setCustomId(`flip_sort_totalProfit_${budget || 0}_${strategy}_${currentPage}`)
                         .setLabel('💰 Total Profit')
-                        .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary),
-                    new ButtonBuilder()
-                        .setCustomId(`flip_sort_profitMargin_${budget || 0}_${strategy}_${currentPage}`)
-                        .setLabel('📊 Margin %')
-                        .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                        .setStyle(sortBy === 'totalProfit' ? ButtonStyle.Success : ButtonStyle.Secondary)
                 );
 
             const sortRow2 = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(
                     new ButtonBuilder()
+                        .setCustomId(`flip_sort_profitMargin_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('📊 Margin %')
+                        .setStyle(sortBy === 'profitMargin' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
                         .setCustomId(`flip_sort_profitPerItem_${budget || 0}_${strategy}_${currentPage}`)
                         .setLabel('🪙 Profit/Item')
                         .setStyle(sortBy === 'profitPerItem' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
-                        .setCustomId(`flip_sort_combinedLiquidity_${budget || 0}_${strategy}_${currentPage}`)
-                        .setLabel('💧 Liquidity')
-                        .setStyle(sortBy === 'combinedLiquidity' ? ButtonStyle.Success : ButtonStyle.Secondary),
-                    new ButtonBuilder()
-                        .setCustomId(`flip_sort_instabuyVolume_${budget || 0}_${strategy}_${currentPage}`)
-                        .setLabel('📥 Instabuy Vol')
-                        .setStyle(sortBy === 'instabuyVolume' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                        .setCustomId(`flip_sort_profitPerHour_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('⏰ Profit/Hr')
+                        .setStyle(sortBy === 'profitPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    // new ButtonBuilder()
+                    //     .setCustomId(`flip_sort_combinedLiquidity_${budget || 0}_${strategy}_${currentPage}`)
+                    //     .setLabel('💧 Liquidity')
+                    //     .setStyle(sortBy === 'combinedLiquidity' ? ButtonStyle.Success : ButtonStyle.Secondary)
+                        new ButtonBuilder()// instasoldPerHour
+                            .setCustomId(`flip_sort_instasoldPerHour_${budget || 0}_${strategy}_${currentPage}`)
+                            .setLabel('⏰ Instasold/Hr')
+                            .setStyle(sortBy === 'instasoldPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary),
+
                 );
 
             const sortRow3 = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(
                     new ButtonBuilder()
+                        .setCustomId(`flip_sort_instabuyVolume_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('📥 Instabuy Vol')
+                        .setStyle(sortBy === 'instabuyVolume' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                    new ButtonBuilder()
                         .setCustomId(`flip_sort_instasellVolume_${budget || 0}_${strategy}_${currentPage}`)
                         .setLabel('📤 Instasell Vol')
                         .setStyle(sortBy === 'instasellVolume' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
-                        .setCustomId(`flip_sort_riskLevel_${budget || 0}_${strategy}_${currentPage}`)
-                        .setLabel('🟢 Low Risk')
-                        .setStyle(sortBy === 'riskLevel' ? ButtonStyle.Success : ButtonStyle.Secondary),
+                        .setCustomId(`flip_sort_instaboughtPerHour_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('⏰ Instabought/Hr')
+                        .setStyle(sortBy === 'instaboughtPerHour' ? ButtonStyle.Success : ButtonStyle.Secondary),
                     new ButtonBuilder()
-                        .setCustomId(`flip_refresh_${budget || 0}_${strategy}_${currentPage}_${sortBy}`)
-                        .setLabel('🔄 Refresh')
-                        .setStyle(ButtonStyle.Primary)
+                        .setCustomId(`flip_sort_competition_${budget || 0}_${strategy}_${currentPage}`)
+                        .setLabel('🥊 Competition')
+                        .setStyle(sortBy === 'competition' ? ButtonStyle.Success : ButtonStyle.Secondary)
                 );
 
             await interaction.editReply({ embeds: [embed], components: [navigationRow, sortRow1, sortRow2, sortRow3] });

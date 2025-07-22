@@ -37,12 +37,13 @@ interface RawBazaarProduct {
     }>;
     quick_status: {
         productId: string;
+        // BACKWARDS NAMING ALSO APPLIES TO VOLUME FIELDS:
         sellPrice: number;
-        sellVolume: number;
+        sellVolume: number;    // BACKWARDS: Actually total items in BUY orders
         sellMovingWeek: number;
         sellOrders: number;
         buyPrice: number;
-        buyVolume: number;
+        buyVolume: number;     // BACKWARDS: Actually total items in SELL orders
         buyMovingWeek: number;
         buyOrders: number;
     };
@@ -288,7 +289,11 @@ export class HypixelService {
 
     /**
      * Transforms raw Hypixel API response to our cleaner interface
-     * Fixes the backwards field naming: sell_summary -> buy_orders, buy_summary -> sell_orders
+     * Fixes the backwards field naming: 
+     * - sell_summary -> buy_orders
+     * - buy_summary -> sell_orders
+     * - sellVolume -> totalItemsInBuyOrders  
+     * - buyVolume -> totalItemsInSellOrders
      */
     private static transformBazaarData(rawData: RawBazaarResponse): BazaarResponse {
         const transformedProducts: Record<string, BazaarProduct> = {};
@@ -299,7 +304,18 @@ export class HypixelService {
                 // Fix backwards field names: sell_summary contains buy orders, buy_summary contains sell orders
                 buy_orders: rawProduct.sell_summary,   // sell_summary -> buy_orders
                 sell_orders: rawProduct.buy_summary,   // buy_summary -> sell_orders
-                quick_status: rawProduct.quick_status
+                quick_status: {
+                    productId: rawProduct.quick_status.productId,
+                    sellPrice: rawProduct.quick_status.sellPrice,
+                    // Fix backwards volume fields
+                    totalItemsInSellOrders: rawProduct.quick_status.buyVolume, // buyVolume -> totalItemsInSellOrders
+                    sellMovingWeek: rawProduct.quick_status.sellMovingWeek,
+                    sellOrders: rawProduct.quick_status.sellOrders,
+                    buyPrice: rawProduct.quick_status.buyPrice,
+                    totalItemsInBuyOrders: rawProduct.quick_status.sellVolume, // sellVolume -> totalItemsInBuyOrders
+                    buyMovingWeek: rawProduct.quick_status.buyMovingWeek,
+                    buyOrders: rawProduct.quick_status.buyOrders
+                }
             };
         }
         
@@ -467,7 +483,7 @@ export class HypixelService {
 
         Logger.verbose(`\n📈 FINAL RESULTS:`);
         Logger.verbose(`   💰 Total revenue: ${totalRevenue.toLocaleString()} coins`);
-        Logger.verbose(`   � Quantity sold: ${totalQuantitySold.toLocaleString()} / ${quantityToSell.toLocaleString()}`);
+        Logger.verbose(`   📦 Quantity sold: ${totalQuantitySold.toLocaleString()} / ${quantityToSell.toLocaleString()}`);
         Logger.verbose(`   💵 Average price: ${averagePrice.toFixed(2)} coins per item`);
         Logger.verbose(`   ✔️ Market feasible: ${feasible ? 'YES' : 'NO'}`);
         Logger.verbose(`   📊 Max possible: ${totalDemand.toLocaleString()} items`);
