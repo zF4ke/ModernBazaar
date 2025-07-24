@@ -1,0 +1,18 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/${POSTGRES_DB}  # database URL, db is the service name in docker-compose
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update      # dev only; auto-create/alter tables
+    show-sql: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus   # Actuator endpoints

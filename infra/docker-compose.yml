@@ -1,0 +1,59 @@
+services:
+    db:
+        image: postgres:16
+        restart: unless-stopped # docker will always restart the container unless it is explicitly stopped
+        env_file: ../.env
+        environment:
+            POSTGRES_DB: ${POSTGRES_DB:-bazaar} # the "-bazaar" is the default database name
+            POSTGRES_USER: ${POSTGRES_USER:-bazaar} # the "-bazaar" is the default username
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bazaar} # the "-bazaar" is the default password
+        volumes: # the volume with data outside the container to store persistent data
+            - dbdata:/var/lib/postgresql/data
+        ports:
+            - "5432:5432" # expose the port 5432 to the host machine for debugging
+        healthcheck: # healthcheck to ensure the database is ready before starting the Core service
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bazaar}"]
+            interval: 10s
+            timeout: 3s
+            retries: 5
+
+    core:
+        build:
+            context: ./core # points to the core directory
+        image: modern-bazaar/core:local # tags the built image (handy if you want to push it to a registry)
+        depends_on:
+            db:
+              condition: service_healthy
+        env_file: ../.env
+        environment:
+            SPRING_PROFILES_ACTIVE: docker # tells the Core service to use the application-docker.yml profile
+            SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB} # the database URL
+            SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER} # the database username
+            SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD} # the database password
+        ports:
+            - "8080:8080" # expose core's port 8080
+        healthcheck:
+          test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep UP || exit 1"] # healthcheck to ensure the Core service is ready
+
+    prometheus: # Prometheus service for monitoring
+        image: prom/prometheus:latest
+        volumes:
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+        ports:
+            - "9090:9090" # expose Prometheus port 9090
+
+    grafana: # Grafana service for visualization, dashboards, etc.
+        image: grafana/grafana:latest
+        environment:
+          - GF_SECURITY_ADMIN_PASSWORD=admin # default admin password for Grafana
+        volumes:
+          - grafana-data:/var/lib/grafana # persistent storage for Grafana data
+          - ./grafana/provisioning:/etc/grafana/provisioning:ro # provisioning files for Grafana: used to configure data sources and dashboards automatically; ro means read-only
+        ports:
+            - "3000:3000" # expose Grafana port 3000
+        depends_on: # we don't have a healthcheck for prometheus, so we don't use `condition: service_healthy`
+            - prometheus
+
+volumes:
+    dbdata: # volume for PostgreSQL data
+    grafana-data: # volume for Grafana data
