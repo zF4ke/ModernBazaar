@@ -363,7 +363,7 @@ export class MarketManipulationService {
     }
 
     /**
-     * Calculate overall manipulation viability score (0-100)
+     * Calculate overall manipulation viability score (0–100)
      */
     private static calculateManipulationScore(
         totalCost: number,
@@ -372,48 +372,69 @@ export class MarketManipulationService {
         weeklyBuyMovement: number,
         weeklySellMovement: number
     ): number {
-        // Can't afford it
+        // 0. Budget guard
         if (totalCost > maxBudget) return 0;
 
         const hourlyBuyMovement = weeklyBuyMovement / 168;
         const avgCostPerItem = totalCost / totalItems;
 
         // 1. Item count score
+        // let itemCountScore = 100;
+        // //const idealItemCount = 700;
+        // const idealItemCount = 1200;
+
+        // if (totalItems < 16) {
+        //     const shortageRatio = (16 - totalItems) / 16;
+        //     itemCountScore = Math.max(0, 100 - Math.pow(shortageRatio, 2) * 100);
+        // } else if (totalItems > idealItemCount) {
+        //     const overflowRatio = (totalItems - idealItemCount) / idealItemCount;
+        //     itemCountScore = Math.max(0, 100 - Math.pow(overflowRatio, 2) * 100);
+        // }
+        // 1. Item count score — ideal between 50 and 10,000
         let itemCountScore = 100;
-        const idealItemCount = 700;
+        const minItemCount = 30;
+        const maxItemCount = 2_000;
 
-        if (totalItems < 16) {
-            const shortageRatio = (16 - totalItems) / 16;
-            itemCountScore = Math.max(0, 100 - Math.pow(shortageRatio, 2) * 100);
-        } else if (totalItems > idealItemCount) {
-            const overflowRatio = (totalItems - idealItemCount) / idealItemCount;
+        if (totalItems < minItemCount) {
+            itemCountScore = 0; // Too few items
+        } else if (totalItems > maxItemCount) {
+            const overflowRatio = (totalItems - maxItemCount) / maxItemCount;
             itemCountScore = Math.max(0, 100 - Math.pow(overflowRatio, 2) * 100);
-        }
-
-        // 2. Demand ratio: hourly buy movement vs item count
-        const demandRatio = hourlyBuyMovement / totalItems;
-        const demandScore = Math.min(100, Math.pow(hourlyBuyMovement / totalItems, 0.6) * 60);
-
-        // 3. Avg cost score: ideal is between 800k and 3M
-        const idealMin = 800_000;
-        const idealMax = 3_000_000;
-        let costScore = 0;
-        if (avgCostPerItem < idealMin) {
-            costScore = (avgCostPerItem / idealMin) * 100;
-        } else if (avgCostPerItem > idealMax) {
-            costScore = Math.max(0, 100 - ((avgCostPerItem - idealMax) / idealMax) * 100);
         } else {
+            itemCountScore = 100; // In ideal range
+        }
+        
+        // 2. Demand must exceed item count
+        // if (hourlyBuyMovement <= totalItems) itemCountScore = 0; // No demand means no manipulation
+        if (hourlyBuyMovement < totalItems) return 0; // No demand means no manipulation
+
+        // 4. Demand score — heavily reward high demand
+        const demandRatio = hourlyBuyMovement / totalItems;
+        const demandScore = Math.min(100, Math.pow(demandRatio, 0.8) * 40);
+
+        // 5. Cost score
+        let costScore;
+        const idealMin = 700_000;
+        const idealMax = 3_000_000;
+
+        // Cost is always 100 because we enforce a range
+        if (avgCostPerItem < idealMin) {
+            costScore = 0; // Outside ideal range
+        } else if (avgCostPerItem > idealMax) {
+            costScore = Math.max(0, 100 - Math.pow((avgCostPerItem - idealMax) / idealMax, 2) * 100);
+        } else {
+            // if it's lower than 700k, it sucks, but if it's higher than 3M, it might still be okay
             costScore = 100;
         }
 
-        // 4. Supply score: penalize if oversupplied
+        // 6. Supply score — penalize oversupply
         let supplyScore = 100;
         if (weeklySellMovement > weeklyBuyMovement) {
             const oversupplyRatio = weeklySellMovement / Math.max(weeklyBuyMovement, 1);
             supplyScore = Math.max(0, 100 - Math.pow(oversupplyRatio, 1.5) * 20);
         }
 
-        // Final weighted average
+        // Final weighted score
         return Math.round(
             itemCountScore * 0.25 +
             demandScore * 0.35 +
