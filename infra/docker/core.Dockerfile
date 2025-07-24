@@ -6,13 +6,27 @@ FROM eclipse-temurin:21-jdk AS builder
 # this is the directory where the source code will be copied
 # it creates a new directory called /build inside the container
 WORKDIR /build
+
+# copy the Gradle wrapper files and settings.gradle from the host machine to the container
+COPY gradlew gradlew.bat ./
+COPY gradle ./gradle
+COPY settings.gradle ./
+COPY build.gradle ./
+
 # copy the source code from the host machine to the container
-COPY . .
+COPY core/build.gradle core/build.gradle
+COPY core/src core/src
+
 # run the Gradle build command to compile the app
 # we use ./gradlew bootJar to build the application into a JAR file without running the entire lifecycle (test, check, etc.), making it faster
 # in a CI pipeline we will use ./gradlew build to run all tasks and tests but here we just want it to be compiled faster
 # the --no-daemon option avoids leaving gradle daemon processes running in the background and slowing down the build
+# chmod +x makes the gradlew script executable
+RUN chmod +x ./gradlew
 RUN ./gradlew bootJar --no-daemon
+
+# debugging step to list the contents of the build directory
+# RUN find /build -maxdepth 6 -type f -name "*.jar" -print
 
 # stage 2: create a minimal runtime image
 # this stage uses a smaller JRE image to run the application because it does not need the full JDK
@@ -22,7 +36,7 @@ FROM eclipse-temurin:21-jre-alpine AS runtime
 WORKDIR /app
 # copy the compiled JAR file from the builder stage to the runtime stage
 # the core-*.jar is a wildcard that matches any JAR file starting with "core-" in the build/libs directory
-COPY --from=builder /build/build/libs/modern-bazaar-core-*.jar app.jar
+COPY --from=builder /build/core/build/libs/modern-bazaar-core-*.jar app.jar
 # expose the port that the application will run on
 EXPOSE 8080
 

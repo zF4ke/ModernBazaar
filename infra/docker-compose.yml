@@ -22,7 +22,8 @@ services:
 
     core:
         build:
-            context: ../core # points to the core directory
+            context: .. # points to the root directory
+            dockerfile: infra/docker/core.Dockerfile # path to the Dockerfile for the Core service
         image: modern-bazaar/core:local # tags the built image (handy if you want to push it to a registry)
         depends_on:
             db:
