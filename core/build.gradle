@@ -5,35 +5,64 @@ plugins {
 }
 
 group = 'com.modernbazaar'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.1'
 
+// ────────────────────────────────────────────────────────────────────────────
+// 1) Java toolchain
+//    Ensures the build uses Java 21, regardless of the local JDK installation.
+// ────────────────────────────────────────────────────────────────────────────
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(21)
     }
 }
 
-configurations {
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
-}
-
+// ────────────────────────────────────────────────────────────────────────────
+// 2) Repository and Dependencies
+// ────────────────────────────────────────────────────────────────────────────
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // Core Spring Boot functionality
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Optional: generate getters/setters automatically
     compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // PostgreSQL driver at runtime
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // In‑memory database for tests
+    testImplementation 'com.h2database:h2'
+
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// 3) Compilation & Testing
+// ────────────────────────────────────────────────────────────────────────────
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+// Ensure the default jar task is disabled in favor of bootJar (optional)
+tasks.named('jar') {
+    enabled = false
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 4) Spring Boot executable jar
+//    'bootJar' is the fat‑jar you ship/run.
+// ────────────────────────────────────────────────────────────────────────────
+tasks.named('bootJar') {
+    archiveFileName = "modern-bazaar-core-${version}.jar"
 }

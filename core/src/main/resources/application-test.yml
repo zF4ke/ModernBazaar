@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    # In‑memory H2, auto‑closes on context shutdown
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      # Create schema at start, drop at end since this is a test profile
+      ddl-auto: create-drop
+    show-sql: false
+
+  flyway:
+    # Disable Flyway migrations for tests
+    enabled: false
+
+# Optionally, adjust server port to avoid collisions in parallel tests
+server:
+  port: 0   # 0 = pick a random free port
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health   # basic health check

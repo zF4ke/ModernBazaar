@@ -15,12 +15,14 @@ COPY . .
 RUN ./gradlew bootJar --no-daemon
 
 # stage 2: create a minimal runtime image
-FROM eclipse-temurin:21-jre AS runtime
+# this stage uses a smaller JRE image to run the application because it does not need the full JDK
+# the "alpine" variant is used for a smaller footprint
+FROM eclipse-temurin:21-jre-alpine AS runtime
 # set the working directory in the container
 WORKDIR /app
 # copy the compiled JAR file from the builder stage to the runtime stage
 # the core-*.jar is a wildcard that matches any JAR file starting with "core-" in the build/libs directory
-COPY --from=builder /build/build/libs/core-*.jar app.jar
+COPY --from=builder /build/build/libs/modern-bazaar-core-*.jar app.jar
 # expose the port that the application will run on
 EXPOSE 8080
 

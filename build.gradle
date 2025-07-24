@@ -1,0 +1,71 @@
+plugins {
+    id 'base'     // gives us clean, build, assemble tasks
+}
+
+def infraComposeFile = "$rootDir/infra/docker-compose.yml"
+
+// --- BUILD TASKS ---
+
+tasks.named('clean') {
+    dependsOn ':core:clean'
+    // later you can add ', :bot:clean', ':ml:clean'
+}
+
+// This task simply depends on the core subproject's build
+tasks.register('buildCore') {
+    group = 'build'
+    description = 'Builds and tests the Core service'
+    dependsOn ':core:build'
+}
+
+// If you uncomment bot or ml later, you can do:
+// tasks.register('buildBot') { dependsOn ':bot:build' }
+// tasks.register('buildMl') { dependsOn ':ml:build' }
+
+tasks.register('buildAll') {
+    group = 'build'
+    description = 'Builds Core (and future Bot/ML) services'
+    dependsOn 'clean', 'buildCore' //, 'buildBot', 'buildMl'
+}
+
+// --- DOCKER TASKS ---
+
+tasks.register('dockerBuild', Exec) {
+    group = 'docker'
+    description = 'docker-compose build all services'
+    commandLine 'docker', 'compose', '-f', infraComposeFile, 'build'
+}
+
+tasks.register('dockerUp', Exec) {
+    group = 'docker'
+    description = 'Starts the full stack in Docker'
+    dependsOn 'dockerBuild'
+    commandLine 'docker', 'compose', '-f', infraComposeFile, 'up', '-d'
+}
+
+tasks.register('dockerDown', Exec) {
+    group = 'docker'
+    description = 'Stops and removes all Docker containers'
+    commandLine 'docker', 'compose', '-f', infraComposeFile, 'down'
+}
+
+tasks.register('fullUp') {
+    group = 'docker'
+    description = 'Builds locally and starts the Docker stack'
+    dependsOn 'clean', 'buildAll', 'dockerUp'
+}
+
+tasks.register('fullDown') {
+    group = 'docker'
+    description = 'Tears down the full stack'
+    dependsOn 'dockerDown'
+}
+
+tasks.register('fullRestart') {
+    group = 'docker'
+    description = 'Restarts the full stack (builds and restarts Docker)'
+    dependsOn 'fullDown', 'fullUp'
+}
+
+// fix Task 'prepareKotlinBuildScriptModel' not found in project ':core'.Task 'prepareKotlinBuildScriptModel' not found in project ':core'.
+//tasks.register("prepareKotlinBuildScriptModel"){}
