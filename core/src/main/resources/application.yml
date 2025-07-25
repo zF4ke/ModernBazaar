@@ -15,9 +15,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, prometheus   # Actuator endpoints
+        include: scheduledtasks, health, metrics, prometheus   # Actuator endpoints
 
 bazaar:
   poll:
-    interval-ms: 2000 # 2 seconds
-  retention-days: 30 # 30 days
+#    interval-ms: 2000 # 2 seconds
+    interval-ms: 30000 # 30 seconds
+  retention-days: 2 # 2 days

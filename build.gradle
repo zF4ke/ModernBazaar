@@ -33,20 +33,20 @@ tasks.register('buildAll') {
 tasks.register('dockerBuild', Exec) {
     group = 'docker'
     description = 'docker-compose build all services'
-    commandLine 'docker', 'compose', '-f', infraComposeFile, 'build'
+    commandLine 'docker', 'compose', '-f', infraComposeFile, '-p', 'modernbazaar', 'build'
 }
 
 tasks.register('dockerUp', Exec) {
     group = 'docker'
     description = 'Starts the full stack in Docker'
     dependsOn 'dockerBuild'
-    commandLine 'docker', 'compose', '-f', infraComposeFile, 'up', '-d'
+    commandLine 'docker', 'compose', '-f', infraComposeFile, '-p', 'modernbazaar', 'up', '-d'
 }
 
 tasks.register('dockerDown', Exec) {
     group = 'docker'
     description = 'Stops and removes all Docker containers'
-    commandLine 'docker', 'compose', '-f', infraComposeFile, 'down'
+    commandLine 'docker', 'compose', '-f', infraComposeFile, '-p', 'modernbazaar', 'down'
 }
 
 tasks.register('fullUp') {
@@ -65,6 +65,12 @@ tasks.register('fullRestart') {
     group = 'docker'
     description = 'Restarts the full stack (builds and restarts Docker)'
     dependsOn 'fullDown', 'fullUp'
+}
+
+tasks.register('dockerDbReset', Exec) {
+    description = 'Stops & removes only the infra container to reset the database, if exists'
+    group       = 'docker'
+    commandLine 'docker', 'compose', '-f', infraComposeFile, 'rm', '-s', '-f', 'infra'
 }
 
 // fix Task 'prepareKotlinBuildScriptModel' not found in project ':core'.Task 'prepareKotlinBuildScriptModel' not found in project ':core'.

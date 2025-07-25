@@ -9,4 +9,6 @@ public interface BazaarProductSnapshotRepository
         extends JpaRepository<BazaarProductSnapshot, Long> {
 
     void deleteByFetchedAtBefore(Instant cutoff);
+
+    BazaarProductSnapshot findTopByProductIdOrderByLastUpdatedDesc(String productId);
 }
