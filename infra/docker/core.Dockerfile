@@ -40,6 +40,12 @@ COPY --from=builder /build/core/build/libs/modern-bazaar-core-*.jar app.jar
 # expose the port that the application will run on
 EXPOSE 8080
 
+# set environment variables for the Java application
+# these options configure the Java Virtual Machine (JVM) to use a minimum heap size of 512 MB and a maximum heap size of 1 GB
+# it also enables the G1 Garbage Collector (G1GC), which is suitable for applications with large heaps and low pause time requirements
+ENV JAVA_OPTS="-Xms512m -Xmx1g -XX:+UseG1GC"
+#ENV JAVA_OPTS="-Xms16m -Xmx64m -XX:+UseG1GC"
+
 # healthcheck to ensure the application is running
 # this command checks the health of the application by making a request to the /actuator/health endpoint every 30 seconds
 # if the health check fails, the container will be marked as unhealthy
