@@ -1,5 +1,8 @@
 # Modern Bazaar
 
+[![CI](https://github.com/zF4ke/ModernBazaar/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/zF4ke/ModernBazaar/actions/workflows/ci.yml)
+<!--![GitHub release](https://img.shields.io/github/v/release/zF4ke/ModernBazaar)-->
+
 > ⚠️ Work in progress.
 
 A personal attempt to build a modular, enterprise‑grade bazaar market analyzer for Hypixel SkyBlock.  
