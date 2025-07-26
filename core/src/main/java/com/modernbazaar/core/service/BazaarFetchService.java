@@ -20,7 +20,10 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -37,6 +40,7 @@ public class BazaarFetchService {
     private final BazaarItemRepository itemRepo;
 
     private final static String BAZAAR_API_URI = "/skyblock/bazaar";
+    private static final int INGEST_BATCH = 50;
 
     /**
      * Fetches the latest bazaar data from the API and stores it in the database.
@@ -56,30 +60,40 @@ public class BazaarFetchService {
 
         Instant apiTs = Instant.ofEpochMilli(resp.getLastUpdated());
 
-        // 2) upsert items
-        List<BazaarItem> items = resp.getProducts().keySet().stream()
-                .map(id -> BazaarItem.builder().productId(id).build())
+        // Upsert items
+        Set<String> productIds = resp.getProducts().keySet();
+        List<BazaarItem> items = productIds.stream()
                 .distinct()
+                .map(id -> BazaarItem.builder().productId(id).build())
                 .collect(Collectors.toList());
         itemRepo.saveAll(items);
 
-        // 3) map & dedupe
-        List<BazaarProductSnapshot> toSave = resp.getProducts().values().stream()
-                .map(raw -> mapper.toSnapshot(raw, resp.getLastUpdated()))
-                .filter(snap -> {
-                    var existing = snapshotRepo
-                            .findTopByProductIdOrderByLastUpdatedDesc(snap.getProductId());
-                    return existing == null || !existing.getLastUpdated().equals(apiTs);
-                })
-                .collect(Collectors.toList());
+        // Map → dedupe → insert in small batches
+        List<BazaarProductSnapshot> batch = new ArrayList<>(INGEST_BATCH);
+        Collection<RawBazaarProduct> products = resp.getProducts().values();
 
-        if (toSave.isEmpty()) {
-            log.info("No changes detected; skipping persist");
-            return;
+        for (RawBazaarProduct raw : products) {
+            BazaarProductSnapshot snap = mapper.toSnapshot(raw, resp.getLastUpdated());
+
+            BazaarProductSnapshot existing =
+                    snapshotRepo.findTopByProductIdOrderByLastUpdatedDesc(snap.getProductId());
+            boolean changed = existing == null || !apiTs.equals(existing.getLastUpdated());
+            if (!changed) {
+                continue;
+            }
+
+            batch.add(snap);
+            if (batch.size() >= INGEST_BATCH) {
+                snapshotIngestor.bulkInsert(batch);
+                batch.clear(); // release memory
+            }
         }
 
-        // 4) bulk‑insert safely
-        snapshotIngestor.bulkInsert(toSave);
-        log.info("Persisted {} snapshots", toSave.size());
+        if (!batch.isEmpty()) {
+            snapshotIngestor.bulkInsert(batch);
+            batch.clear();
+        }
+
+        log.info("Persisted snapshots in batches; lastUpdated={}, products={}", apiTs, products.size());
     }
 }

@@ -7,8 +7,8 @@ public record ItemSummaryResponseDTO (
         String displayName,
         Instant lastUpdated,
         Instant fetchedAt,
-        double buyPrice,     // weightedTwoPercentBuyPrice
-        double sellPrice,    // weightedTwoPercentSellPrice
+        double weightedTwoPercentBuyPrice,     // weightedTwoPercentBuyPrice
+        double weightedTwoPercentSellPrice,    // weightedTwoPercentSellPrice
         double spread,       // sell - buy
         long buyMovingWeek,
         long sellMovingWeek,

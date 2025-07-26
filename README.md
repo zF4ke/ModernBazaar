@@ -23,12 +23,12 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [ ] **Core API & persistence**
   - [x] Implement background job to fetch Hypixel's API and save `BazaarItem` + `BazaarProductSnapshot`
   - [x] Only persist snapshots if data has changed (skip duplicates)  
-  - [ ] Implement `GET /items` to fetch all BazaarItem records  
-  - [ ] Implement other endpoints for tranding strategies and analysis
+  - [x] Swagger UI & OpenAPI (`/swagger-ui.html`, `/v3/api-docs`)
+  - [x] `GET /api/items` & `GET /api/items/{productId}` (ItemsController + DTOs)
+  - [ ] Implement other endpoints for trading strategies and analysis
   - [ ] Find a way to keep track of my trades and store them
   - [ ] Add paging (maybe), filtering and error handling to each endpoint
-  - [ ] **Concurrency & pruning**  
-    - [ ] Introduce concurrent processing for snapshot writes and analysis jobs  
+  - [ ] **Retention & pruning**  
     - [ ] Schedule nightly analysis job to aggregate/prune old `BazaarProductSnapshot` records (e.g. keep hourly snapshots, drop minute‑level)  
     - [ ] Archive or delete stale snapshot data to reduce DB footprint  
 - [ ] Migrate Discord bot to consume Core API only

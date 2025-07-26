@@ -1,6 +1,7 @@
 package com.modernbazaar.core.repository;
 
 import com.modernbazaar.core.domain.BazaarProductSnapshot;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +17,9 @@ public interface BazaarProductSnapshotRepository
 
     BazaarProductSnapshot findTopByProductIdOrderByLastUpdatedDesc(String productId);
 
-    Optional<BazaarProductSnapshot> findTopByProductIdOrderByFetchedAtDesc(String productId);
+    @EntityGraph(attributePaths = {"buyOrders", "sellOrders"})
+    Optional<BazaarProductSnapshot>
+    findTopByProductIdOrderByFetchedAtDesc(String productId);
 
     @Query(value = """
         select distinct on (s.product_id) s.*

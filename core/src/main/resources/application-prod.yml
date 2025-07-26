@@ -9,6 +9,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none                        # no schema changes at runtime
+    open-in-view: false
+    properties:
+      hibernate.cache.use_second_level_cache: false
+      hibernate.cache.use_query_cache: false
   flyway:
     enabled: true                           # enable Flyway migrations
     locations: classpath:db/migration

@@ -10,6 +10,10 @@ spring:
       # Create schema at start, drop at end since this is a test profile
       ddl-auto: create-drop
     show-sql: false
+    open-in-view: false
+    properties:
+      hibernate.cache.use_second_level_cache: false
+      hibernate.cache.use_query_cache: false
 
   flyway:
     # Disable Flyway migrations for tests

@@ -9,6 +9,7 @@ import com.modernbazaar.core.repository.BazaarItemRepository;
 import com.modernbazaar.core.repository.BazaarProductSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
@@ -52,10 +53,10 @@ public class ItemQueryService {
 
         // sorting
         Comparator<ItemSummaryResponseDTO> cmp = switch (sort.orElse("spreadDesc")) {
-            case "sellAsc"   -> Comparator.comparing(ItemSummaryResponseDTO::sellPrice);
-            case "sellDesc"  -> Comparator.comparing(ItemSummaryResponseDTO::sellPrice).reversed();
-            case "buyAsc"    -> Comparator.comparing(ItemSummaryResponseDTO::buyPrice);
-            case "buyDesc"   -> Comparator.comparing(ItemSummaryResponseDTO::buyPrice).reversed();
+            case "sellAsc"   -> Comparator.comparing(ItemSummaryResponseDTO::weightedTwoPercentSellPrice);
+            case "sellDesc"  -> Comparator.comparing(ItemSummaryResponseDTO::weightedTwoPercentSellPrice).reversed();
+            case "buyAsc"    -> Comparator.comparing(ItemSummaryResponseDTO::weightedTwoPercentBuyPrice);
+            case "buyDesc"   -> Comparator.comparing(ItemSummaryResponseDTO::weightedTwoPercentBuyPrice).reversed();
             case "spreadAsc" -> Comparator.comparing(ItemSummaryResponseDTO::spread);
             default          -> Comparator.comparing(ItemSummaryResponseDTO::spread).reversed();
         };
@@ -66,14 +67,13 @@ public class ItemQueryService {
                 .orElse(list);
     }
 
+    @Transactional(readOnly = true)
     public ItemDetailResponseDTO getItemDetail(String productId) {
-        var itemOpt = itemRepo.findById(productId);
-        var snapOpt = snapshotRepo.findTopByProductIdOrderByFetchedAtDesc(productId);
-
-        var item = itemOpt.orElse(null);
-        var s = snapOpt.orElseThrow(() -> new NoSuchElementException("Item not found: " + productId));
-
-        return toDetailDTO(s, item);
+        var item = itemRepo.findById(productId).orElse(null);
+        var snap = snapshotRepo
+                .findTopByProductIdOrderByFetchedAtDesc(productId)      // ← uses EntityGraph
+                .orElseThrow(() -> new NoSuchElementException("Item not found: " + productId));
+        return toDetailDTO(snap, item);
     }
 
     // ── mapping ────────────────────────────────────────────────────────────────
@@ -87,16 +87,16 @@ public class ItemQueryService {
      * @return an ItemSummaryResponseDTO containing the summary information
      */
     private ItemSummaryResponseDTO toSummaryDTO(BazaarProductSnapshot s, BazaarItem item) {
-        double buy  = s.getWeightedTwoPercentBuyPrice();
-        double sell = s.getWeightedTwoPercentSellPrice();
+        double weightedTwoPercentBuyPrice  = s.getWeightedTwoPercentBuyPrice();
+        double weightedTwoPercentSellPrice = s.getWeightedTwoPercentSellPrice();
         return new ItemSummaryResponseDTO(
                 s.getProductId(),
                 item != null ? item.getDisplayName() : null,
                 s.getLastUpdated(),
                 s.getFetchedAt(),
-                buy,
-                sell,
-                sell - buy,
+                weightedTwoPercentBuyPrice,
+                weightedTwoPercentSellPrice,
+                weightedTwoPercentSellPrice - weightedTwoPercentBuyPrice, // spread
                 s.getBuyMovingWeek(),
                 s.getSellMovingWeek(),
                 s.getActiveBuyOrdersCount(),

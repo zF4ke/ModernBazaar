@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -28,38 +29,45 @@ public class BazaarSnapshotMapper {
                 .productId(raw.getProductId())
                 .lastUpdated(Instant.ofEpochMilli(apiLastUpdated))
                 .fetchedAt(Instant.now())
-
-                // quickStatus → primitives
                 .weightedTwoPercentSellPrice(raw.getQuickStatus().getSellPrice())
                 .sellMovingWeek(raw.getQuickStatus().getSellMovingWeek())
                 .activeSellOrdersCount(raw.getQuickStatus().getSellOrders())
-
                 .weightedTwoPercentBuyPrice(raw.getQuickStatus().getBuyPrice())
                 .buyMovingWeek(raw.getQuickStatus().getBuyMovingWeek())
                 .activeBuyOrdersCount(raw.getQuickStatus().getBuyOrders())
                 .build();
 
-        // 2) map raw.sell_summary → SellOrderEntry list
-        raw.getSell_summary().forEach(rawEntry -> {
-            SellOrderEntry e = SellOrderEntry.builder()
-                    .snapshot(snapshot)
-                    .pricePerUnit(rawEntry.getPricePerUnit())
-                    .amount(rawEntry.getAmount())
-                    .orders(rawEntry.getOrders())
-                    .build();
-            snapshot.getSellOrders().add(e);
-        });
+        // sell_summary (sellers) -> BUY orders
+        List<RawBazaarProduct.OrderEntry> sellSummary = raw.getSell_summary();
+        if (sellSummary != null) {
+            int idx = 0;
+            for (RawBazaarProduct.OrderEntry re : sellSummary) {
+                BuyOrderEntry e = BuyOrderEntry.builder()
+                        .snapshot(snapshot)
+                        .orderIndex(idx++)
+                        .pricePerUnit(re.getPricePerUnit())
+                        .amount(re.getAmount())
+                        .orders(re.getOrders())
+                        .build();
+                snapshot.getBuyOrders().add(e);
+            }
+        }
 
-        // 3) map raw.buy_summary → BuyOrderEntry list
-        raw.getBuy_summary().forEach(rawEntry -> {
-            BuyOrderEntry e = BuyOrderEntry.builder()
-                    .snapshot(snapshot)
-                    .pricePerUnit(rawEntry.getPricePerUnit())
-                    .amount(rawEntry.getAmount())
-                    .orders(rawEntry.getOrders())
-                    .build();
-            snapshot.getBuyOrders().add(e);
-        });
+        // buy_summary (buyers) -> SELL orders
+        List<RawBazaarProduct.OrderEntry> buySummary = raw.getBuy_summary();
+        if (buySummary != null) {
+            int idx = 0;
+            for (RawBazaarProduct.OrderEntry re : buySummary) {
+                SellOrderEntry e = SellOrderEntry.builder()
+                        .snapshot(snapshot)
+                        .orderIndex(idx++)
+                        .pricePerUnit(re.getPricePerUnit())
+                        .amount(re.getAmount())
+                        .orders(re.getOrders())
+                        .build();
+                snapshot.getSellOrders().add(e);
+            }
+        }
 
         return snapshot;
     }
