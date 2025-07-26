@@ -3,9 +3,8 @@
 > ⚠️ Work in progress.
 
 A personal attempt to build a modular, enterprise‑grade bazaar market analyzer for Hypixel SkyBlock.  
-Java/Spring Boot core, TypeScript Discord bot, Dockerized infra (PostgreSQL, Prometheus, Grafana).  
+Java/Spring Boot core, TypeScript NextJS dashboard, Dockerized infra (PostgreSQL, Prometheus, Grafana).  
 Real-time bazaar analytics with comprehensive trading data and strategies; ML-driven forecasting and anomaly detection later.
-
 
 ## 💡 Vision 
 A cleanly separated system:
@@ -31,11 +30,12 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
   - [ ] **Retention & pruning**  
     - [ ] Schedule nightly analysis job to aggregate/prune old `BazaarProductSnapshot` records (e.g. keep hourly snapshots, drop minute‑level)  
     - [ ] Archive or delete stale snapshot data to reduce DB footprint  
-- [ ] Migrate Discord bot to consume Core API only
+- [ ] Build web dashboard to explore trends, prices, and strategies
+  - [ ] Replace prior bot interactions with API-powered UI
+  - [ ] (Optional) Add authentication and subscription support
 - [ ] Add recording rules, alerts, and refined dashboards in Grafana
 - [ ] Optimize background jobs & introduce caching for high‑frequency updates
 - [ ] Introduce ML modules (prediction, anomaly detection) and tie them into Core
-- [ ] Optional web dashboard for trend exploration
 - [ ] Scale/shard where necessary
 
 ## ⚡ Quick start
