@@ -47,7 +47,11 @@ jobs:
 
       - name: Run container and wait for health
         run: |
-          docker run -d --name bazaar-ci -p 8080:8080 modernbazaar-core:ci-${{ github.run_id }}
+          docker run -d \
+            --name bazaar-ci \
+            -p 8080:8080 \
+            -e SPRING_PROFILES_ACTIVE=test \
+            modernbazaar-core:ci-${{ github.run_id }}
           echo "Waiting up to 60s for /actuator/health to report UP..."
           for i in {1..12}; do
             if curl -fs http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
