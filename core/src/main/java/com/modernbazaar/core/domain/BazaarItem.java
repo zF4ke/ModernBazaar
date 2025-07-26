@@ -19,6 +19,8 @@ public class BazaarItem {
     private String displayName;    // you can populate later or derive from productId
 
     // optional back-reference to snapshots
-    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
+    //  cascade = CascadeType.ALL was causing a memory leak
+    @ToString.Exclude
     private List<BazaarProductSnapshot> snapshots;
 }

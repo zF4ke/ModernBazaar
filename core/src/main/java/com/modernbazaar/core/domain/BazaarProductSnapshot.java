@@ -27,8 +27,10 @@ public class BazaarProductSnapshot {
      * FK back to the BazaarItem master row.
      * Populated lazily, not part of the builder.
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    // cascade = { CascadeType.PERSIST, CascadeType.MERGE } was causing a memory leak
     @JoinColumn(name = "product_id", insertable = false, updatable = false)
+    @ToString.Exclude
     private BazaarItem item;
 
     /** The Hypixel product ID string. */

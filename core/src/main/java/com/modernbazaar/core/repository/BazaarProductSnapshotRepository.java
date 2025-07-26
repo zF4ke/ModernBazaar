@@ -13,13 +13,12 @@ import java.util.Optional;
 public interface BazaarProductSnapshotRepository
         extends JpaRepository<BazaarProductSnapshot, Long> {
 
+    boolean existsByProductIdAndLastUpdated(String productId, Instant lastUpdated);
+
+    @EntityGraph(attributePaths = {"buyOrders","sellOrders"})
+    Optional<BazaarProductSnapshot> findTopByProductIdOrderByFetchedAtDesc(String productId);
+
     void deleteByFetchedAtBefore(Instant cutoff);
-
-    BazaarProductSnapshot findTopByProductIdOrderByLastUpdatedDesc(String productId);
-
-    @EntityGraph(attributePaths = {"buyOrders", "sellOrders"})
-    Optional<BazaarProductSnapshot>
-    findTopByProductIdOrderByFetchedAtDesc(String productId);
 
     @Query(value = """
         select distinct on (s.product_id) s.*

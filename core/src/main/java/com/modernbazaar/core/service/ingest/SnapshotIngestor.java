@@ -2,34 +2,37 @@ package com.modernbazaar.core.service.ingest;
 
 import com.modernbazaar.core.domain.BazaarOrderEntry;
 import com.modernbazaar.core.domain.BazaarProductSnapshot;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.StatelessSession;
 import org.hibernate.SessionFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 public class SnapshotIngestor {
 
-    private final SessionFactory sessionFactory;
-    private final TransactionTemplate txTemplate;
+    @PersistenceContext
+    private EntityManager em;
 
-    /**
-     * Bulk‑inserts snapshots + their order entries with no first‑level cache.
-     */
-    public void bulkInsert(List<BazaarProductSnapshot> snapshots) {
-        txTemplate.executeWithoutResult(status -> {
-            try (StatelessSession ss = sessionFactory.openStatelessSession()) {
-                for (BazaarProductSnapshot snap : snapshots) {
-                    ss.insert(snap);
-                    // manually insert child entries since statelessSession ignores cascade
-                    snap.getBuyOrders().forEach(ss::insert);
-                    snap.getSellOrders().forEach(ss::insert);
-                }
+    private static final int JDBC_BATCH_SIZE = 50;
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void ingestBatch(List<BazaarProductSnapshot> batch) {
+        int i = 0;
+        for (BazaarProductSnapshot s : batch) {
+            em.persist(s);
+            if (++i % JDBC_BATCH_SIZE == 0) {
+                em.flush();
+                em.clear(); // drop references from the persistence context
             }
-        });
+        }
+        em.flush();
+        em.clear();
     }
 }

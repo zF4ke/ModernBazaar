@@ -17,7 +17,7 @@ public class RetentionJob {
 
     private final BazaarProductSnapshotRepository repo;
 
-    @Value("${bazaar.retention-hours:48}")
+    @Value("${bazaar.retention.interval-hours:48}")
     private long retentionHours;
 
     /**

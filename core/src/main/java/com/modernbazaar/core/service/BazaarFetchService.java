@@ -12,20 +12,12 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,60 +32,94 @@ public class BazaarFetchService {
     private final BazaarItemRepository itemRepo;
 
     private final static String BAZAAR_API_URI = "/skyblock/bazaar";
-    private static final int INGEST_BATCH = 50;
+    private static final int BATCH = 20;
 
-    /**
-     * Fetches the latest bazaar data from the API and stores it in the database.
-     */
+    @PersistenceContext
+    private EntityManager em;
+
+    /** Entry point called by the scheduler. One TX, small batches, clear PC. */
+    @Transactional
     public void fetchAndStore() {
-        // 1) fetch raw
-        RawBazaarResponse resp = webClient.get()
-                .uri(BAZAAR_API_URI)
-                .retrieve()
-                .bodyToMono(RawBazaarResponse.class)
-                .block();  // blocking here…
-
+        RawBazaarResponse resp = fetchBazaar();
         if (resp == null || !resp.isSuccess()) {
-            log.warn("Bazaar fetch failed or null");
+            //log.warn("Bazaar fetch failed or null");
             return;
         }
 
         Instant apiTs = Instant.ofEpochMilli(resp.getLastUpdated());
+        //log.info("Poll start: products={}", resp.getProducts().size());
 
-        // Upsert items
-        Set<String> productIds = resp.getProducts().keySet();
-        List<BazaarItem> items = productIds.stream()
-                .distinct()
-                .map(id -> BazaarItem.builder().productId(id).build())
-                .collect(Collectors.toList());
-        itemRepo.saveAll(items);
+        upsertNewItems(resp);
+        ingestNewSnapshots(resp, apiTs);
 
-        // Map → dedupe → insert in small batches
-        List<BazaarProductSnapshot> batch = new ArrayList<>(INGEST_BATCH);
+        //log.info("Poll end.");
+    }
+
+    /** Calls Hypixel and maps the JSON payload. */
+    private RawBazaarResponse fetchBazaar() {
+        return webClient.get()
+                .uri(BAZAAR_API_URI)
+                .retrieve()
+                .bodyToMono(RawBazaarResponse.class)
+                .block();
+    }
+
+    /** Insert new product IDs without merging existing rows. */
+    private void upsertNewItems(RawBazaarResponse resp) {
+        for (String id : resp.getProducts().keySet()) {
+            itemRepo.insertIgnore(id);
+        }
+    }
+
+    /** Maps, dedupes, and persists snapshots in small batches. */
+    private void ingestNewSnapshots(RawBazaarResponse resp, Instant apiTs) {
+        int persisted = 0;
+        int skipped = 0;
+        int sinceFlush = 0;
+
         Collection<RawBazaarProduct> products = resp.getProducts().values();
-
         for (RawBazaarProduct raw : products) {
-            BazaarProductSnapshot snap = mapper.toSnapshot(raw, resp.getLastUpdated());
-
-            BazaarProductSnapshot existing =
-                    snapshotRepo.findTopByProductIdOrderByLastUpdatedDesc(snap.getProductId());
-            boolean changed = existing == null || !apiTs.equals(existing.getLastUpdated());
-            if (!changed) {
+            if (!shouldPersist(raw.getProductId(), apiTs)) {
+                skipped++;
                 continue;
             }
 
-            batch.add(snap);
-            if (batch.size() >= INGEST_BATCH) {
-                snapshotIngestor.bulkInsert(batch);
-                batch.clear(); // release memory
+            BazaarProductSnapshot snap = buildSnapshot(raw, resp.getLastUpdated());
+            em.persist(snap);
+            persisted++;
+            sinceFlush++;
+
+            if (sinceFlush >= BATCH) {
+                flushAndClear();
+                sinceFlush = 0;
             }
         }
 
-        if (!batch.isEmpty()) {
-            snapshotIngestor.bulkInsert(batch);
-            batch.clear();
-        }
+        flushAndClear();
+        //log.info("Persisted {} snapshots (skipped {}).", persisted, skipped);
+    }
 
-        log.info("Persisted snapshots in batches; lastUpdated={}, products={}", apiTs, products.size());
+    /** Fast boolean dedupe: skip if same productId + lastUpdated already stored. */
+    private boolean shouldPersist(String productId, Instant apiTs) {
+        return !snapshotRepo.existsByProductIdAndLastUpdated(productId, apiTs);
+    }
+
+    /** Build a snapshot entity and assign order indexes. */
+    private BazaarProductSnapshot buildSnapshot(RawBazaarProduct raw, long apiLastUpdatedMs) {
+        BazaarProductSnapshot snap = mapper.toSnapshot(raw, apiLastUpdatedMs);
+
+        for (int i = 0; i < snap.getBuyOrders().size(); i++) {
+            snap.getBuyOrders().get(i).setOrderIndex(i);
+        }
+        for (int i = 0; i < snap.getSellOrders().size(); i++) {
+            snap.getSellOrders().get(i).setOrderIndex(i);
+        }
+        return snap;
+    }
+
+    /** Flush JDBC batch and drop references from the persistence context. */
+    private void flushAndClear() {
+        em.flush();
+        em.clear();
     }
 }

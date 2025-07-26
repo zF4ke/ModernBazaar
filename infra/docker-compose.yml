@@ -41,6 +41,9 @@ services:
           test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep UP || exit 1"] # healthcheck to ensure the Core service is ready
         networks:
             - bazaar-net
+        volumes:
+            - core-heapdumps:/app/heapdumps
+            - core-logs:/app/logs
 
     prometheus: # Prometheus service for monitoring
         image: prom/prometheus:latest
@@ -79,6 +82,8 @@ services:
 volumes:
     dbdata: # volume for PostgreSQL data
     grafana-data: # volume for Grafana data
+    core-heapdumps: # volume for Core service heap dumps
+    core-logs: # volume for Core service logs
 
 networks:
     bazaar-net: # custom network for the services to communicate with each other

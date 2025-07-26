@@ -43,7 +43,7 @@ EXPOSE 8080
 # set environment variables for the Java application
 # these options configure the Java Virtual Machine (JVM) to use a minimum heap size of 512 MB and a maximum heap size of 1 GB
 # it also enables the G1 Garbage Collector (G1GC), which is suitable for applications with large heaps and low pause time requirements
-ENV JAVA_OPTS="-Xms512m -Xmx1g -XX:+UseG1GC"
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/heapdumps -Xlog:gc*:file=/app/logs/gc.log:tags,uptime,level"
 
 # healthcheck to ensure the application is running
 # this command checks the health of the application by making a request to the /actuator/health endpoint every 30 seconds
