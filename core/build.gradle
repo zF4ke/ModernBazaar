@@ -24,6 +24,11 @@ repositories {
     mavenCentral()
 }
 
+// for Mockito inline mock‑maker
+configurations {
+    create("mockitoAgent")
+}
+
 dependencies {
     // Core Spring Boot functionality
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -50,16 +55,26 @@ dependencies {
     // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Byte‑Buddy agent for Mockito inline
+    add("mockitoAgent", "net.bytebuddy:byte-buddy-agent:1.17.6")
 }
 
 // ────────────────────────────────────────────────────────────────────────────
 // 3) Compilation & Testing
 // ────────────────────────────────────────────────────────────────────────────
-tasks.named('test') {
+tasks.withType(Test).configureEach {
+    // enable JUnit Jupiter
     useJUnitPlatform()
+    // attach Byte‑Buddy agent for Mockito inline mock-maker
+    def agentJar = configurations.named("mockitoAgent").get().singleFile
+    jvmArgs += [
+            "-javaagent:${agentJar}",
+            "-XX:+EnableDynamicAgentLoading"
+    ]
 }
 
-// Ensure the default jar task is disabled in favor of bootJar (optional)
+// Ensure the default jar task is disabled in favor of bootJar
 tasks.named('jar') {
     enabled = false
 }

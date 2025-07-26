@@ -31,8 +31,8 @@ management:
 
 bazaar:
   poll:
-    enabled: true
+    enabled: false
     interval-seconds: 60 # 1 minute
   retention:
-    enabled: true
+    enabled: false
     interval-hours: 24 # 1 day
