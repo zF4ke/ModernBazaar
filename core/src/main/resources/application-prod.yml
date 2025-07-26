@@ -29,7 +29,7 @@ management:
 bazaar:
   poll:
     enabled: true
-    interval-ms: 30000 # 30 seconds
+    interval-seconds: 60 # 1 minute
   retention:
     enabled: true
     interval-hours: 24 # 1 day

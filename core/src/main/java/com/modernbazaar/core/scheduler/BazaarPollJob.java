@@ -16,9 +16,9 @@ public class BazaarPollJob {
 
     /**
      * Triggers the fetch once every configured interval.
-     * Interval is defined by bazaar.poll.interval-ms in application.yml.
+     * Interval is defined by bazaar.poll.interval-seconds in application.yml.
      */
-    @Scheduled(fixedDelayString = "${bazaar.poll.interval-ms:30000}")
+    @Scheduled(fixedDelayString = "${bazaar.poll.interval-seconds:60}000")
     public void run() {
         fetchService.fetchAndStore();
     }
