@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -70,7 +71,7 @@ public class ItemQueryService {
         var snapOpt = snapshotRepo.findTopByProductIdOrderByFetchedAtDesc(productId);
 
         var item = itemOpt.orElse(null);
-        var s = snapOpt.orElseThrow(() -> new IllegalArgumentException("Item not found: " + productId));
+        var s = snapOpt.orElseThrow(() -> new NoSuchElementException("Item not found: " + productId));
 
         return toDetailDTO(s, item);
     }
