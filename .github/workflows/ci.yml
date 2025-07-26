@@ -2,9 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - master
   pull_request:
-    branches: [ main ]
+    branches:
+      - '*'
 
 jobs:
   build-and-docker-test:
