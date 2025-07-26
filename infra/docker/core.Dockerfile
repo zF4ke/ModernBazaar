@@ -34,6 +34,10 @@ RUN ./gradlew bootJar --no-daemon
 FROM eclipse-temurin:21-jre-alpine AS runtime
 # set the working directory in the container
 WORKDIR /app
+
+# create directories for heap dumps and logs
+RUN mkdir -p /app/logs
+
 # copy the compiled JAR file from the builder stage to the runtime stage
 # the core-*.jar is a wildcard that matches any JAR file starting with "core-" in the build/libs directory
 COPY --from=builder /build/core/build/libs/modern-bazaar-core-*.jar app.jar
