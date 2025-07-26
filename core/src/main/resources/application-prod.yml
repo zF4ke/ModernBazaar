@@ -17,7 +17,21 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: scheduledtasks, health, metrics, info, prometheus
   endpoint:
     health:
       show-details: always                  # more detail in prod health checks
+
+bazaar:
+  poll:
+    enabled: true
+    interval-ms: 30000 # 30 seconds
+  retention:
+    enabled: true
+    interval-hours: 24 # 1 day
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

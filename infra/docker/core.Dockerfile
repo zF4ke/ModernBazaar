@@ -44,7 +44,6 @@ EXPOSE 8080
 # these options configure the Java Virtual Machine (JVM) to use a minimum heap size of 512 MB and a maximum heap size of 1 GB
 # it also enables the G1 Garbage Collector (G1GC), which is suitable for applications with large heaps and low pause time requirements
 ENV JAVA_OPTS="-Xms512m -Xmx1g -XX:+UseG1GC"
-#ENV JAVA_OPTS="-Xms16m -Xmx64m -XX:+UseG1GC"
 
 # healthcheck to ensure the application is running
 # this command checks the health of the application by making a request to the /actuator/health endpoint every 30 seconds
@@ -53,4 +52,5 @@ HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
   CMD wget -qO- http://localhost:8080/actuator/health | grep UP || exit 1
 
 # defines the command to run the application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+#ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

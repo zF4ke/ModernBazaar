@@ -24,3 +24,11 @@ management:
     web:
       exposure:
         include: health   # basic health check
+
+bazaar:
+  poll:
+    enabled: true
+    interval-ms: 30000 # 30 seconds
+  retention:
+    enabled: true
+    interval-hours: 24 # 1 day

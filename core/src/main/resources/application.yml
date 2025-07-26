@@ -19,6 +19,14 @@ management:
 
 bazaar:
   poll:
-#    interval-ms: 2000 # 2 seconds
+    enabled: true
     interval-ms: 30000 # 30 seconds
-  retention-days: 2 # 2 days
+  retention:
+    enabled: true
+    interval-hours: 24 # 1 day
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

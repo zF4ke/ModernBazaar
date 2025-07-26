@@ -67,11 +67,5 @@ tasks.register('fullRestart') {
     dependsOn 'fullDown', 'fullUp'
 }
 
-tasks.register('dockerDbReset', Exec) {
-    description = 'Stops & removes only the infra container to reset the database, if exists'
-    group       = 'docker'
-    commandLine 'docker', 'compose', '-f', infraComposeFile, 'rm', '-s', '-f', 'infra'
-}
-
 // fix Task 'prepareKotlinBuildScriptModel' not found in project ':core'.Task 'prepareKotlinBuildScriptModel' not found in project ':core'.
 //tasks.register("prepareKotlinBuildScriptModel"){}
