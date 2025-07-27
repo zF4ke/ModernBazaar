@@ -22,14 +22,17 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 
 - [x] Core project scaffolded (Gradle, Dockerfile, Spring profiles)
 - [x] Infra stack (Postgres, Prometheus, Grafana) running with basic metrics
+- [x] Github Actions CI/CD pipeline for building, testing, and deploying
 - [ ] **Core API & persistence**
   - [x] Implement background job to fetch Hypixel's API and save `BazaarItem` + `BazaarProductSnapshot`
   - [x] Only persist snapshots if data has changed (skip duplicates)  
   - [x] Swagger UI & OpenAPI (`/swagger-ui.html`, `/v3/api-docs`)
   - [x] `GET /api/items` & `GET /api/items/{productId}` (ItemsController + DTOs)
+  - [x] Add ~~paging~~ (in the future if needed), filtering and error handling to each endpoint
+  - [ ] Implement `GET /api/items/{productId}/snapshots?from={timestamp}&to={timestamp}` endpoint
+- [ ] Implement `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]` endpoints
   - [ ] Implement other endpoints for trading strategies and analysis
   - [ ] Find a way to keep track of my trades and store them
-  - [ ] Add paging (maybe), filtering and error handling to each endpoint
   - [ ] **Retention & pruning**  
     - [ ] Schedule nightly analysis job to aggregate/prune old `BazaarProductSnapshot` records (e.g. keep hourly snapshots, drop minute‑level)  
     - [ ] Archive or delete stale snapshot data to reduce DB footprint  
