@@ -25,13 +25,13 @@ public class ItemsController {
 
     @Operation(
             summary = "Get all items (latest snapshot)",
-            description = "Returns a list of item summaries, optionally filtered and sorted.",
+            description = "Returns a list of item summaries, optionally filtered and sorted. Supports pagination.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Successful operation")
             }
     )
     @GetMapping
-    public List<ItemSummaryResponseDTO> getItems(
+    public PagedItemsResponseDTO getItems(
             @Parameter(description = "Search query to filter items by name or ID")
             @RequestParam(required = false) String q,
 
@@ -56,11 +56,14 @@ public class ItemsController {
             )
             @RequestParam(required = false, defaultValue = "spreadDesc") String sort,
 
-            @Parameter(description = "Limit the number of returned items")
-            @RequestParam(required = false) Integer limit
+            @Parameter(description = "Page number (0-based)")
+            @RequestParam(required = false, defaultValue = "0") Integer page,
+
+            @Parameter(description = "Number of items per page")
+            @RequestParam(required = false, defaultValue = "50") Integer limit
     ) {
         var filter = ItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread);
-        return service.getLatest(filter, Optional.ofNullable(sort), Optional.ofNullable(limit));
+        return service.getLatestPaginated(filter, Optional.ofNullable(sort), page, limit);
     }
 
     @Operation(

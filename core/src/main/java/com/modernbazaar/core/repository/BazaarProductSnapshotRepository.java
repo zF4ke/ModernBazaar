@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,4 +41,21 @@ public interface BazaarProductSnapshotRepository
             @Param("maxBuy")  Double maxBuy,
             @Param("minSpread") Double minSpread
     );
+
+    @Query(value = "select max(fetched_at) from bazaar_product_snapshot", nativeQuery = true)
+    Optional<Instant> findLatestFetchTime();
+
+    @Query(value = "select count(distinct product_id) from bazaar_product_snapshot", nativeQuery = true)
+    int countDistinctProducts();
+
+    @Query(value = """
+        with latest as (
+          select distinct on (product_id)
+                 (weighted_two_percent_sell_price - weighted_two_percent_buy_price) as spread
+          from bazaar_product_snapshot
+          order by product_id, fetched_at desc
+        )
+        select avg(spread) from latest
+        """, nativeQuery = true)
+    double calculateAverageSpread();
 }

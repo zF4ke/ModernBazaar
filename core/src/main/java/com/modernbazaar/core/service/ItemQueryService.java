@@ -26,6 +26,23 @@ public class ItemQueryService {
     private final BazaarItemRepository itemRepo;
 
     /**
+     * Fetches the latest BazaarProductSnapshots based on the provided filter criteria with pagination.
+     * This method retrieves snapshots that match the filter conditions, sorts them according to the specified sort order,
+     * and returns paginated results.
+     *
+     * @param filter the filter criteria to apply when searching for items
+     * @param sort an optional sort order, which can be one of the following: sellAsc, sellDesc, buyAsc,
+     *            buyDesc, spreadAsc, spreadDesc. If not provided, defaults to "spreadDesc".
+     * @param page the page number (0-based)
+     * @param limit the number of items per page
+     * @return a PagedItemsResponseDTO containing the paginated item summaries
+     */
+    public PagedItemsResponseDTO getLatestPaginated(ItemFilterDTO filter, Optional<String> sort, int page, int limit) {
+        List<ItemSummaryResponseDTO> allItems = getLatest(filter, sort, Optional.empty());
+        return PagedItemsResponseDTO.of(allItems, page, limit);
+    }
+
+    /**
      * Fetches the latest BazaarProductSnapshots based on the provided filter criteria.
      * This method retrieves snapshots that match the filter conditions, sorts them according to the specified sort order,
      * and limits the results to the specified number if provided.

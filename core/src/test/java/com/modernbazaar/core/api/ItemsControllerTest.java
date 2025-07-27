@@ -3,6 +3,7 @@ package com.modernbazaar.core.api;
 import com.modernbazaar.core.api.dto.OrderEntryResponseDTO;
 import com.modernbazaar.core.api.dto.ItemDetailResponseDTO;
 import com.modernbazaar.core.api.dto.ItemSummaryResponseDTO;
+import com.modernbazaar.core.api.dto.PagedItemsResponseDTO;
 import com.modernbazaar.core.service.ItemQueryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,14 +57,17 @@ class ItemsControllerTest {
                 "ID1","Name1",Instant.now(),Instant.now(),
                 5.0,6.0,1.0,10L,20L,2,3
         );
-        when(service.getLatest(Mockito.any(), Mockito.any(), Mockito.any()))
-                .thenReturn(List.of(summary));
+        PagedItemsResponseDTO page = PagedItemsResponseDTO.of(List.of(summary), 0, 50);
+
+        Mockito.when(service.getLatestPaginated(
+                        Mockito.any(), Mockito.any(), Mockito.eq(0), Mockito.eq(50)))
+                .thenReturn(page);
 
         mockMvc.perform(get("/api/items"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].productId").value("ID1"))
-                .andExpect(jsonPath("$[0].weightedTwoPercentBuyPrice").value(5.0))
-                .andExpect(jsonPath("$[0].weightedTwoPercentSellPrice").value(6.0));
+                .andExpect(jsonPath("$.items[0].productId").value("ID1"))
+                .andExpect(jsonPath("$.items[0].weightedTwoPercentBuyPrice").value(5.0))
+                .andExpect(jsonPath("$.items[0].weightedTwoPercentSellPrice").value(6.0));
     }
 
     /**
