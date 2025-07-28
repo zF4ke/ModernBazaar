@@ -23,22 +23,31 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Core project scaffolded (Gradle, Dockerfile, Spring profiles)
 - [x] Infra stack (Postgres, Prometheus, Grafana) running with basic metrics
 - [x] Github Actions CI/CD pipeline for building, testing, and deploying
-- [ ] **Core API & persistence**
+- [x] **Core API & persistence**
   - [x] Implement background job to fetch Hypixel's API and save `BazaarItem` + `BazaarProductSnapshot`
   - [x] Only persist snapshots if data has changed (skip duplicates)  
   - [x] Swagger UI & OpenAPI (`/swagger-ui.html`, `/v3/api-docs`)
   - [x] `GET /api/bazaar/items` & `GET /api/bazaar/items/{productId}` (ItemsController + DTOs)
-  - [x] Add ~~paging~~ (in the future if needed), filtering and error handling to each endpoint
+  - [x] Add pagination, filtering and error handling to each endpoint
+  - [x] Implement Skyblock Items API (`GET /api/skyblock/items`) with filtering
+  - [x] Add Skyblock catalog refresh endpoints
   - [ ] Implement `GET /api/bazaar/items/{productId}/snapshots?from={timestamp}&to={timestamp}` endpoint
-- [ ] Implement `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]` endpoints
+- [ ] **Web Dashboard (Next.js + TypeScript)**
+  - [x] Basic dashboard structure with navigation
+  - [x] Bazaar Items page with pagination and filtering
+  - [x] Skyblock Items page with filtering
+  - [x] Settings page with system status and data management
+  - [ ] Charts and data visualization
+  - [ ] Advanced filtering and search features
+- [ ] **Trading Strategies & Analysis**
+  - [ ] Implement `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]` endpoints
   - [ ] Implement other endpoints for trading strategies and analysis
-  - [ ] Find a way to keep track of my trades and store them
-  - [ ] **Retention & pruning**  
-    - [ ] Schedule nightly analysis job to aggregate/prune old `BazaarProductSnapshot` records (e.g. keep hourly snapshots, drop minute‑level)  
-    - [ ] Archive or delete stale snapshot data to reduce DB footprint  
-- [ ] Build web dashboard to explore trends, prices, and strategies
   - [ ] Replace prior bot interactions with API-powered UI
   - [ ] (Optional) Add authentication and subscription support
+  - [ ] Find a way to keep track of my trades and store them
+- [ ] **Retention & pruning**  
+  - [ ] Schedule nightly analysis job to aggregate/prune old `BazaarProductSnapshot` records (e.g. keep hourly snapshots, drop minute‑level)  
+  - [ ] Archive or delete stale snapshot data to reduce DB footprint  
 - [ ] Add recording rules, alerts, and refined dashboards in Grafana
 - [ ] Optimize background jobs & introduce caching for high‑frequency updates
 - [ ] Introduce ML modules (prediction, anomaly detection) and tie them into Core
@@ -54,6 +63,7 @@ cp infra/.env.example infra/.env # fill in Postgres creds
 ```
 
 Core health: http://localhost:8080/actuator/health  
+Dashboard:   http://localhost:3000  
 Prometheus:   http://localhost:9090  
 Grafana:      http://localhost:3000
 
