@@ -37,7 +37,7 @@ class BazaarItemsControllerTest {
 
     @Test
     void listEndpoint_returns_json_array() throws Exception {
-        ItemSummaryResponseDTO summary = new ItemSummaryResponseDTO(
+        BazaarItemSummaryResponseDTO summary = new BazaarItemSummaryResponseDTO(
                 "ID1", "Name1",
                 Instant.parse("2025-07-26T10:00:00Z"),
                 Instant.parse("2025-07-26T10:00:05Z"),
@@ -47,7 +47,7 @@ class BazaarItemsControllerTest {
         PagedItemsResponseDTO page = PagedItemsResponseDTO.of(List.of(summary), 0, 50);
 
         when(service.getLatestPaginated(
-                any(ItemFilterDTO.class),
+                any(BazaarItemFilterDTO.class),
                 eq(Optional.empty()), // no default sort anymore
                 eq(0), eq(50))
         ).thenReturn(page);
@@ -67,7 +67,7 @@ class BazaarItemsControllerTest {
 
     @Test
     void detailEndpoint_returns_item_detail() throws Exception {
-        ItemDetailResponseDTO detail = new ItemDetailResponseDTO(
+        BazaarItemDetailResponseDTO detail = new BazaarItemDetailResponseDTO(
                 "ID2", "Name2",
                 Instant.parse("2025-07-26T10:00:00Z"),
                 Instant.parse("2025-07-26T10:00:05Z"),

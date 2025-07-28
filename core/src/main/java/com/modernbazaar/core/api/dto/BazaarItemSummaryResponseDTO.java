@@ -2,7 +2,7 @@ package com.modernbazaar.core.api.dto;
 
 import java.time.Instant;
 
-public record ItemSummaryResponseDTO (
+public record BazaarItemSummaryResponseDTO(
         String productId,
         String displayName,
         Instant lastUpdated,

@@ -16,7 +16,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping(path = "/api/bazaar/items", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
-@Tag(name = "Items", description = "Operations related to Bazaar items")
+@Tag(name = "Bazaar Items", description = "Operations related to Bazaar items")
 public class BazaarItemsController {
 
     private final BazaarItemsQueryService service;
@@ -60,7 +60,7 @@ public class BazaarItemsController {
             @Parameter(description = "Number of items per page")
             @RequestParam(required = false, defaultValue = "50") Integer limit
     ) {
-        var filter = ItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread);
+        var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread);
         return service.getLatestPaginated(filter, Optional.ofNullable(sort), page, limit);
     }
 
@@ -73,7 +73,7 @@ public class BazaarItemsController {
             }
     )
     @GetMapping("/{productId}")
-    public ItemDetailResponseDTO getItem(
+    public BazaarItemDetailResponseDTO getItem(
             @Parameter(in = ParameterIn.PATH, description = "The product ID of the item", required = true)
             @PathVariable String productId
     ) {

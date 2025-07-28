@@ -78,10 +78,10 @@ class BazaarItemsQueryServiceTest {
         when(itemRepo.findAllWithSkyblockByIdIn(anySet()))
                 .thenReturn(List.of(itemA, itemB));
 
-        ItemFilterDTO filter = ItemFilterDTO.of(null, null, null, null, null, null);
+        BazaarItemFilterDTO filter = BazaarItemFilterDTO.of(null, null, null, null, null, null);
 
         // sort by spreadDesc
-        List<ItemSummaryResponseDTO> out = service.getLatest(filter, Optional.of("spreadDesc"), Optional.empty());
+        List<BazaarItemSummaryResponseDTO> out = service.getLatest(filter, Optional.of("spreadDesc"), Optional.empty());
 
         assertThat(out).hasSize(2);
         assertThat(out.get(0).productId()).isEqualTo("A");
@@ -109,7 +109,7 @@ class BazaarItemsQueryServiceTest {
 
         when(itemRepo.findById("A")).thenReturn(Optional.of(itemA));
 
-        ItemDetailResponseDTO dto = service.getItemDetail("A");
+        BazaarItemDetailResponseDTO dto = service.getItemDetail("A");
         assertThat(dto.productId()).isEqualTo("A");
         assertThat(dto.displayName()).isEqualTo("Name A");
         assertThat(dto.buyOrders()).hasSize(1);

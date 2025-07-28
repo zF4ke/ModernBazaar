@@ -34,8 +34,8 @@ public class BazaarItemsQueryService {
      * @param limit the number of items per page
      * @return a PagedItemsResponseDTO containing the paginated item summaries
      */
-    public PagedItemsResponseDTO getLatestPaginated(ItemFilterDTO filter, Optional<String> sort, int page, int limit) {
-        List<ItemSummaryResponseDTO> allItems = getLatest(filter, sort, Optional.empty());
+    public PagedItemsResponseDTO getLatestPaginated(BazaarItemFilterDTO filter, Optional<String> sort, int page, int limit) {
+        List<BazaarItemSummaryResponseDTO> allItems = getLatest(filter, sort, Optional.empty());
         return PagedItemsResponseDTO.of(allItems, page, limit);
     }
 
@@ -50,7 +50,7 @@ public class BazaarItemsQueryService {
      * @param limit an optional limit on the number of results to return
      * @return a list of ItemSummaryResponseDTO containing the latest item summaries
      */
-    public List<ItemSummaryResponseDTO> getLatest(ItemFilterDTO filter, Optional<String> sort, Optional<Integer> limit) {
+    public List<BazaarItemSummaryResponseDTO> getLatest(BazaarItemFilterDTO filter, Optional<String> sort, Optional<Integer> limit) {
         List<BazaarItemSnapshot> snaps = snapshotRepo.searchLatest(
                 filter.q(), filter.minSell(), filter.maxSell(),
                 filter.minBuy(), filter.maxBuy(), filter.minSpread()
@@ -62,20 +62,20 @@ public class BazaarItemsQueryService {
         Map<String, BazaarItem> byId = items.stream()
                 .collect(Collectors.toMap(BazaarItem::getProductId, Function.identity()));
 
-        List<ItemSummaryResponseDTO> list = snaps.stream()
+        List<BazaarItemSummaryResponseDTO> list = snaps.stream()
                 .map(s -> toSummaryDTO(s, byId.get(s.getProductId())))
                 .collect(Collectors.toList());
 
         // optional sorting
         sort.ifPresent(key -> {
-            Comparator<ItemSummaryResponseDTO> cmp = switch (key) {
-                case "sellAsc"   -> Comparator.comparing(ItemSummaryResponseDTO::weightedTwoPercentSellPrice);
-                case "sellDesc"  -> Comparator.comparing(ItemSummaryResponseDTO::weightedTwoPercentSellPrice).reversed();
-                case "buyAsc"    -> Comparator.comparing(ItemSummaryResponseDTO::weightedTwoPercentBuyPrice);
-                case "buyDesc"   -> Comparator.comparing(ItemSummaryResponseDTO::weightedTwoPercentBuyPrice).reversed();
-                case "spreadAsc" -> Comparator.comparing(ItemSummaryResponseDTO::spread);
-                case "spreadDesc"-> Comparator.comparing(ItemSummaryResponseDTO::spread).reversed();
-                default          -> Comparator.comparing(ItemSummaryResponseDTO::spread).reversed();
+            Comparator<BazaarItemSummaryResponseDTO> cmp = switch (key) {
+                case "sellAsc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentSellPrice);
+                case "sellDesc"  -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentSellPrice).reversed();
+                case "buyAsc"    -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentBuyPrice);
+                case "buyDesc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentBuyPrice).reversed();
+                case "spreadAsc" -> Comparator.comparing(BazaarItemSummaryResponseDTO::spread);
+                case "spreadDesc"-> Comparator.comparing(BazaarItemSummaryResponseDTO::spread).reversed();
+                default          -> Comparator.comparing(BazaarItemSummaryResponseDTO::spread).reversed();
             };
             list.sort(cmp);
         });
@@ -86,7 +86,7 @@ public class BazaarItemsQueryService {
     }
 
     @Transactional(readOnly = true)
-    public ItemDetailResponseDTO getItemDetail(String productId) {
+    public BazaarItemDetailResponseDTO getItemDetail(String productId) {
         BazaarItem item = itemRepo.findById(productId).orElse(null);
         BazaarItemSnapshot snap = snapshotRepo
                 .findTopByProductIdOrderByFetchedAtDesc(productId)
@@ -104,7 +104,7 @@ public class BazaarItemsQueryService {
      * @param item the associated BazaarItem, may be null if not found
      * @return an ItemSummaryResponseDTO containing the summary information
      */
-    private ItemSummaryResponseDTO toSummaryDTO(BazaarItemSnapshot s, BazaarItem item) {
+    private BazaarItemSummaryResponseDTO toSummaryDTO(BazaarItemSnapshot s, BazaarItem item) {
         String name = null;
         if (item != null && item.getSkyblockItem() != null) {
             name = item.getSkyblockItem().getName();
@@ -113,7 +113,7 @@ public class BazaarItemsQueryService {
         double buy  = s.getWeightedTwoPercentBuyPrice();
         double sell = s.getWeightedTwoPercentSellPrice();
 
-        return new ItemSummaryResponseDTO(
+        return new BazaarItemSummaryResponseDTO(
                 s.getProductId(),
                 name,
                 s.getLastUpdated(),
@@ -136,7 +136,7 @@ public class BazaarItemsQueryService {
      * @param item the associated BazaarItem, may be null if not found
      * @return an ItemDetailResponseDTO containing detailed information about the item
      */
-    private ItemDetailResponseDTO toDetailDTO(BazaarItemSnapshot s, BazaarItem item) {
+    private BazaarItemDetailResponseDTO toDetailDTO(BazaarItemSnapshot s, BazaarItem item) {
         String name = null;
         if (item != null && item.getSkyblockItem() != null) {
             name = item.getSkyblockItem().getName();
@@ -155,7 +155,7 @@ public class BazaarItemsQueryService {
                 .map(o -> new OrderEntryResponseDTO(o.getOrderIndex(), o.getPricePerUnit(), o.getAmount(), o.getOrders()))
                 .toList();
 
-        return new ItemDetailResponseDTO(
+        return new BazaarItemDetailResponseDTO(
                 s.getProductId(),
                 name,
                 s.getLastUpdated(),

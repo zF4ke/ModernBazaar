@@ -27,7 +27,7 @@ public class SkyblockItemsCatalogService {
     private final SkyblockItemRepository repo;
     private final SkyblockItemMapper mapper;
 
-    private final static String ITEMS_URI = "resources/skyblock/items";
+    private final static String ITEMS_URI = "/resources/skyblock/items";
 
     @Transactional(readOnly = true)
     public List<SkyblockItemDTO> search(String q,

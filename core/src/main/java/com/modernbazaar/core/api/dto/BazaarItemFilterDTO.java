@@ -1,6 +1,6 @@
 package com.modernbazaar.core.api.dto;
 
-public record ItemFilterDTO (
+public record BazaarItemFilterDTO(
         String q,
         Double minSell,
         Double maxSell,
@@ -8,9 +8,9 @@ public record ItemFilterDTO (
         Double maxBuy,
         Double minSpread
 ) {
-    public static ItemFilterDTO of(String q, Double minSell, Double maxSell,
-                                   Double minBuy, Double maxBuy, Double minSpread) {
-        return new ItemFilterDTO(emptyToNull(q), minSell, maxSell, minBuy, maxBuy, minSpread);
+    public static BazaarItemFilterDTO of(String q, Double minSell, Double maxSell,
+                                         Double minBuy, Double maxBuy, Double minSpread) {
+        return new BazaarItemFilterDTO(emptyToNull(q), minSell, maxSell, minBuy, maxBuy, minSpread);
     }
 
     /**

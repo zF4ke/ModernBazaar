@@ -6,7 +6,7 @@ import java.util.List;
  * Response DTO for paginated item lists, containing both the data and pagination metadata.
  */
 public record PagedItemsResponseDTO(
-        List<ItemSummaryResponseDTO> items,
+        List<BazaarItemSummaryResponseDTO> items,
         int page,
         int limit,
         int totalItems,
@@ -14,7 +14,7 @@ public record PagedItemsResponseDTO(
         boolean hasNext,
         boolean hasPrevious
 ) {
-    public static PagedItemsResponseDTO of(List<ItemSummaryResponseDTO> allItems, int page, int limit) {
+    public static PagedItemsResponseDTO of(List<BazaarItemSummaryResponseDTO> allItems, int page, int limit) {
         int totalItems = allItems.size();
         int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / limit);
         
@@ -28,7 +28,7 @@ public record PagedItemsResponseDTO(
         int startIndex = page * limit;
         int endIndex = Math.min(startIndex + limit, totalItems);
         
-        List<ItemSummaryResponseDTO> pageItems = startIndex < totalItems
+        List<BazaarItemSummaryResponseDTO> pageItems = startIndex < totalItems
                 ? allItems.subList(startIndex, endIndex)
                 : List.of();
         
