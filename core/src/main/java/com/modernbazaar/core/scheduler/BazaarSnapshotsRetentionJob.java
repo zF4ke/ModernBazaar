@@ -11,13 +11,13 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 @Component
-@ConditionalOnProperty(prefix = "bazaar.retention", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "skyblock.bazaar.retention", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class BazaarSnapshotsRetentionJob {
 
     private final BazaarProductSnapshotRepository repo;
 
-    @Value("${bazaar.retention.interval-hours:48}")
+    @Value("${skyblock.bazaar.retention.interval-hours:48}")
     private long retentionHours;
 
     /**

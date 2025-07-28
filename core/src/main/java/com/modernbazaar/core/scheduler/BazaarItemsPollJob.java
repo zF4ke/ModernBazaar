@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(prefix = "bazaar.poll", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "skyblock.bazaar.poll", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
 public class BazaarItemsPollJob {
 
@@ -17,7 +17,7 @@ public class BazaarItemsPollJob {
      * Triggers the fetch once every configured interval.
      * Interval is defined by bazaar.poll.interval-seconds in application.yml.
      */
-    @Scheduled(fixedDelayString = "${bazaar.poll.interval-seconds:60}000")
+    @Scheduled(fixedDelayString = "${skyblock.bazaar.poll.interval-seconds:60}000")
     public void run() {
         fetchService.fetchAndStore();
     }
