@@ -17,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class BazaarProductSnapshot {
+public class BazaarItemSnapshot {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

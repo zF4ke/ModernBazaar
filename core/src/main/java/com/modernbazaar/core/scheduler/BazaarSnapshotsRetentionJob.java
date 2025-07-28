@@ -13,7 +13,7 @@ import java.time.temporal.ChronoUnit;
 @Component
 @ConditionalOnProperty(prefix = "bazaar.retention", name = "enabled", havingValue = "true")
 @RequiredArgsConstructor
-public class RetentionJob {
+public class BazaarSnapshotsRetentionJob {
 
     private final BazaarProductSnapshotRepository repo;
 

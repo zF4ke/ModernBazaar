@@ -22,7 +22,7 @@ public abstract class BazaarOrderEntry {
     /** owning snapshot */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "snapshot_id", nullable = false)
-    private BazaarProductSnapshot snapshot;
+    private BazaarItemSnapshot snapshot;
 
     /**
      * Maintains the same API ordering.

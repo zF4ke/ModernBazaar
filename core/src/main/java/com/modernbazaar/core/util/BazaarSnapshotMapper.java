@@ -1,6 +1,6 @@
 package com.modernbazaar.core.util;
 
-import com.modernbazaar.core.domain.BazaarProductSnapshot;
+import com.modernbazaar.core.domain.BazaarItemSnapshot;
 import com.modernbazaar.core.domain.BuyOrderEntry;
 import com.modernbazaar.core.domain.SellOrderEntry;
 import com.modernbazaar.core.dto.RawBazaarProduct;
@@ -23,9 +23,9 @@ public class BazaarSnapshotMapper {
      * @param apiLastUpdated the last‑updated timestamp from the API (ms since epoch)
      * @return a fully populated BazaarProductSnapshot
      */
-    public BazaarProductSnapshot toSnapshot(RawBazaarProduct raw, long apiLastUpdated) {
+    public BazaarItemSnapshot toSnapshot(RawBazaarProduct raw, long apiLastUpdated) {
         // 1) build the snapshot core
-        BazaarProductSnapshot snapshot = BazaarProductSnapshot.builder()
+        BazaarItemSnapshot snapshot = BazaarItemSnapshot.builder()
                 .productId(raw.getProductId())
                 .lastUpdated(Instant.ofEpochMilli(apiLastUpdated))
                 .fetchedAt(Instant.now())

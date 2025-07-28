@@ -29,10 +29,15 @@ management:
       exposure:
         include: health   # basic health check
 
-bazaar:
-  poll:
-    enabled: false
-    interval-seconds: 60 # 1 minute
-  retention:
-    enabled: false
-    interval-hours: 24 # 1 day
+skyblock:
+  bazaar:
+    poll:
+      enabled: false
+      interval-seconds: 60 # 1 minute
+    retention:
+      enabled: false
+      interval-hours: 24 # 1 day
+  catalog:
+    enabled: false        # leave off by default; enable in prod
+    refresh-days: 30
+    cron: "0 0 3 * * *"   # 03:00 every day

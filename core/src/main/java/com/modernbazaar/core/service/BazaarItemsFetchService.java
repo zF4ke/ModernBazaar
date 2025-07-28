@@ -1,12 +1,10 @@
 package com.modernbazaar.core.service;
 
-import com.modernbazaar.core.domain.BazaarItem;
 import com.modernbazaar.core.dto.RawBazaarResponse;
 import com.modernbazaar.core.dto.RawBazaarProduct;
-import com.modernbazaar.core.domain.BazaarProductSnapshot;
+import com.modernbazaar.core.domain.BazaarItemSnapshot;
 import com.modernbazaar.core.repository.BazaarItemRepository;
 import com.modernbazaar.core.repository.BazaarProductSnapshotRepository;
-import com.modernbazaar.core.service.ingest.SnapshotIngestor;
 import com.modernbazaar.core.util.BazaarSnapshotMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -18,16 +16,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BazaarFetchService {
+public class BazaarItemsFetchService {
 
     private final WebClient webClient;
     private final BazaarSnapshotMapper mapper;
-    private final SnapshotIngestor snapshotIngestor;
     private final BazaarProductSnapshotRepository snapshotRepo;
     private final BazaarItemRepository itemRepo;
 
@@ -84,7 +80,7 @@ public class BazaarFetchService {
                 continue;
             }
 
-            BazaarProductSnapshot snap = buildSnapshot(raw, resp.getLastUpdated());
+            BazaarItemSnapshot snap = buildSnapshot(raw, resp.getLastUpdated());
             em.persist(snap);
             persisted++;
             sinceFlush++;
@@ -105,8 +101,8 @@ public class BazaarFetchService {
     }
 
     /** Build a snapshot entity and assign order indexes. */
-    private BazaarProductSnapshot buildSnapshot(RawBazaarProduct raw, long apiLastUpdatedMs) {
-        BazaarProductSnapshot snap = mapper.toSnapshot(raw, apiLastUpdatedMs);
+    private BazaarItemSnapshot buildSnapshot(RawBazaarProduct raw, long apiLastUpdatedMs) {
+        BazaarItemSnapshot snap = mapper.toSnapshot(raw, apiLastUpdatedMs);
 
         for (int i = 0; i < snap.getBuyOrders().size(); i++) {
             snap.getBuyOrders().get(i).setOrderIndex(i);

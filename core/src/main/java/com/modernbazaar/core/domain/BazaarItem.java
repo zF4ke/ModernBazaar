@@ -6,21 +6,26 @@ import java.util.List;
 
 @Entity
 @Table(name = "bazaar_item")
-@Data
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class BazaarItem {
 
     @Id
-    @Column(name = "product_id", nullable = false)
+    @Column(name = "product_id", nullable = false, updatable = false)
     private String productId;
 
-    private String displayName;    // you can populate later or derive from productId
-
-    // optional back-reference to snapshots
-    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
-    //  cascade = CascadeType.ALL was causing a memory leak
+    /**
+     * Link to the catalog row. Same identifier space as productId.
+     * No cascade to avoid large persistence contexts.
+     */
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "product_id", referencedColumnName = "id", insertable = false, updatable = false)
     @ToString.Exclude
-    private List<BazaarProductSnapshot> snapshots;
+    private SkyblockItem skyblockItem;
+
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
+    @ToString.Exclude
+    private List<BazaarItemSnapshot> snapshots;
 }

@@ -28,7 +28,7 @@ async function fetchItems(query: ItemsQuery): Promise<ItemsResponse> {
 
 export default function ItemsPage() {
   const [query, setQuery] = useState<ItemsQuery>({
-    sort: "spreadDesc",
+    sort: "",
     limit: 50,
     page: 0,
   })
@@ -80,7 +80,7 @@ export default function ItemsPage() {
   }
 
   const resetFilters = () => {
-    setQuery({ sort: "spreadDesc", limit: 50, page: 0 })
+    setQuery({ sort: "", limit: 50, page: 0 })
     setSpreadRange([0])
     setSearchText("")
     setPriceFilters({
@@ -195,6 +195,7 @@ export default function ItemsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="" className="cursor-pointer">Default</SelectItem>
                   <SelectItem value="spreadDesc" className="cursor-pointer">Highest Spread</SelectItem>
                   <SelectItem value="sellDesc" className="cursor-pointer">Highest Sell Price</SelectItem>
                   <SelectItem value="sellAsc" className="cursor-pointer">Lowest Sell Price</SelectItem>

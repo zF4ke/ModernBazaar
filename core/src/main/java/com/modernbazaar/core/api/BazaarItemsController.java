@@ -1,27 +1,25 @@
 package com.modernbazaar.core.api;
 
 import com.modernbazaar.core.api.dto.*;
-import com.modernbazaar.core.service.ItemQueryService;
+import com.modernbazaar.core.service.BazaarItemsQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping(path = "/api/items", produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(path = "/api/bazaar/items", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "Items", description = "Operations related to Bazaar items")
-public class ItemsController {
+public class BazaarItemsController {
 
-    private final ItemQueryService service;
+    private final BazaarItemsQueryService service;
 
     @Operation(
             summary = "Get all items (latest snapshot)",
@@ -54,7 +52,7 @@ public class ItemsController {
                     description = "Sorting order. Options: 'spreadDesc', 'profitDesc', etc.",
                     example = "spreadDesc"
             )
-            @RequestParam(required = false, defaultValue = "spreadDesc") String sort,
+            @RequestParam(required = false) String sort,
 
             @Parameter(description = "Page number (0-based)")
             @RequestParam(required = false, defaultValue = "0") Integer page,

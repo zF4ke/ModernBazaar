@@ -1,23 +1,22 @@
 package com.modernbazaar.core.repository;
 
-import com.modernbazaar.core.domain.BazaarProductSnapshot;
+import com.modernbazaar.core.domain.BazaarItemSnapshot;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface BazaarProductSnapshotRepository
-        extends JpaRepository<BazaarProductSnapshot, Long> {
+        extends JpaRepository<BazaarItemSnapshot, Long> {
 
     boolean existsByProductIdAndLastUpdated(String productId, Instant lastUpdated);
 
     @EntityGraph(attributePaths = {"buyOrders","sellOrders"})
-    Optional<BazaarProductSnapshot> findTopByProductIdOrderByFetchedAtDesc(String productId);
+    Optional<BazaarItemSnapshot> findTopByProductIdOrderByFetchedAtDesc(String productId);
 
     void deleteByFetchedAtBefore(Instant cutoff);
 
@@ -33,7 +32,7 @@ public interface BazaarProductSnapshotRepository
           and (:minSpread is null or (s.weighted_two_percent_sell_price - s.weighted_two_percent_buy_price) >= :minSpread)
         order by s.product_id, s.fetched_at desc
         """, nativeQuery = true)
-    List<BazaarProductSnapshot> searchLatest(
+    List<BazaarItemSnapshot> searchLatest(
             @Param("q") String q,
             @Param("minSell") Double minSell,
             @Param("maxSell") Double maxSell,
