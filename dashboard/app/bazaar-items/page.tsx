@@ -14,21 +14,21 @@ import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import type { BazaarItem, ItemsQuery, ItemsResponse } from "@/types/bazaar"
+import type { BazaarItem, BazaarItemsQuery, BazaarItemsResponse } from "@/types/bazaar"
 import { fetchWithBackendUrl, buildQueryParams } from "@/lib/api"
 import { useDebounce } from "@/hooks/use-debounce"
 
-async function fetchItems(query: ItemsQuery): Promise<ItemsResponse> {
+async function fetchBazaarItems(query: BazaarItemsQuery): Promise<BazaarItemsResponse> {
   const params = buildQueryParams(query)
-  const response = await fetchWithBackendUrl(`/api/items?${params}`)
-  if (!response.ok) throw new Error("Failed to fetch items")
+  const response = await fetchWithBackendUrl(`/api/bazaar/items?${params}`)
+  if (!response.ok) throw new Error("Failed to fetch bazaar items")
   
   return response.json()
 }
 
-export default function ItemsPage() {
-  const [query, setQuery] = useState<ItemsQuery>({
-    sort: "",
+export default function BazaarItemsPage() {
+  const [query, setQuery] = useState<BazaarItemsQuery>({
+    sort: "default",
     limit: 50,
     page: 0,
   })
@@ -64,8 +64,8 @@ export default function ItemsPage() {
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ["items", finalQuery],
-    queryFn: () => fetchItems(finalQuery),
+    queryKey: ["bazaar-items", finalQuery],
+    queryFn: () => fetchBazaarItems(finalQuery),
     placeholderData: (previousData) => previousData,
     staleTime: 30000, // 30 seconds
   })
@@ -75,8 +75,8 @@ export default function ItemsPage() {
   const totalPages = response?.totalPages ?? 1
   const totalItems = response?.totalItems ?? 0
 
-  const updateQuery = (updates: Partial<ItemsQuery>) => {
-    setQuery((prev) => ({ ...prev, ...updates }))
+  const updateQuery = (updates: Partial<BazaarItemsQuery>) => {
+    setQuery((prev) => ({ ...prev, ...updates, page: 0 }))
   }
 
   const resetFilters = () => {
@@ -131,7 +131,7 @@ export default function ItemsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Items</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Bazaar Items</h2>
         <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
           {isFetching ? 'Refreshing...' : 'Refresh'}
@@ -170,7 +170,7 @@ export default function ItemsPage() {
           {/* Always visible: Search and basic controls */}
           <div className="grid gap-4 md:grid-cols-4">
             <div className="md:col-span-2">
-              <Label htmlFor="search" className="text-sm font-medium">Search Items</Label>
+              <Label htmlFor="search" className="text-sm font-medium">Search Bazaar Items</Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -195,7 +195,7 @@ export default function ItemsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="" className="cursor-pointer">Default</SelectItem>
+                  <SelectItem value="default" className="cursor-pointer">Default</SelectItem>
                   <SelectItem value="spreadDesc" className="cursor-pointer">Highest Spread</SelectItem>
                   <SelectItem value="sellDesc" className="cursor-pointer">Highest Sell Price</SelectItem>
                   <SelectItem value="sellAsc" className="cursor-pointer">Lowest Sell Price</SelectItem>
@@ -224,80 +224,59 @@ export default function ItemsPage() {
             </div>
           </div>
 
+          {/* Collapsible advanced filters */}
           <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
-            <CollapsibleContent className="space-y-6">
+            <CollapsibleContent className="space-y-4">
               <Separator />
               
-              {/* Advanced Filters */}
-              <div>
-                <h4 className="text-sm font-medium mb-3">Price Filters</h4>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                  <div>
-                    <Label htmlFor="minBuy" className="text-sm">Min Buy Price</Label>
-                    <Input
-                      id="minBuy"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="mt-1"
-                      value={priceFilters.minBuy}
-                      onChange={(e) =>
-                        setPriceFilters(prev => ({ ...prev, minBuy: e.target.value }))
-                      }
-                    />
-                  </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="min-buy" className="text-sm font-medium">Min Buy Price</Label>
+                  <Input
+                    id="min-buy"
+                    type="number"
+                    placeholder="0.00"
+                    value={priceFilters.minBuy}
+                    onChange={(e) => setPriceFilters(prev => ({ ...prev, minBuy: e.target.value }))}
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="maxBuy" className="text-sm">Max Buy Price</Label>
-                    <Input
-                      id="maxBuy"
-                      type="number"
-                      step="0.01"
-                      placeholder="100000.00"
-                      className="mt-1"
-                      value={priceFilters.maxBuy}
-                      onChange={(e) =>
-                        setPriceFilters(prev => ({ ...prev, maxBuy: e.target.value }))
-                      }
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="max-buy" className="text-sm font-medium">Max Buy Price</Label>
+                  <Input
+                    id="max-buy"
+                    type="number"
+                    placeholder="1000.00"
+                    value={priceFilters.maxBuy}
+                    onChange={(e) => setPriceFilters(prev => ({ ...prev, maxBuy: e.target.value }))}
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="minSell" className="text-sm">Min Sell Price</Label>
-                    <Input
-                      id="minSell"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="mt-1"
-                      value={priceFilters.minSell}
-                      onChange={(e) =>
-                        setPriceFilters(prev => ({ ...prev, minSell: e.target.value }))
-                      }
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="min-sell" className="text-sm font-medium">Min Sell Price</Label>
+                  <Input
+                    id="min-sell"
+                    type="number"
+                    placeholder="0.00"
+                    value={priceFilters.minSell}
+                    onChange={(e) => setPriceFilters(prev => ({ ...prev, minSell: e.target.value }))}
+                  />
+                </div>
 
-                  <div>
-                    <Label htmlFor="maxSell" className="text-sm">Max Sell Price</Label>
-                    <Input
-                      id="maxSell"
-                      type="number"
-                      step="0.01"
-                      placeholder="100000.00"
-                      className="mt-1"
-                      value={priceFilters.maxSell}
-                      onChange={(e) =>
-                        setPriceFilters(prev => ({ ...prev, maxSell: e.target.value }))
-                      }
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="max-sell" className="text-sm font-medium">Max Sell Price</Label>
+                  <Input
+                    id="max-sell"
+                    type="number"
+                    placeholder="1000.00"
+                    value={priceFilters.maxSell}
+                    onChange={(e) => setPriceFilters(prev => ({ ...prev, maxSell: e.target.value }))}
+                  />
                 </div>
               </div>
-
               <div className="flex justify-end">
                 <Button onClick={resetFilters} variant="outline" size="sm">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Reset All Filters
+                  Reset Filters
                 </Button>
               </div>
             </CollapsibleContent>
@@ -305,13 +284,13 @@ export default function ItemsPage() {
         </CardContent>
       </Card>
 
-      {/* Items Table */}
+      {/* Bazaar Items Table */}
       <Card>
         <CardHeader>
           <CardTitle>
             <div className="flex items-end">
               <span>
-                Items ({itemsArray.length})
+                Bazaar Items ({itemsArray.length})
               </span>
               {isLoading && (
                 <span className="ml-2 text-xs text-muted-foreground">• Loading...</span>
@@ -332,28 +311,28 @@ export default function ItemsPage() {
           
           <Table className="my-4">
             <TableHeader>
-                              <TableRow>
-                  <TableHead>Product ID</TableHead>
-                  <TableHead>Display Name</TableHead>
-                  <TableHead className="text-right">Weighted Buy Price</TableHead>
-                  <TableHead className="text-right">Weighted Sell Price</TableHead>
-                  <TableHead className="text-right">Spread</TableHead>
-                  <TableHead className="text-right">Buy Orders</TableHead>
-                  <TableHead className="text-right">Sell Orders</TableHead>
-                  <TableHead className="text-right">Last Updated</TableHead>
-                </TableRow>
+              <TableRow>
+                <TableHead>Product ID</TableHead>
+                <TableHead>Display Name</TableHead>
+                <TableHead className="text-right">Weighted Buy Price</TableHead>
+                <TableHead className="text-right">Weighted Sell Price</TableHead>
+                <TableHead className="text-right">Spread</TableHead>
+                <TableHead className="text-right">Buy Orders</TableHead>
+                <TableHead className="text-right">Sell Orders</TableHead>
+                <TableHead className="text-right">Last Updated</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
-                    Loading items...
+                    Loading bazaar items...
                   </TableCell>
                 </TableRow>
               ) : itemsArray.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
-                    No items found
+                    No bazaar items found
                   </TableCell>
                 </TableRow>
               ) : (
@@ -363,7 +342,7 @@ export default function ItemsPage() {
                     className="cursor-pointer hover:bg-muted-foreground/5"
                   >
                     <TableCell>
-                      <Link href={`/items/${item.productId}`} className="font-medium text-primary hover:underline">
+                      <Link href={`/bazaar-items/${item.productId}`} className="font-medium text-primary hover:underline">
                         {item.productId}
                       </Link>
                     </TableCell>
@@ -396,4 +375,4 @@ export default function ItemsPage() {
       </Card>
     </div>
   )
-}
+} 

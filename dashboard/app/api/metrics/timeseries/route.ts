@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import type { TimeSeriesData } from "@/types/bazaar"
+import type { TimeSeriesData } from "@/types/metrics"
 
 export async function GET() {
   const now = new Date()

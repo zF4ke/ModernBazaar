@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const item: BazaarItemDetail = await fetchFromBackend(
       request, 
-      `/api/items/${encodeURIComponent(productId)}`
+      `/api/bazaar/items/${encodeURIComponent(productId)}`
     )
     return NextResponse.json(item)
   } catch (error) {

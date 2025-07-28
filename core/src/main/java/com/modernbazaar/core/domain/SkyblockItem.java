@@ -2,6 +2,8 @@ package com.modernbazaar.core.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 
@@ -66,7 +68,7 @@ public class SkyblockItem {
      * Stats object as JSON text for portability across DBs (H2 + Postgres).
      * Example: {"DEFENSE":75,"HEALTH":20}
      */
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
     @Column(name = "stats_json", columnDefinition = "text")
     private String statsJson;
 

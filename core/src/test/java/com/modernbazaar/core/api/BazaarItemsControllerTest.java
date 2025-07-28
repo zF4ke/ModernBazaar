@@ -44,7 +44,7 @@ class BazaarItemsControllerTest {
                 5.0, 6.0, 1.0,
                 10L, 20L, 2, 3
         );
-        PagedItemsResponseDTO page = PagedItemsResponseDTO.of(List.of(summary), 0, 50);
+        PagedResponseDTO page = PagedResponseDTO.of(List.of(summary), 0, 50);
 
         when(service.getLatestPaginated(
                 any(BazaarItemFilterDTO.class),

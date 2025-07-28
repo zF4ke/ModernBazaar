@@ -26,10 +26,15 @@ export function Header() {
 
     const breadcrumbs = [{ label: "Dashboard", href: "/" }]
 
-    if (segments[0] === "items") {
-      breadcrumbs.push({ label: "Items", href: "/items" })
+    if (segments[0] === "bazaar-items") {
+      breadcrumbs.push({ label: "Bazaar Items", href: "/bazaar-items" })
       if (segments[1]) {
-        breadcrumbs.push({ label: segments[1].toUpperCase(), href: `/items/${segments[1]}` })
+        breadcrumbs.push({ label: segments[1].toUpperCase(), href: `/bazaar-items/${segments[1]}` })
+      }
+    } else if (segments[0] === "skyblock-items") {
+      breadcrumbs.push({ label: "Skyblock Items", href: "/skyblock-items" })
+      if (segments[1]) {
+        breadcrumbs.push({ label: segments[1].toUpperCase(), href: `/skyblock-items/${segments[1]}` })
       }
     } else {
       breadcrumbs.push({

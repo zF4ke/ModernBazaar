@@ -1,6 +1,7 @@
 package com.modernbazaar.core.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.modernbazaar.core.api.dto.PagedResponseDTO;
 import com.modernbazaar.core.api.dto.SkyblockItemDTO;
 import com.modernbazaar.core.domain.SkyblockItem;
 import com.modernbazaar.core.dto.RawSkyblockItem;
@@ -12,12 +13,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
@@ -73,7 +74,6 @@ class SkyblockItemsCatalogServiceTest {
         when(repo.findAllByIdIn(argThat(set -> set.containsAll(Set.of("NEW_ID", "EXISTING_ID")))))
                 .thenReturn(List.of(existing));
 
-        // generic mapper stub – avoids NPEs in argThat
         when(mapper.toEntity(any(RawSkyblockItem.class), any()))
                 .thenAnswer(inv -> {
                     RawSkyblockItem r = inv.getArgument(0);
@@ -119,20 +119,27 @@ class SkyblockItemsCatalogServiceTest {
     }
 
     @Test
-    void search_returns_dtos_from_page() {
+    void search_returns_paged_dtos_from_repo_page() {
         WebClient wc = WebClient.builder().build();
         SkyblockItemsCatalogService svc = new SkyblockItemsCatalogService(wc, repo, mapper);
 
         SkyblockItem e1 = SkyblockItem.builder().id("A").name("Name A").build();
         SkyblockItem e2 = SkyblockItem.builder().id("B").name("Name B").build();
 
-        when(repo.search(any(), any(), any(), anyBoolean(), any()))
-                .thenReturn(new PageImpl<>(List.of(e1, e2)));
+        when(repo.search(any(), any(), any(), anyBoolean(), isNull(), isNull(), eq(PageRequest.of(1, 2))))
+                .thenReturn(new PageImpl<>(List.of(e1, e2), PageRequest.of(1, 2), 5));
 
-        List<SkyblockItemDTO> out = svc.search(null, null, null, false, 10);
-        assertThat(out).hasSize(2);
-        assertThat(out.get(0).id()).isEqualTo("A");
-        assertThat(out.get(1).id()).isEqualTo("B");
+        PagedResponseDTO<SkyblockItemDTO> out = svc.search(null, null, null, false, null, null,1, 2);
+
+        assertThat(out.items()).hasSize(2);
+        assertThat(out.totalItems()).isEqualTo(5);
+        assertThat(out.totalPages()).isEqualTo(3);
+        assertThat(out.page()).isEqualTo(1);
+        assertThat(out.limit()).isEqualTo(2);
+        assertThat(out.hasNext()).isTrue();
+        assertThat(out.hasPrevious()).isTrue();
+        assertThat(out.items().get(0).id()).isEqualTo("A");
+        assertThat(out.items().get(1).id()).isEqualTo("B");
     }
 
     @Test

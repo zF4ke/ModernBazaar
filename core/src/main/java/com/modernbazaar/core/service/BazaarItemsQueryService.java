@@ -34,9 +34,10 @@ public class BazaarItemsQueryService {
      * @param limit the number of items per page
      * @return a PagedItemsResponseDTO containing the paginated item summaries
      */
-    public PagedItemsResponseDTO getLatestPaginated(BazaarItemFilterDTO filter, Optional<String> sort, int page, int limit) {
+    @Transactional(readOnly = true)
+    public PagedResponseDTO<BazaarItemSummaryResponseDTO> getLatestPaginated(BazaarItemFilterDTO filter, Optional<String> sort, int page, int limit) {
         List<BazaarItemSummaryResponseDTO> allItems = getLatest(filter, sort, Optional.empty());
-        return PagedItemsResponseDTO.of(allItems, page, limit);
+        return PagedResponseDTO.of(allItems, page, limit);
     }
 
     /**
@@ -50,6 +51,7 @@ public class BazaarItemsQueryService {
      * @param limit an optional limit on the number of results to return
      * @return a list of ItemSummaryResponseDTO containing the latest item summaries
      */
+    @Transactional(readOnly = true)
     public List<BazaarItemSummaryResponseDTO> getLatest(BazaarItemFilterDTO filter, Optional<String> sort, Optional<Integer> limit) {
         List<BazaarItemSnapshot> snaps = snapshotRepo.searchLatest(
                 filter.q(), filter.minSell(), filter.maxSell(),
@@ -75,9 +77,12 @@ public class BazaarItemsQueryService {
                 case "buyDesc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentBuyPrice).reversed();
                 case "spreadAsc" -> Comparator.comparing(BazaarItemSummaryResponseDTO::spread);
                 case "spreadDesc"-> Comparator.comparing(BazaarItemSummaryResponseDTO::spread).reversed();
-                default          -> Comparator.comparing(BazaarItemSummaryResponseDTO::spread).reversed();
+                default -> null;
             };
-            list.sort(cmp);
+
+            if (cmp != null) {
+                list.sort(cmp);
+            }
         });
 
         return limit.filter(l -> l > 0 && l < list.size())

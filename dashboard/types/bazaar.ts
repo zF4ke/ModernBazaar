@@ -24,7 +24,7 @@ export interface OrderBookEntry {
   orders: number
 }
 
-export interface ItemsQuery {
+export interface BazaarItemsQuery {
   q?: string
   minSell?: number
   maxSell?: number
@@ -36,7 +36,7 @@ export interface ItemsQuery {
   limit?: number
 }
 
-export interface ItemsResponse {
+export interface BazaarItemsResponse {
   items: BazaarItem[]
   page: number
   limit: number
@@ -44,17 +44,4 @@ export interface ItemsResponse {
   totalPages: number
   hasNext: boolean
   hasPrevious: boolean
-}
-
-export interface SystemMetrics {
-  totalItems: number
-  avgSpread: number
-  volume24h: number
-  apiLatency: number
-  heapUsage: number
-}
-
-export interface TimeSeriesData {
-  timestamp: string
-  value: number
 }

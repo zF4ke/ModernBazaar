@@ -29,7 +29,7 @@ public class BazaarItemsController {
             }
     )
     @GetMapping
-    public PagedItemsResponseDTO getItems(
+    public PagedResponseDTO<BazaarItemSummaryResponseDTO> getItems(
             @Parameter(description = "Search query to filter items by name or ID")
             @RequestParam(required = false) String q,
 

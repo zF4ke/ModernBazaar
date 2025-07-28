@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,18 +14,35 @@ import { RefreshCw, Database, Clock, Trash2, Server, Wifi, Activity } from "luci
 import { useToast } from "@/hooks/use-toast"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { StatusCard } from "@/components/status-card"
+import { fetchWithBackendUrl } from "@/lib/api"
+import type { SystemHealth, SystemMetrics } from "@/types/metrics"
 
-interface SystemHealth {
-  status: string
+// Custom hook for Skyblock manual refresh
+const useSkyblockManualRefresh = () => {
+  return useQuery({
+    queryKey: ["skyblock-manual-refresh"],
+    queryFn: async () => {
+      const response = await fetch("/api/skyblock/items/refresh", { method: "POST" })
+      if (!response.ok) throw new Error("Failed to force refresh Skyblock catalog")
+      return response.json()
+    },
+    enabled: false, // Don't run automatically
+    retry: false,
+  })
 }
 
-interface SystemMetrics {
-  lastFetch: string | null
-  status: string,
-  dbStatus: string,
-  avgSpread: number,
-  heapUsage: number,
-  totalItems: number,
+// Custom hook for Skyblock refresh if stale
+const useSkyblockRefreshIfStale = (days: number) => {
+  return useQuery({
+    queryKey: ["skyblock-refresh-if-stale", days],
+    queryFn: async () => {
+      const response = await fetch(`/api/skyblock/items/refresh-if-stale?days=${days}`, { method: "POST" })
+      if (!response.ok) throw new Error("Failed to refresh Skyblock catalog if stale")
+      return response.json()
+    },
+    enabled: false, // Don't run automatically
+    retry: false,
+  })
 }
 
 export default function SettingsPage() {
@@ -32,6 +50,11 @@ export default function SettingsPage() {
   const [pruningEnabled, setPruningEnabled] = useState(true)
   const [pruningDays, setPruningDays] = useState("30")
   const [apiEndpoint, setApiEndpoint] = useState("http://localhost:8080")
+  const [skyblockRefreshDays, setSkyblockRefreshDays] = useState(30)
+
+  // Skyblock refresh queries
+  const manualRefreshQuery = useSkyblockManualRefresh()
+  const refreshIfStaleQuery = useSkyblockRefreshIfStale(skyblockRefreshDays)
 
   // Fetch system health
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useBackendQuery<SystemHealth>(
@@ -66,6 +89,28 @@ export default function SettingsPage() {
       setApiEndpoint(saved)
     }
   }, [])
+
+  // Skyblock manual refresh
+  const handleSkyblockManualRefresh = async () => {
+    try {
+      await manualRefreshQuery.refetch()
+      toast({ title: "Skyblock Catalog Refreshed", description: "Skyblock item catalog was force refreshed." })
+    } catch (e) {
+      toast({ title: "Error", description: (e as Error).message, variant: "destructive" })
+    }
+  }
+
+  // Skyblock refresh if stale
+  const handleSkyblockRefreshIfStale = async () => {
+    try {
+      await refreshIfStaleQuery.refetch()
+      toast({ title: "Skyblock Catalog Refreshed (If Stale)", description: `Skyblock item catalog refreshed if older than ${skyblockRefreshDays} days.` })
+    } catch (e) {
+      toast({ title: "Error", description: (e as Error).message, variant: "destructive" })
+    }
+  }
+
+  const isSkyblockRefreshing = manualRefreshQuery.isFetching || refreshIfStaleQuery.isFetching
 
   return (
     <div className="space-y-4">
@@ -112,64 +157,56 @@ export default function SettingsPage() {
       </Card>
 
       {/* Data Management */}
-      {/* <Card>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
             Data Management
           </CardTitle>
-          <CardDescription>Manage catalog refresh and data synchronization</CardDescription>
+          <CardDescription>Manage catalog refresh and data synchronization for Skyblock Items</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>Manual Catalog Refresh</Label>
-              <p className="text-sm text-muted-foreground">Manually trigger a full catalog refresh from the backend</p>
-            </div>
-            <Button onClick={handleManualRefresh} disabled={isRefreshing} variant="outline">
-              {isRefreshing ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Refreshing...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Refresh Now
-                </>
-              )}
-            </Button>
-          </div>
-
-          <Separator />
-
+          {/* Skyblock Items Management */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <Label htmlFor="auto-refresh">Auto Refresh</Label>
-                <p className="text-sm text-muted-foreground">Automatically refresh data at regular intervals</p>
+                <Label>Skyblock: Manual Catalog Refresh</Label>
+                <p className="text-sm text-muted-foreground">Manually trigger a full Skyblock item catalog refresh from the backend</p>
               </div>
-              <Switch id="auto-refresh" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+              <Button onClick={handleSkyblockManualRefresh} disabled={isSkyblockRefreshing} variant="outline">
+                {isSkyblockRefreshing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Refreshing...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh Now
+                  </>
+                )}
+              </Button>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="poll-interval">Poll Interval (seconds)</Label>
-              <Select value={pollInterval} onValueChange={setPollInterval}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30">30 seconds</SelectItem>
-                  <SelectItem value="60">1 minute</SelectItem>
-                  <SelectItem value="300">5 minutes</SelectItem>
-                  <SelectItem value="600">10 minutes</SelectItem>
-                  <SelectItem value="1800">30 minutes</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-2 justify-between">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="skyblock-refresh-days">Refresh If Stale (days):</Label>
+                <Input
+                  id="skyblock-refresh-days"
+                  type="number"
+                  min={1}
+                  value={skyblockRefreshDays}
+                  onChange={e => setSkyblockRefreshDays(Number(e.target.value))}
+                  className="w-20"
+                />
+              </div>
+              <Button onClick={handleSkyblockRefreshIfStale} disabled={isSkyblockRefreshing} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh If Stale
+              </Button>
             </div>
           </div>
         </CardContent>
-      </Card> */}
+      </Card>
 
       {/* Data Pruning */}
       {/* <Card>

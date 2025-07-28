@@ -8,8 +8,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -24,8 +24,13 @@ const navigation = [
     icon: Home,
   },
   {
-    title: "Items",
-    url: "/items",
+    title: "Bazaar Items",
+    url: "/bazaar-items",
+    icon: Package,
+  },
+  {
+    title: "Skyblock Items",
+    url: "/skyblock-items",
     icon: Package,
   },
   {

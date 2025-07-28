@@ -1,13 +1,15 @@
 package com.modernbazaar.core.service;
 
+import com.modernbazaar.core.api.dto.PagedResponseDTO;
 import com.modernbazaar.core.api.dto.SkyblockItemDTO;
 import com.modernbazaar.core.domain.SkyblockItem;
-import com.modernbazaar.core.dto.RawSkyblockItemsResponse;
 import com.modernbazaar.core.dto.RawSkyblockItem;
+import com.modernbazaar.core.dto.RawSkyblockItemsResponse;
 import com.modernbazaar.core.repository.SkyblockItemRepository;
 import com.modernbazaar.core.util.SkyblockItemMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,20 +29,30 @@ public class SkyblockItemsCatalogService {
     private final SkyblockItemRepository repo;
     private final SkyblockItemMapper mapper;
 
-    private final static String ITEMS_URI = "/resources/skyblock/items";
+    private static final String ITEMS_URI = "/resources/skyblock/items";
 
     @Transactional(readOnly = true)
-    public List<SkyblockItemDTO> search(String q,
-                                        String tier,
-                                        String category,
-                                        boolean inBazaar,
-                                        Integer limit) {
-        int size = (limit == null || limit <= 0) ? 500 : limit;
-        return repo.search(q, tier, category, inBazaar, PageRequest.of(0, size))
-                .getContent()
-                .stream()
-                .map(this::toDTO)
-                .toList();
+    public PagedResponseDTO<SkyblockItemDTO> search(
+            String q,
+            String tier,
+            String category,
+            boolean inBazaar,
+            Double minNpc,
+            Double maxNpc,
+            int page,
+            int limit
+    ) {
+        Page<SkyblockItem> p = repo.search(
+                q,
+                tier,
+                category,
+                inBazaar,
+                minNpc,
+                maxNpc,
+                PageRequest.of(page, limit)
+        );
+        Page<SkyblockItemDTO> dtoPage = p.map(this::toDTO);
+        return PagedResponseDTO.fromPage(dtoPage);
     }
 
     @Transactional(readOnly = true)
@@ -50,23 +62,16 @@ public class SkyblockItemsCatalogService {
         return toDTO(item);
     }
 
-    /**
-     * Refreshes the catalog if stale. "Stale" means the newest row is older than maxAge.
-     * Returns true if a refresh happened.
-     */
     @Transactional
     public boolean refreshIfStale(Duration maxAge) {
         Instant newest = repo.findMaxLastRefreshed();
         if (newest != null && newest.isAfter(Instant.now().minus(maxAge))) {
-            return false; // fresh enough
+            return false;
         }
         forceRefresh();
         return true;
     }
 
-    /**
-     * Always pulls the latest list from Hypixel and upserts rows.
-     */
     @Transactional
     public void forceRefresh() {
         RawSkyblockItemsResponse resp = webClient.get()
@@ -83,7 +88,6 @@ public class SkyblockItemsCatalogService {
         Instant refreshedAt = Instant.now();
         List<RawSkyblockItem> rawItems = resp.getItems();
 
-        // Load existing IDs once
         Set<String> ids = rawItems.stream().map(RawSkyblockItem::getId).collect(Collectors.toSet());
         Map<String, SkyblockItem> existing = repo.findAllByIdIn(ids).stream()
                 .collect(Collectors.toMap(SkyblockItem::getId, it -> it));
@@ -95,7 +99,6 @@ public class SkyblockItemsCatalogService {
             if (prior == null) {
                 toSave.add(current);
             } else if (needsUpdate(prior, current)) {
-                // copy over ID to ensure merge
                 current.setId(prior.getId());
                 toSave.add(current);
             }

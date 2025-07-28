@@ -21,32 +21,26 @@ public interface SkyblockItemRepository extends JpaRepository<SkyblockItem, Stri
 
     List<SkyblockItem> findAllByIdIn(Collection<String> ids);
 
-    @Query(value = """
-        select i.* 
-        from skyblock_item i
-        left join bazaar_item b on b.product_id = i.id
-        where (:q is null or i.name ilike concat('%', :q, '%') or i.id ilike concat('%', :q, '%'))
-          and (:tier is null or i.tier = :tier)
-          and (:category is null or i.category = :category)
-          and (:inBazaar = false or b.product_id is not null)
-        order by i.name asc
-        """,
-            countQuery = """
-        select count(*) 
-        from skyblock_item i
-        left join bazaar_item b on b.product_id = i.id
-        where (:q is null or i.name ilike concat('%', :q, '%') or i.id ilike concat('%', :q, '%'))
-          and (:tier is null or i.tier = :tier)
-          and (:category is null or i.category = :category)
-          and (:inBazaar = false or b.product_id is not null)
-        """,
-            nativeQuery = true)
+    @Query("""
+  select s from SkyblockItem s
+  where (:q     is null
+         or lower(s.name) like lower(concat('%', cast(:q as string), '%')))
+    and (:tier is null or s.tier     = :tier)
+    and (:category is null or s.category = :category)
+    and (:inBazaar = false or exists (
+         select 1 from BazaarItem bi join bi.skyblockItem si where si.id = s.id
+       ))
+    and (:minNpc is null or s.npcSellPrice >= :minNpc)
+    and (:maxNpc is null or s.npcSellPrice <= :maxNpc)
+""")
     Page<SkyblockItem> search(
-            @Param("q") String q,
-            @Param("tier") String tier,
+            @Param("q")        String q,
+            @Param("tier")     String tier,
             @Param("category") String category,
             @Param("inBazaar") boolean inBazaar,
-            Pageable pageable
+            @Param("minNpc")   Double minNpc,
+            @Param("maxNpc")   Double maxNpc,
+            Pageable page
     );
 
     Optional<SkyblockItem> findById(String id);

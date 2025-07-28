@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 import { Activity, Database, DollarSign, Package, Zap } from "lucide-react"
-import type { SystemMetrics, TimeSeriesData } from "@/types/bazaar"
+import type { SystemMetrics, TimeSeriesData } from "@/types/metrics"
 
 async function fetchMetrics(): Promise<SystemMetrics> {
   const response = await fetch("/api/metrics")
