@@ -13,7 +13,7 @@ Real-time bazaar analytics with comprehensive trading data and strategies; ML-dr
 A cleanly separated system:
 - Core backend that fetches, monitors, stores, and serves market data via a stable API.
 - Empirical data analysis for different trading strategies.
-- Discord bot as the primary user interface.
+- Dashboard as the primary user interface.
 - Optional Python/Java modules for heavier analysis or ML.
 - Production-style observability and reliability
 
