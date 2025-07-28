@@ -79,6 +79,10 @@ export default function BazaarItemsPage() {
     setQuery((prev) => ({ ...prev, ...updates, page: 0 }))
   }
 
+  const updatePage = (page: number) => {
+    setQuery((prev) => ({ ...prev, page }))
+  }
+
   const resetFilters = () => {
     setQuery({ sort: "", limit: 50, page: 0 })
     setSpreadRange([0])
@@ -93,7 +97,7 @@ export default function BazaarItemsPage() {
 
   const goToPage = (page: number) => {
     if (page >= 0 && page < totalPages) {
-      updateQuery({ page })
+      updatePage(page)
     }
   }
 

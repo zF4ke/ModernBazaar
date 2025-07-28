@@ -78,6 +78,10 @@ export default function SkyblockItemsPage() {
     setQuery((prev) => ({ ...prev, ...updates, page: 0 }))
   }
 
+  const updatePage = (page: number) => {
+    setQuery((prev) => ({ ...prev, page }))
+  }
+
   const resetFilters = () => {
     setQuery({ limit: 50, page: 0 })
     setSearchText("")
@@ -89,7 +93,7 @@ export default function SkyblockItemsPage() {
 
   const goToPage = (page: number) => {
     if (page >= 0 && page < totalPages) {
-      updateQuery({ page })
+      updatePage(page)
     }
   }
 
