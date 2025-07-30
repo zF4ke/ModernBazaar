@@ -171,22 +171,36 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
           </CardHeader>
           <CardContent>
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Orders</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {item.buyOrders.slice(0, 10).map((order, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
-                    <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
-                    <TableCell>{order.orders}</TableCell>
+                             <TableHeader>
+                 <TableRow>
+                   <TableHead></TableHead>
+                   <TableHead>Price (coins)</TableHead>
+                   <TableHead>Amount (items)</TableHead>
+                   <TableHead>Orders</TableHead>
+                 </TableRow>
+               </TableHeader>
+                             <TableBody>
+                 {item.buyOrders.slice(0, 10).map((order, index) => (
+                   <TableRow key={index}>
+                     <TableCell></TableCell>
+                     <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
+                     <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
+                     <TableCell>{order.orders}</TableCell>
+                   </TableRow>
+                 ))}
+                                   <TableRow className="border-t-2 font-semibold bg-muted/50">
+                    <TableCell className="font-semibold">Total</TableCell>
+                    <TableCell className="font-mono">
+                      {item.buyOrders.slice(0, 10).reduce((sum, order) => sum + (order.pricePerUnit * order.amount), 0).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {item.buyOrders.slice(0, 10).reduce((sum, order) => sum + order.amount, 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {item.buyOrders.slice(0, 10).reduce((sum, order) => sum + order.orders, 0)}
+                    </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
+               </TableBody>
             </Table>
           </CardContent>
         </Card>
@@ -198,22 +212,36 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
           </CardHeader>
           <CardContent>
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Orders</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {item.sellOrders.slice(0, 10).map((order, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
-                    <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
-                    <TableCell>{order.orders}</TableCell>
+                             <TableHeader>
+                 <TableRow>
+                   <TableHead></TableHead>
+                   <TableHead>Price (coins)</TableHead>
+                   <TableHead>Amount (items)</TableHead>
+                   <TableHead>Orders</TableHead>
+                 </TableRow>
+               </TableHeader>
+                             <TableBody>
+                 {item.sellOrders.slice(0, 10).map((order, index) => (
+                   <TableRow key={index}>
+                     <TableCell></TableCell>
+                     <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
+                     <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
+                     <TableCell>{order.orders}</TableCell>
+                   </TableRow>
+                 ))}
+                                   <TableRow className="border-t-2 font-semibold bg-muted/50">
+                    <TableCell className="font-semibold">Total</TableCell>
+                    <TableCell className="font-mono">
+                      {item.sellOrders.slice(0, 10).reduce((sum, order) => sum + (order.pricePerUnit * order.amount), 0).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {item.sellOrders.slice(0, 10).reduce((sum, order) => sum + order.amount, 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {item.sellOrders.slice(0, 10).reduce((sum, order) => sum + order.orders, 0)}
+                    </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
+               </TableBody>
             </Table>
           </CardContent>
         </Card>
