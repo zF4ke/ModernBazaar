@@ -9,6 +9,8 @@ public record BazaarItemSummaryResponseDTO(
         Instant fetchedAt,
         double weightedTwoPercentBuyPrice,     // weightedTwoPercentBuyPrice
         double weightedTwoPercentSellPrice,    // weightedTwoPercentSellPrice
+        double instantBuyPrice,          // instantBuyPrice
+        double instantSellPrice,         // instantSellPrice
         double spread,       // sell - buy
         long buyMovingWeek,
         long sellMovingWeek,

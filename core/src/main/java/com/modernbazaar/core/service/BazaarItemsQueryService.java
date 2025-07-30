@@ -1,16 +1,15 @@
 package com.modernbazaar.core.service;
 
 import com.modernbazaar.core.api.dto.*;
-import com.modernbazaar.core.domain.BazaarItem;
-import com.modernbazaar.core.domain.BazaarItemSnapshot;
-import com.modernbazaar.core.domain.BuyOrderEntry;
-import com.modernbazaar.core.domain.SellOrderEntry;
+import com.modernbazaar.core.domain.*;
+import com.modernbazaar.core.repository.BazaarItemHourSummaryRepository;
 import com.modernbazaar.core.repository.BazaarItemRepository;
 import com.modernbazaar.core.repository.BazaarProductSnapshotRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -21,6 +20,7 @@ public class BazaarItemsQueryService {
 
     private final BazaarProductSnapshotRepository snapshotRepo;
     private final BazaarItemRepository itemRepo;
+    private final BazaarItemHourSummaryRepository hourSummaryRepo;
 
     /**
      * Fetches the latest BazaarProductSnapshots based on the provided filter criteria with pagination.
@@ -71,10 +71,10 @@ public class BazaarItemsQueryService {
         // optional sorting
         sort.ifPresent(key -> {
             Comparator<BazaarItemSummaryResponseDTO> cmp = switch (key) {
-                case "sellAsc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentSellPrice);
-                case "sellDesc"  -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentSellPrice).reversed();
-                case "buyAsc"    -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentBuyPrice);
-                case "buyDesc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::weightedTwoPercentBuyPrice).reversed();
+                case "sellAsc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::instantSellPrice);
+                case "sellDesc"  -> Comparator.comparing(BazaarItemSummaryResponseDTO::instantSellPrice).reversed();
+                case "buyAsc"    -> Comparator.comparing(BazaarItemSummaryResponseDTO::instantBuyPrice);
+                case "buyDesc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::instantBuyPrice).reversed();
                 case "spreadAsc" -> Comparator.comparing(BazaarItemSummaryResponseDTO::spread);
                 case "spreadDesc"-> Comparator.comparing(BazaarItemSummaryResponseDTO::spread).reversed();
                 default -> null;
@@ -99,6 +99,43 @@ public class BazaarItemsQueryService {
         return toDetailDTO(snap, item);
     }
 
+    /**
+     * Fetches the BazaarItemSnapshot for a specific product ID.
+     * This method retrieves the most recent snapshot for the given product ID.
+     *
+     * @param productId the ID of the product to fetch
+     * @return a BazaarItemSnapshotResponseDTO containing the snapshot details
+     */
+    @Transactional(readOnly = true)
+    public List<BazaarHourSummaryResponseDTO> getHistory(
+            String  productId,
+            Instant from,          // may be null
+            Instant to,            // may be null
+            boolean withPoints) {
+
+        // normalise range
+        Instant start = (from != null) ? from : Instant.EPOCH; // “since forever”
+        Instant end   = (to   != null) ? to   : Instant.now(); // “until now”
+
+        if (!start.isBefore(end)) {
+            throw new IllegalArgumentException("'from' must be before 'to' (or both null)");
+        }
+
+        List<BazaarItemHourSummary> rows = withPoints
+                ? hourSummaryRepo.findRangeWithPoints(productId, start, end)
+                : hourSummaryRepo.findRange(productId,          start, end);
+
+        if (rows.isEmpty()) {
+            throw new NoSuchElementException("No data for product " + productId);
+        }
+
+        // build DTOs (already ordered ASC in JPQL)
+        return rows.stream()
+                .map(s -> BazaarHourSummaryResponseDTO.of(s, withPoints))
+                .toList();
+    }
+
+
     // ── mapping ────────────────────────────────────────────────────────────────
 
     /**
@@ -115,14 +152,16 @@ public class BazaarItemsQueryService {
             name = item.getSkyblockItem().getName();
         }
 
-        double buy  = s.getWeightedTwoPercentBuyPrice();
-        double sell = s.getWeightedTwoPercentSellPrice();
+        double buy  = s.getInstantBuyPrice();
+        double sell = s.getInstantSellPrice();
 
         return new BazaarItemSummaryResponseDTO(
                 s.getProductId(),
                 name,
                 s.getLastUpdated(),
                 s.getFetchedAt(),
+                s.getWeightedTwoPercentBuyPrice(),
+                s.getWeightedTwoPercentSellPrice(),
                 buy,
                 sell,
                 sell - buy,
@@ -147,8 +186,8 @@ public class BazaarItemsQueryService {
             name = item.getSkyblockItem().getName();
         }
 
-        double buy  = s.getWeightedTwoPercentBuyPrice();
-        double sell = s.getWeightedTwoPercentSellPrice();
+        double buy  = s.getInstantBuyPrice();
+        double sell = s.getInstantSellPrice();
 
         List<OrderEntryResponseDTO> buyOrders = s.getBuyOrders().stream()
                 .sorted(Comparator.comparingInt(BuyOrderEntry::getOrderIndex))
@@ -165,6 +204,8 @@ public class BazaarItemsQueryService {
                 name,
                 s.getLastUpdated(),
                 s.getFetchedAt(),
+                s.getWeightedTwoPercentBuyPrice(),
+                s.getWeightedTwoPercentSellPrice(),
                 buy,
                 sell,
                 sell - buy,

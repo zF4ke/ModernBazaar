@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -78,5 +80,22 @@ public class BazaarItemsController {
             @PathVariable String productId
     ) {
         return service.getItemDetail(productId);
+    }
+
+    @Operation(
+            summary = "Hourly history for a product",
+            description = """
+        Returns all BazaarItemHourSummary rows for `productId` ordered ASC by hourStart.
+        Optional `from` / `to` narrow the range (inclusive lower‑bound, exclusive upper‑bound).
+        Optional `withPoints=true` embeds the kept minute points for each hour.
+        """)
+    @GetMapping("/{productId}/history")
+    public List<BazaarHourSummaryResponseDTO> getItemHistory(
+            @PathVariable String productId,
+            @RequestParam(required = false) Instant from,
+            @RequestParam(required = false) Instant to,
+            @RequestParam(defaultValue = "false") boolean withPoints) {
+
+        return service.getHistory(productId, from, to, withPoints);
     }
 }

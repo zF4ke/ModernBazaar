@@ -318,8 +318,8 @@ export default function BazaarItemsPage() {
               <TableRow>
                 <TableHead>Product ID</TableHead>
                 <TableHead>Display Name</TableHead>
-                <TableHead className="text-right">Weighted Buy Price</TableHead>
-                <TableHead className="text-right">Weighted Sell Price</TableHead>
+                <TableHead className="text-right">Instant Buy Price</TableHead>
+                <TableHead className="text-right">Instant Sell Price</TableHead>
                 <TableHead className="text-right">Spread</TableHead>
                 <TableHead className="text-right">Buy Orders</TableHead>
                 <TableHead className="text-right">Sell Orders</TableHead>
@@ -351,8 +351,18 @@ export default function BazaarItemsPage() {
                       </Link>
                     </TableCell>
                     <TableCell>{item.displayName}</TableCell>
-                    <TableCell className="text-right font-mono">{item.weightedTwoPercentBuyPrice.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-mono">{item.weightedTwoPercentSellPrice.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="font-mono">{item.instantBuyPrice.toFixed(2)}</div>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        weighted: {item.weightedTwoPercentBuyPrice.toFixed(2)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="font-mono">{item.instantSellPrice.toFixed(2)}</div>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        weighted: {item.weightedTwoPercentSellPrice.toFixed(2)}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right font-mono">
                       <span className={item.spread > 0.5 ? "text-green-500 font-semibold" : ""}>
                         {item.spread.toFixed(2)}

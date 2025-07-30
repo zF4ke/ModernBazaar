@@ -26,15 +26,19 @@ public interface BazaarProductSnapshotRepository
     Instant findOldestFetchedAt();
 
     @Query(value = """
-        select distinct on (s.product_id) s.*
+
+            select distinct on (s.product_id) s.*
         from bazaar_product_snapshot s
-        join bazaar_item i on i.product_id = s.product_id
-        where (:q is null or i.display_name ilike concat('%', :q, '%') or s.product_id ilike concat('%', :q, '%'))
-          and (:minSell is null or s.weighted_two_percent_sell_price >= :minSell)
-          and (:maxSell is null or s.weighted_two_percent_sell_price <= :maxSell)
-          and (:minBuy  is null or s.weighted_two_percent_buy_price  >= :minBuy)
-          and (:maxBuy  is null or s.weighted_two_percent_buy_price  <= :maxBuy)
-          and (:minSpread is null or (s.weighted_two_percent_sell_price - s.weighted_two_percent_buy_price) >= :minSpread)
+        left join skyblock_item si on si.id = s.product_id   -- ← join for name
+        where ( :q is null
+                or si.name ilike concat('%', :q, '%')
+                or s.product_id ilike concat('%', :q, '%') )
+          and ( :minSell  is null or s.weighted_two_percent_sell_price >= :minSell )
+          and ( :maxSell  is null or s.weighted_two_percent_sell_price <= :maxSell )
+          and ( :minBuy   is null or s.weighted_two_percent_buy_price  >= :minBuy  )
+          and ( :maxBuy   is null or s.weighted_two_percent_buy_price  <= :maxBuy  )
+          and ( :minSpread is null
+                or (s.weighted_two_percent_sell_price - s.weighted_two_percent_buy_price) >= :minSpread )
         order by s.product_id, s.fetched_at desc
         """, nativeQuery = true)
     List<BazaarItemSnapshot> searchLatest(

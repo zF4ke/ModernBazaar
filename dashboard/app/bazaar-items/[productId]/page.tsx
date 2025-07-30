@@ -37,8 +37,8 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
     hour.setHours(hour.getHours() - (23 - i))
     return {
       time: hour.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-      buyPrice: (item?.weightedTwoPercentBuyPrice || 2.5) + (Math.random() - 0.5) * 0.5,
-      sellPrice: (item?.weightedTwoPercentSellPrice || 3.2) + (Math.random() - 0.5) * 0.5,
+      buyPrice: (item?.instantBuyPrice || 2.5) + (Math.random() - 0.5) * 0.5,
+      sellPrice: (item?.instantSellPrice || 3.2) + (Math.random() - 0.5) * 0.5,
     }
   })
 
@@ -84,23 +84,27 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="flex flex-col justify-between">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Buy Price</CardTitle>
+            <CardTitle className="text-sm font-medium">Instant Buy Price</CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{item.weightedTwoPercentBuyPrice.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Weighted 2% buy price</p>
+            <div className="text-2xl font-bold">{item.instantBuyPrice.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              weighted: {item.weightedTwoPercentBuyPrice.toFixed(2)}
+            </p>
           </CardContent>
         </Card>
 
         <Card className="flex flex-col justify-between">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sell Price</CardTitle>
+            <CardTitle className="text-sm font-medium">Instant Sell Price</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{item.weightedTwoPercentSellPrice.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Weighted 2% sell price</p>
+            <div className="text-2xl font-bold">{item.instantSellPrice.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">
+              weighted: {item.weightedTwoPercentSellPrice.toFixed(2)}
+            </p>
           </CardContent>
         </Card>
 
@@ -129,17 +133,17 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
       <Card className={`transition-opacity duration-200 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
         <CardHeader>
           <CardTitle>Price History</CardTitle>
-          <CardDescription>Weighted buy and sell prices over the last 24 hours</CardDescription>
+          <CardDescription>Instant buy and sell prices over the last 24 hours</CardDescription>
         </CardHeader>
         <CardContent>
           <ChartContainer
             config={{
               buyPrice: {
-                label: "Weighted Buy Price",
+                label: "Instant Buy Price",
                 color: "hsl(var(--primary))",
               },
               sellPrice: {
-                label: "Weighted Sell Price",
+                label: "Instant Sell Price",
                 color: "hsl(142, 76%, 36%)",
               },
             }}

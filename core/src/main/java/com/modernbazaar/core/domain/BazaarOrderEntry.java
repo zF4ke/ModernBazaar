@@ -8,7 +8,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "bazaar_order_entry",
         indexes = {
                 @Index(columnList = "snapshot_id"),
-                @Index(columnList = "minute_point_id"),
+                @Index(columnList = "hour_point_id"),
                 @Index(columnList = "side")
         })
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)

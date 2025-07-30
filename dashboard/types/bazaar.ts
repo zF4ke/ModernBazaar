@@ -5,6 +5,8 @@ export interface BazaarItem {
   fetchedAt: string
   weightedTwoPercentBuyPrice: number
   weightedTwoPercentSellPrice: number
+  instantBuyPrice: number
+  instantSellPrice: number
   spread: number
   buyMovingWeek: number
   sellMovingWeek: number

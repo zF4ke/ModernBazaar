@@ -15,10 +15,10 @@ public interface BazaarItemRepository extends JpaRepository<BazaarItem, String> 
     @Modifying
     @Transactional
     @Query(value = """
-        insert into bazaar_item(product_id, display_name)
-        values (:id, null)
-        on conflict do nothing
-        """, nativeQuery = true)
+    insert into bazaar_item(product_id)
+    values (:id)
+    on conflict do nothing
+    """, nativeQuery = true)
     void insertIgnore(String id);
 
     @Query("""
