@@ -113,7 +113,8 @@ public class BazaarHourlyProcessingService {
         }
 
         /* clean up heavy table */
-        snapRepo.deleteAllInBatch(raw);
+//        snapRepo.deleteAllInBatch(raw);
+        snapRepo.deleteAll(raw);
         em.flush();
         em.clear();
 
