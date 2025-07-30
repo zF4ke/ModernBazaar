@@ -1,14 +1,15 @@
 package com.modernbazaar.core.repository;
 
 import com.modernbazaar.core.domain.BazaarItemSnapshot;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import jakarta.persistence.QueryHint;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public interface BazaarProductSnapshotRepository
         extends JpaRepository<BazaarItemSnapshot, Long> {
@@ -19,8 +20,6 @@ public interface BazaarProductSnapshotRepository
     Optional<BazaarItemSnapshot> findTopByProductIdOrderByFetchedAtDesc(String productId);
 
     void deleteByFetchedAtBefore(Instant cutoff);
-
-    List<BazaarItemSnapshot> findAllByFetchedAtBetween(Instant from, Instant to);
 
     @Query("select min(s.fetchedAt) from BazaarItemSnapshot s")
     Instant findOldestFetchedAt();
@@ -66,4 +65,49 @@ public interface BazaarProductSnapshotRepository
         select avg(spread) from latest
         """, nativeQuery = true)
     double calculateAverageSpread();
+
+
+
+// huge memory usage, so we don't use it
+//    @EntityGraph(attributePaths = {"buyOrders", "sellOrders"})
+//    List<BazaarItemSnapshot> findAllByFetchedAtBetween(Instant from, Instant to);
+
+    @Query("""
+        select s
+        from BazaarItemSnapshot s
+        where s.productId = :productId
+          and s.fetchedAt >= :from and s.fetchedAt < :to
+        order by s.fetchedAt
+        """)
+    @QueryHints({
+            @QueryHint( name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE , value = "256" )
+    })
+    Stream<BazaarItemSnapshot> streamHourForProduct(@Param("productId") String productId,
+                                                    @Param("from") Instant from,
+                                                    @Param("to")   Instant to);
+
+    @Query("""
+        select distinct s.productId
+        from BazaarItemSnapshot s
+        where s.fetchedAt >= :from and s.fetchedAt < :to
+        """)
+    List<String> findProductIdsInHour(@Param("from") Instant from,
+                                      @Param("to")   Instant to);
+
+
+
+    @Modifying @Transactional
+    @Query(value = """
+        /* 1️⃣ orders first */
+        delete from bazaar_order_entry
+         where snapshot_id in (
+               select id from bazaar_product_snapshot
+                where fetched_at >= :from and fetched_at < :to
+         );
+        /* 2️⃣ now the parents */
+        delete from bazaar_product_snapshot
+         where fetched_at >= :from and fetched_at < :to;
+        """, nativeQuery = true)
+    void cascadeDeleteHour(@Param("from") Instant from,
+                           @Param("to")   Instant to);
 }

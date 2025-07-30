@@ -40,7 +40,7 @@ skyblock:
       interval-hours: 24 # 1 day
   catalog:
     enabled: true
-    refresh-days: 30
+    refresh-days: 7
     cron: "0 0 3 * * *"   # 03:00 every day
 
 
