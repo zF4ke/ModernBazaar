@@ -45,8 +45,12 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
   - [ ] Replace prior bot interactions with API-powered UI
   - [ ] (Optional) Add authentication and subscription support
   - [ ] Find a way to keep track of my trades and store them
-- [ ] **Retention & pruning**  
-  - [ ] Schedule nightly analysis job to aggregate/prune old `BazaarProductSnapshot` records (e.g. keep hourly snapshots, drop minute‑level)  
+- [ ] **Retention & pruning**
+  - [x] Hourly compaction service  
+    • collapses raw snapshots ➜ BazaarItemHourSummary + kept HourPoints  
+    • deletes the heavy snapshots once processed
+  - [ ] Nightly retention job to drop / archive **old HourPoints** (e.g. keep 7 days, thin after)
+  - [ ] Optional cold‑storage / S3 export for long‑term history
   - [ ] Archive or delete stale snapshot data to reduce DB footprint  
 - [ ] Add recording rules, alerts, and refined dashboards in Grafana
 - [ ] Optimize background jobs & introduce caching for high‑frequency updates

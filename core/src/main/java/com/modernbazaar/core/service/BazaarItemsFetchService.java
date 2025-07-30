@@ -5,7 +5,7 @@ import com.modernbazaar.core.dto.RawBazaarProduct;
 import com.modernbazaar.core.domain.BazaarItemSnapshot;
 import com.modernbazaar.core.repository.BazaarItemRepository;
 import com.modernbazaar.core.repository.BazaarProductSnapshotRepository;
-import com.modernbazaar.core.util.BazaarSnapshotMapper;
+import com.modernbazaar.core.util.RawBazaarProductToSnapshotMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import java.util.*;
 public class BazaarItemsFetchService {
 
     private final WebClient webClient;
-    private final BazaarSnapshotMapper mapper;
+    private final RawBazaarProductToSnapshotMapper mapper;
     private final BazaarProductSnapshotRepository snapshotRepo;
     private final BazaarItemRepository itemRepo;
 

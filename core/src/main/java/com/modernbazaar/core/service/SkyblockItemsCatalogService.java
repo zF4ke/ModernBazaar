@@ -6,7 +6,7 @@ import com.modernbazaar.core.domain.SkyblockItem;
 import com.modernbazaar.core.dto.RawSkyblockItem;
 import com.modernbazaar.core.dto.RawSkyblockItemsResponse;
 import com.modernbazaar.core.repository.SkyblockItemRepository;
-import com.modernbazaar.core.util.SkyblockItemMapper;
+import com.modernbazaar.core.util.RawSkyblockItemToItemMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -27,7 +27,7 @@ public class SkyblockItemsCatalogService {
 
     private final WebClient webClient;
     private final SkyblockItemRepository repo;
-    private final SkyblockItemMapper mapper;
+    private final RawSkyblockItemToItemMapper mapper;
 
     private static final String ITEMS_URI = "/resources/skyblock/items";
 

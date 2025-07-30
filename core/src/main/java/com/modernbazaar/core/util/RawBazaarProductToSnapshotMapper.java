@@ -12,7 +12,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class BazaarSnapshotMapper {
+public class RawBazaarProductToSnapshotMapper {
 
     /**
      * Converts a RawBazaarProduct into a BazaarProductSnapshot,
@@ -24,21 +24,35 @@ public class BazaarSnapshotMapper {
      * @return a fully populated BazaarProductSnapshot
      */
     public BazaarItemSnapshot toSnapshot(RawBazaarProduct raw, long apiLastUpdated) {
+        List<RawBazaarProduct.OrderEntry> buySummary = raw.getBuy_summary(); // sell orders
+        List<RawBazaarProduct.OrderEntry> sellSummary = raw.getSell_summary(); // buy orders
+
+        // get highest buy order price
+        double instantSellPrice = sellSummary != null && !sellSummary.isEmpty()
+                ? sellSummary.getFirst().getPricePerUnit() : 0.0;
+
+        // get highest sell order price
+        double instantBuyPrice = buySummary != null && !buySummary.isEmpty()
+                ? buySummary.getFirst().getPricePerUnit() : 0.0;
+
         // 1) build the snapshot core
         BazaarItemSnapshot snapshot = BazaarItemSnapshot.builder()
                 .productId(raw.getProductId())
                 .lastUpdated(Instant.ofEpochMilli(apiLastUpdated))
                 .fetchedAt(Instant.now())
+                .instantSellPrice(instantSellPrice)
                 .weightedTwoPercentSellPrice(raw.getQuickStatus().getSellPrice())
                 .sellMovingWeek(raw.getQuickStatus().getSellMovingWeek())
                 .activeSellOrdersCount(raw.getQuickStatus().getSellOrders())
+                .instantBuyPrice(instantBuyPrice)
                 .weightedTwoPercentBuyPrice(raw.getQuickStatus().getBuyPrice())
                 .buyMovingWeek(raw.getQuickStatus().getBuyMovingWeek())
                 .activeBuyOrdersCount(raw.getQuickStatus().getBuyOrders())
+                .buyVolume(raw.getQuickStatus().getBuyVolume())
+                .sellVolume(raw.getQuickStatus().getSellVolume())
                 .build();
 
         // sell_summary (sellers) -> BUY orders
-        List<RawBazaarProduct.OrderEntry> sellSummary = raw.getSell_summary();
         if (sellSummary != null) {
             int idx = 0;
             for (RawBazaarProduct.OrderEntry re : sellSummary) {
@@ -54,7 +68,6 @@ public class BazaarSnapshotMapper {
         }
 
         // buy_summary (buyers) -> SELL orders
-        List<RawBazaarProduct.OrderEntry> buySummary = raw.getBuy_summary();
         if (buySummary != null) {
             int idx = 0;
             for (RawBazaarProduct.OrderEntry re : buySummary) {

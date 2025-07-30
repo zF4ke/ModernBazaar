@@ -7,7 +7,7 @@ import com.modernbazaar.core.domain.SkyblockItem;
 import com.modernbazaar.core.dto.RawSkyblockItem;
 import com.modernbazaar.core.dto.RawSkyblockItemsResponse;
 import com.modernbazaar.core.repository.SkyblockItemRepository;
-import com.modernbazaar.core.util.SkyblockItemMapper;
+import com.modernbazaar.core.util.RawSkyblockItemToItemMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
@@ -34,7 +34,7 @@ class SkyblockItemsCatalogServiceTest {
     private SkyblockItemRepository repo;
 
     @Mock
-    private SkyblockItemMapper mapper;
+    private RawSkyblockItemToItemMapper mapper;
 
     @Test
     void refreshIfStale_returns_false_when_recent() {

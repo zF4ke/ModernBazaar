@@ -6,28 +6,34 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "bazaar_order_entry",
-        indexes = @Index(columnList = "snapshot_id, side"))
+        indexes = {
+                @Index(columnList = "snapshot_id"),
+                @Index(columnList = "minute_point_id"),
+                @Index(columnList = "side")
+        })
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "side", discriminatorType = DiscriminatorType.STRING)
-@Data
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@SuperBuilder(toBuilder = true)          // ← keep toBuilder()
 public abstract class BazaarOrderEntry {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    /* ─────────────────────────  primary key  ─────────────────────────── */
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** owning snapshot */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "snapshot_id", nullable = false)
-    private BazaarItemSnapshot snapshot;
+    /* ───────────── master‑entity back‑refs (exactly one is non‑null) ─── */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "snapshot_id")
+    private BazaarItemSnapshot snapshot;          // owning snapshot (heavy table)
 
-    /**
-     * Maintains the same API ordering.
-     * Hibernate will write and read this column for `@OrderColumn`.
-     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hour_point_id")
+    private BazaarItemHourPoint hourPoint;          // light table, 1:1 with snapshot
+
+    /* ─────────────────────── order‑book columns ──────────────────────── */
+    /** position in API array (0 = best price) */
     @Column(name = "order_index", nullable = false)
     private int orderIndex;
 
@@ -42,16 +48,4 @@ public abstract class BazaarOrderEntry {
     /** number of distinct orders at this price */
     @Column(nullable = false)
     private int orders;
-
-    @Override
-    public String toString() {
-        return "BazaarOrderEntry{" +
-                "id=" + id +
-                ", snapshot=" + snapshot.getId() +
-                ", orderIndex=" + orderIndex +
-                ", pricePerUnit=" + pricePerUnit +
-                ", amount=" + amount +
-                ", orders=" + orders +
-                '}';
-    }
 }

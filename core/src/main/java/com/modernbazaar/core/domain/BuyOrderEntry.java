@@ -7,7 +7,7 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @DiscriminatorValue("BUY")
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 public class BuyOrderEntry extends BazaarOrderEntry {
     // no extra fields ‑ only serves to filter by side='BUY'

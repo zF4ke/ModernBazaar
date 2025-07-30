@@ -11,7 +11,7 @@ import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
-public class SkyblockItemMapper {
+public class RawSkyblockItemToItemMapper {
 
     private final ObjectMapper objectMapper;
 

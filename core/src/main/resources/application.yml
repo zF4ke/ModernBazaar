@@ -30,6 +30,11 @@ skyblock:
     poll:
       enabled: true
       interval-seconds: 60 # 1 minute
+    processing:
+      price-move-threshold: 0.2 # 0.2%
+      max-snapshot-gap-min: 5 # 5 minutes
+      hourly:
+        enabled: true
     retention:
       enabled: false
       interval-hours: 24 # 1 day

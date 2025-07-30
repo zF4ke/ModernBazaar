@@ -34,6 +34,9 @@ skyblock:
     poll:
       enabled: false
       interval-seconds: 60 # 1 minute
+    processing:
+      hourly:
+        enabled: false
     retention:
       enabled: false
       interval-hours: 24 # 1 day

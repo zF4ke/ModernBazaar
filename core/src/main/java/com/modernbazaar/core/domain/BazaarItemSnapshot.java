@@ -77,11 +77,25 @@ public class BazaarItemSnapshot {
     private double weightedTwoPercentSellPrice;
 
     /**
+     * Instant sell price, the price at which you can sell instantly.
+     * This is the highest buy order price.
+     */
+    @Column(name = "instant_sell_price")
+    private double instantSellPrice;
+
+    /**
      * Total transacted volume over the last 7 days (live + historic).
      * Formerly quickStatus.sellMovingWeek.
      */
     @Column(name = "sell_moving_week")
     private long sellMovingWeek;
+
+    /**
+     * Total volume of all sell orders in the bazaar. (very inaccurate)
+     *
+     */
+    @Column(name = "sell_volume")
+    private long sellVolume;
 
     /**
      * Count of active sell orders in the bazaar.
@@ -98,11 +112,25 @@ public class BazaarItemSnapshot {
     private double weightedTwoPercentBuyPrice;
 
     /**
+     * Instant buy price, the price at which you can buy instantly.
+     * This is the lowest sell order price.
+     */
+    @Column(name = "instant_buy_price")
+    private double instantBuyPrice;
+
+    /**
      * Total transacted volume over the last 7 days (live + historic).
      * Formerly quickStatus.buyMovingWeek.
      */
     @Column(name = "buy_moving_week")
     private long buyMovingWeek;
+
+    /**
+     * Total volume of all buy orders in the bazaar. (very inaccurate)
+     *
+     */
+    @Column(name = "buy_volume")
+    private long buyVolume;
 
     /**
      * Count of active buy orders in the bazaar.
@@ -120,9 +148,11 @@ public class BazaarItemSnapshot {
                 ", fetchedAt=" + fetchedAt +
                 ", buyOrders=" + buyOrders +
                 ", sellOrders=" + sellOrders +
+                ", instantSellPrice=" + instantSellPrice +
                 ", weightedTwoPercentSellPrice=" + weightedTwoPercentSellPrice +
                 ", sellMovingWeek=" + sellMovingWeek +
                 ", activeSellOrdersCount=" + activeSellOrdersCount +
+                ", instantBuyPrice=" + instantBuyPrice +
                 ", weightedTwoPercentBuyPrice=" + weightedTwoPercentBuyPrice +
                 ", buyMovingWeek=" + buyMovingWeek +
                 ", activeBuyOrdersCount=" + activeBuyOrdersCount +

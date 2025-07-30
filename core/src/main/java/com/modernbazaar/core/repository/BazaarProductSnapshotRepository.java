@@ -20,6 +20,11 @@ public interface BazaarProductSnapshotRepository
 
     void deleteByFetchedAtBefore(Instant cutoff);
 
+    List<BazaarItemSnapshot> findAllByFetchedAtBetween(Instant from, Instant to);
+
+    @Query("select min(s.fetchedAt) from BazaarItemSnapshot s")
+    Instant findOldestFetchedAt();
+
     @Query(value = """
         select distinct on (s.product_id) s.*
         from bazaar_product_snapshot s
