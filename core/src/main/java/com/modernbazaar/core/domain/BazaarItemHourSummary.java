@@ -24,7 +24,7 @@ public class BazaarItemHourSummary {
     @Column(nullable=false, updatable=false) private Instant hourStart;
 
     @Builder.ObtainVia(method = "ignore")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(
             name               = "product_id",
             referencedColumnName = "product_id",
