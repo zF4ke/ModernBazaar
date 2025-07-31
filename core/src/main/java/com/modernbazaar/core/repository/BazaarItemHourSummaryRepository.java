@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarItemHourSummary, Long> {
     Optional<BazaarItemHourSummary> findByProductIdAndHourStart(String productId, Instant hourStart);
 
-    /* latest per product, optional filters -------------------------------- */
+    /* latest per product, optional filters */
     @Query(value = """
         select distinct on (hs.product_id) hs.*
         from   bazaar_hour_summary hs
@@ -25,22 +25,22 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
           and  (:maxSell is null or hs.close_instant_sell_price <= :maxSell)
           and  (:minBuy  is null or hs.close_instant_buy_price  >= :minBuy)
           and  (:maxBuy  is null or hs.close_instant_buy_price  <= :maxBuy)
-          and  (:minSpread is null or (hs.close_instant_sell_price -
-                                       hs.close_instant_buy_price) >= :minSpread)
+          and  (:minSpread is null or (hs.close_instant_sell_price - hs.close_instant_buy_price) >= :minSpread)
         order by hs.product_id, hs.hour_start desc
         """, nativeQuery = true)
-    List<BazaarItemHourSummary> searchLatest(@Param("q")        String q,
-                                             @Param("minSell")  Double minSell,
-                                             @Param("maxSell")  Double maxSell,
-                                             @Param("minBuy")   Double minBuy,
-                                             @Param("maxBuy")   Double maxBuy,
+    List<BazaarItemHourSummary> searchLatest(@Param("q")         String q,
+                                             @Param("minSell")   Double minSell,
+                                             @Param("maxSell")   Double maxSell,
+                                             @Param("minBuy")    Double minBuy,
+                                             @Param("maxBuy")    Double maxBuy,
                                              @Param("minSpread") Double minSpread);
 
     @Query("""
-        select s from BazaarItemHourSummary s
-        where s.productId = :productId
-          and s.hourStart >= :from
-          and s.hourStart <  :to
+        select s
+        from   BazaarItemHourSummary s
+        where  s.productId  = :productId
+          and  s.hourStart  >= :from
+          and  s.hourStart  <  :to
         order by s.hourStart asc
         """)
     List<BazaarItemHourSummary> findRange(
@@ -48,20 +48,15 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
             @Param("from")      Instant from,
             @Param("to")        Instant to);
 
-    /** same, but fetch‑joins kept points when requested */
-    @EntityGraph(attributePaths = {
-            "item",
-            "points",
-            "points.buyOrders",
-            "points.sellOrders"
-    })
+    /** fetch-minutes + orders with distinct root to avoid join duplication */
+    @EntityGraph(attributePaths = {"item","points","points.buyOrders","points.sellOrders"})
     @Query("""
-        select hs
+        select distinct hs
         from   BazaarItemHourSummary hs
                left join fetch hs.points p
                left join fetch p.buyOrders
                left join fetch p.sellOrders
-        where  hs.productId  = :pid
+        where  hs.productId = :pid
           and  hs.hourStart >= :from
           and  hs.hourStart <  :to
         order  by hs.hourStart asc
@@ -70,15 +65,9 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
                                                     @Param("from") Instant from,
                                                     @Param("to")   Instant to);
 
-    /* same but eager‑fetch minute points (for detail view) */
-    @EntityGraph(attributePaths = {
-            "item",
-            "points",
-            "points.buyOrders",
-            "points.sellOrders"
-    })
+    @EntityGraph(attributePaths = {"item","points","points.buyOrders","points.sellOrders"})
     @Query("""
-        select hs
+        select distinct hs
         from   BazaarItemHourSummary hs
                left join fetch hs.points p
                left join fetch p.buyOrders
