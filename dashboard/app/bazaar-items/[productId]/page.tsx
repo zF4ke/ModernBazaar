@@ -64,6 +64,8 @@ async function fetchBazaarItemHistory(productId: string, from?: string, to?: str
 export default function BazaarItemDetailPage({ params }: { params: Promise<{ productId: string }> }) {
   const resolvedParams = use(params)
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | '7d' | 'total'>('24h')
+  const [buyOrdersCollapsed, setBuyOrdersCollapsed] = useState(false)
+  const [sellOrdersCollapsed, setSellOrdersCollapsed] = useState(false)
   
   const {
     data: item,
@@ -361,141 +363,173 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
       </Card>
 
       {/* Order Books */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className={`grid gap-4 ${buyOrdersCollapsed || sellOrdersCollapsed ? 'md:grid-cols-1' : 'md:grid-cols-2'}`}>
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <ArrowDownRight className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>Buy Orders</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowDownRight className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Buy Orders</CardTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setBuyOrdersCollapsed(!buyOrdersCollapsed)}
+                className="h-8 w-8 p-0"
+              >
+                {buyOrdersCollapsed ? (
+                  <Plus className="h-4 w-4" />
+                ) : (
+                  <Minus className="h-4 w-4" />
+                )}
+              </Button>
             </div>
             <CardDescription>Active buy orders for this item</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead></TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      Price (coins)
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Package className="h-3 w-3" />
-                      Amount (items)
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Activity className="h-3 w-3" />
-                      Orders
-                    </div>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {snapshot.buyOrders.slice(0, 10).map((order, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
+          {!buyOrdersCollapsed && (
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead></TableHead>
+                    <TableHead>
                       <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground/50">#{index + 1}</span>
+                        <DollarSign className="h-3 w-3" />
+                        Price (coins)
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <Package className="h-3 w-3" />
+                        Amount (items)
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <Activity className="h-3 w-3" />
+                        Orders
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {snapshot.buyOrders.map((order, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground/50">#{index + 1}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
+                      <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
+                      <TableCell>{order.orders}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="border-t-2 font-semibold bg-muted/50">
+                    <TableCell className="font-semibold">
+                      <div className="flex items-center gap-1">
+                        <BarChart3 className="h-3 w-3" />
+                        Total
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
-                    <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
-                    <TableCell>{order.orders}</TableCell>
+                    <TableCell className="font-mono">
+                      {snapshot.buyOrders.reduce((sum, order) => sum + (order.pricePerUnit * order.amount), 0).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {snapshot.buyOrders.reduce((sum, order) => sum + order.amount, 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {snapshot.buyOrders.reduce((sum, order) => sum + order.orders, 0)}
+                    </TableCell>
                   </TableRow>
-                ))}
-                <TableRow className="border-t-2 font-semibold bg-muted/50">
-                  <TableCell className="font-semibold">
-                    <div className="flex items-center gap-1">
-                      <BarChart3 className="h-3 w-3" />
-                      Total
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono">
-                    {snapshot.buyOrders.slice(0, 10).reduce((sum, order) => sum + (order.pricePerUnit * order.amount), 0).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="font-mono">
-                    {snapshot.buyOrders.slice(0, 10).reduce((sum, order) => sum + order.amount, 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    {snapshot.buyOrders.slice(0, 10).reduce((sum, order) => sum + order.orders, 0)}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
+                </TableBody>
+              </Table>
+            </CardContent>
+          )}
         </Card>
 
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-2">
-              <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>Sell Orders</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
+                <CardTitle>Sell Orders</CardTitle>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSellOrdersCollapsed(!sellOrdersCollapsed)}
+                className="h-8 w-8 p-0"
+              >
+                {sellOrdersCollapsed ? (
+                  <Plus className="h-4 w-4" />
+                ) : (
+                  <Minus className="h-4 w-4" />
+                )}
+              </Button>
             </div>
             <CardDescription>Active sell orders for this item</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead></TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <DollarSign className="h-3 w-3" />
-                      Price (coins)
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Package className="h-3 w-3" />
-                      Amount (items)
-                    </div>
-                  </TableHead>
-                  <TableHead>
-                    <div className="flex items-center gap-1">
-                      <Activity className="h-3 w-3" />
-                      Orders
-                    </div>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {snapshot.sellOrders.slice(0, 10).map((order, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
+          {!sellOrdersCollapsed && (
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead></TableHead>
+                    <TableHead>
                       <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground/50">#{index + 1}</span>
+                        <DollarSign className="h-3 w-3" />
+                        Price (coins)
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <Package className="h-3 w-3" />
+                        Amount (items)
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1">
+                        <Activity className="h-3 w-3" />
+                        Orders
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {snapshot.sellOrders.map((order, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground/50">#{index + 1}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
+                      <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
+                      <TableCell>{order.orders}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="border-t-2 font-semibold bg-muted/50">
+                    <TableCell className="font-semibold">
+                      <div className="flex items-center gap-1">
+                        <BarChart3 className="h-3 w-3" />
+                        Total
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
-                    <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
-                    <TableCell>{order.orders}</TableCell>
+                    <TableCell className="font-mono">
+                      {snapshot.sellOrders.reduce((sum, order) => sum + (order.pricePerUnit * order.amount), 0).toFixed(2)}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {snapshot.sellOrders.reduce((sum, order) => sum + order.amount, 0).toLocaleString()}
+                    </TableCell>
+                    <TableCell>
+                      {snapshot.sellOrders.reduce((sum, order) => sum + order.orders, 0)}
+                    </TableCell>
                   </TableRow>
-                ))}
-                <TableRow className="border-t-2 font-semibold bg-muted/50">
-                  <TableCell className="font-semibold">
-                    <div className="flex items-center gap-1">
-                      <BarChart3 className="h-3 w-3" />
-                      Total
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-mono">
-                    {snapshot.sellOrders.slice(0, 10).reduce((sum, order) => sum + (order.pricePerUnit * order.amount), 0).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="font-mono">
-                    {snapshot.sellOrders.slice(0, 10).reduce((sum, order) => sum + order.amount, 0).toLocaleString()}
-                  </TableCell>
-                  <TableCell>
-                    {snapshot.sellOrders.slice(0, 10).reduce((sum, order) => sum + order.orders, 0)}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
+                </TableBody>
+              </Table>
+            </CardContent>
+          )}
         </Card>
       </div>
 
