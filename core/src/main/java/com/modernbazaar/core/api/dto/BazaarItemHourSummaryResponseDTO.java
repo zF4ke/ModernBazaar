@@ -2,6 +2,8 @@ package com.modernbazaar.core.api.dto;
 
 import com.modernbazaar.core.domain.BazaarItemHourPoint;
 import com.modernbazaar.core.domain.BazaarItemHourSummary;
+import com.modernbazaar.core.domain.BuyOrderEntry;
+import com.modernbazaar.core.domain.SellOrderEntry;
 import jakarta.annotation.Nullable;
 
 import java.time.Instant;
@@ -31,13 +33,34 @@ public record BazaarItemHourSummaryResponseDTO(
     public static BazaarItemHourSummaryResponseDTO of(
             BazaarItemHourSummary s, boolean withPoints) {
 
+        List<BazaarItemHourPointDTO> pts = null;
 
-        List<BazaarItemHourPointDTO> pts = (withPoints && s.getPoints() != null)
-                ? s.getPoints().stream()
-                .sorted(Comparator.comparing(BazaarItemHourPoint::getSnapshotTime))
-                .map(BazaarItemHourPointDTO::of)
-                .toList()
-                : List.of();
+        if (withPoints && s.getPoints() != null) {
+            pts = s.getPoints().stream()
+                    .sorted(Comparator.comparing(BazaarItemHourPoint::getSnapshotTime))
+                    .map(p -> new BazaarItemHourPointDTO(
+                            p.getSnapshotTime(),
+                            p.getInstantBuyPrice(),
+                            p.getInstantSellPrice(),
+                            p.getActiveBuyOrdersCount(),
+                            p.getActiveSellOrdersCount(),
+                            /* buy side */
+                            p.getBuyOrders().stream()
+                                    .sorted(Comparator.comparingInt(BuyOrderEntry::getOrderIndex))
+                                    .map(o -> new OrderEntryResponseDTO(
+                                            o.getOrderIndex(), o.getPricePerUnit(),
+                                            o.getAmount(),     o.getOrders()))
+                                    .toList(),
+                            /* sell side */
+                            p.getSellOrders().stream()
+                                    .sorted(Comparator.comparingInt(SellOrderEntry::getOrderIndex))
+                                    .map(o -> new OrderEntryResponseDTO(
+                                            o.getOrderIndex(), o.getPricePerUnit(),
+                                            o.getAmount(),     o.getOrders()))
+                                    .toList()
+                    ))
+                    .toList();
+        }
 
         String name = (s.getItem() != null &&
                 s.getItem().getSkyblockItem() != null)

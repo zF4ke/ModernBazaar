@@ -20,24 +20,4 @@ public record BazaarItemHourPointDTO(
         int     activeSellOrdersCount,
         List<OrderEntryResponseDTO> buyOrders,
         List<OrderEntryResponseDTO> sellOrders
-) {
-    public static BazaarItemHourPointDTO of(BazaarItemHourPoint p) {
-        return new BazaarItemHourPointDTO(
-                p.getSnapshotTime(),
-                p.getInstantBuyPrice(),
-                p.getInstantSellPrice(),
-                p.getActiveBuyOrdersCount(),
-                p.getActiveSellOrdersCount(),
-                p.getBuyOrders().stream()
-                        .map(o -> new OrderEntryResponseDTO(
-                                o.getOrderIndex(), o.getPricePerUnit(),
-                                o.getAmount(),     o.getOrders()))
-                        .toList(),
-                p.getSellOrders().stream()
-                        .map(o -> new OrderEntryResponseDTO(
-                                o.getOrderIndex(), o.getPricePerUnit(),
-                                o.getAmount(),     o.getOrders()))
-                        .toList()
-        );
-    }
-}
+) {}

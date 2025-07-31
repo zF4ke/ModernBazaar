@@ -1,51 +1,87 @@
 package com.modernbazaar.core.util;
 
 import com.modernbazaar.core.domain.*;
-        import lombok.RequiredArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class BazaarSnapshotToMinutePointMapper {
 
-    private static final int DEPTH = 30;  // how many order levels to keep
+    /** How many price levels of the order-book we persist per kept snapshot */
+    private static final int DEPTH = 30;
+
+    /* ------------------------------------------------------------------ */
+    /*  public API                                                        */
+    /* ------------------------------------------------------------------ */
 
     public BazaarItemHourPoint toMinute(BazaarItemSnapshot s,
                                         BazaarItemHourSummary parent) {
 
         BazaarItemHourPoint p = new BazaarItemHourPoint();
-        p.setHourSummary(parent);
-        p.setSnapshotTime(s.getFetchedAt());
 
-        p.setInstantBuyPrice (s.getInstantBuyPrice());
-        p.setInstantSellPrice(s.getInstantSellPrice());
+        /* ——— header / FK columns ———————————————————————————————— */
+        p.setHourSummary(parent);             // FK → summary (NOT NULL)
+        p.setProductId(s.getProductId());     // NOT NULL
+        p.setSnapshotTime(s.getFetchedAt());
+        p.setApiLastUpdated(s.getLastUpdated());
+
+        /* ——— instant prices & counts ———————————————————————————— */
+        p.setInstantBuyPrice      (s.getInstantBuyPrice());
+        p.setInstantSellPrice     (s.getInstantSellPrice());
         p.setActiveBuyOrdersCount (s.getActiveBuyOrdersCount());
         p.setActiveSellOrdersCount(s.getActiveSellOrdersCount());
 
-        /* ---- copy (trimmed) order-books -------------------------------- */
-        p.setBuyOrders (cloneOrders(
-                s.getBuyOrders(), BuyOrderEntry.class,  p));
-        p.setSellOrders(cloneOrders(
-                s.getSellOrders(), SellOrderEntry.class, p));
+        /* ——— optional metrics we still want to keep ————————————— */
+        p.setWeightedTwoPercentBuyPrice (s.getWeightedTwoPercentBuyPrice());
+        p.setWeightedTwoPercentSellPrice(s.getWeightedTwoPercentSellPrice());
+        p.setBuyMovingWeek   (s.getBuyMovingWeek());
+        p.setSellMovingWeek  (s.getSellMovingWeek());
+        p.setBuyVolume   (s.getBuyVolume());
+        p.setSellVolume  (s.getSellVolume());
+
+        /* ——— copy first N levels of each side of the book ——————— */
+        p.setBuyOrders (s.getBuyOrders().stream()
+                .limit(DEPTH)
+                .map(o -> copyBuy(o, p))
+                .collect(Collectors.toList()));
+
+        p.setSellOrders(s.getSellOrders().stream()
+                .limit(DEPTH)
+                .map(o -> copySell(o, p))
+                .collect(Collectors.toList()));
 
         return p;
     }
 
-    /** deep-clone the first N order levels so we can delete the parent snapshot. */
-    private <T extends BazaarOrderEntry> List<T> cloneOrders(
-            List<? extends BazaarOrderEntry> src,
-            Class<T> type,
-            BazaarItemHourPoint owner) {
+    /* ------------------------------------------------------------------ */
+    /*  private helpers – make NEW rows, no reflection, no cloning        */
+    /* ------------------------------------------------------------------ */
 
-        return src.stream()
-                .limit(BazaarSnapshotToMinutePointMapper.DEPTH)
-                .map(o -> {
-                    T copy = type.cast(o.cloneShallow());   // add a copy helper or ctor
-                    copy.setHourPoint(owner);
-                    return copy;
-                })
-                .toList();
+    private BuyOrderEntry copyBuy(BuyOrderEntry src,
+                                  BazaarItemHourPoint owner) {
+
+        BuyOrderEntry b = new BuyOrderEntry();
+        b.setHourPoint(owner);
+        b.setOrderIndex   (src.getOrderIndex());
+        b.setPricePerUnit (src.getPricePerUnit());
+        b.setAmount       (src.getAmount());
+        b.setOrders       (src.getOrders());
+        return b;
+    }
+
+    private SellOrderEntry copySell(SellOrderEntry src,
+                                    BazaarItemHourPoint owner) {
+
+        SellOrderEntry s = new SellOrderEntry();
+        s.setHourPoint(owner);
+        s.setOrderIndex   (src.getOrderIndex());
+        s.setPricePerUnit (src.getPricePerUnit());
+        s.setAmount       (src.getAmount());
+        s.setOrders       (src.getOrders());
+        return s;
     }
 }

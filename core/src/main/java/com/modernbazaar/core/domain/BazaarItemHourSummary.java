@@ -30,6 +30,7 @@ public class BazaarItemHourSummary {
             updatable          = false,
             foreignKey         = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     @ToString.Exclude
+    @Setter(AccessLevel.NONE)
     private BazaarItem item;
 
     /* --- OHLC for BUY side (2% weighted price) ----------------------------- */

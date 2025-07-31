@@ -48,14 +48,5 @@ public abstract class BazaarOrderEntry {
     /** number of distinct orders at this price */
     @Column(nullable = false)
     private int orders;
-
-    // cloneShallow
-    public BazaarOrderEntry cloneShallow() {
-        try {
-            return (BazaarOrderEntry) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException("Failed to clone BazaarOrderEntry", e);
-        }
-    }
 }
 

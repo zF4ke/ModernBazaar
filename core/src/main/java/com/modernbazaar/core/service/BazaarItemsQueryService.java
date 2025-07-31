@@ -142,11 +142,6 @@ public class BazaarItemsQueryService {
         if (rows.isEmpty())
             throw new NoSuchElementException("No data for product " + productId);
 
-        String name = itemRepo.findById(productId)
-                .map(BazaarItem::getSkyblockItem)
-                .map(SkyblockItem::getName)
-                .orElse(null);
-
         return rows.stream()
                 .map(r -> BazaarItemHourSummaryResponseDTO.of(r, withPoints))
                 .toList();
