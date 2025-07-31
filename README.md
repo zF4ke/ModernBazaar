@@ -22,39 +22,45 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 
 - [x] Core project scaffolded (Gradle, Dockerfile, Spring profiles)
 - [x] Infra stack (Postgres, Prometheus, Grafana) running with basic metrics
-- [x] Github Actions CI/CD pipeline for building, testing, and deploying
-- [x] **Core API & persistence**
-  - [x] Implement background job to fetch Hypixel's API and save `BazaarItem` + `BazaarProductSnapshot`
-  - [x] Only persist snapshots if data has changed (skip duplicates)  
-  - [x] Swagger UI & OpenAPI (`/swagger-ui.html`, `/v3/api-docs`)
-  - [x] `GET /api/bazaar/items` & `GET /api/bazaar/items/{productId}` (ItemsController + DTOs)
-  - [x] Add pagination, filtering and error handling to each endpoint
-  - [x] Implement Skyblock Items API (`GET /api/skyblock/items`) with filtering
-  - [x] Add Skyblock catalog refresh endpoints
-  - [ ] Implement `GET /api/bazaar/items/{productId}/snapshots?from={timestamp}&to={timestamp}` endpoint
-- [ ] **Web Dashboard (Next.js + TypeScript)**
-  - [x] Basic dashboard structure with navigation
-  - [x] Bazaar Items page with pagination and filtering
-  - [x] Skyblock Items page with filtering
-  - [x] Settings page with system status and data management
-  - [ ] Charts and data visualization
-  - [ ] Advanced filtering and search features
-- [ ] **Trading Strategies & Analysis**
-  - [ ] Implement `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]` endpoints
-  - [ ] Implement other endpoints for trading strategies and analysis
-  - [ ] Replace prior bot interactions with API-powered UI
-  - [ ] (Optional) Add authentication and subscription support
-  - [ ] Find a way to keep track of my trades and store them
-- [ ] **Retention & pruning**
-  - [x] Hourly compaction service  
-    • collapses raw snapshots ➜ BazaarItemHourSummary + kept HourPoints  
-    • deletes the heavy snapshots once processed
-  - [ ] Nightly retention job to drop / archive **old HourPoints** (e.g. keep 7 days, thin after)
-  - [ ] Optional cold‑storage / S3 export for long‑term history
-  - [ ] Archive or delete stale snapshot data to reduce DB footprint  
-- [ ] Add recording rules, alerts, and refined dashboards in Grafana
-- [ ] Optimize background jobs & introduce caching for high‑frequency updates
-- [ ] Introduce ML modules (prediction, anomaly detection) and tie them into Core
+- [x] GitHub Actions CI/CD pipeline for building, testing, and deploying
+
+**Core API & persistence**
+- [x] Background job: poll Hypixel → `BazaarItemSnapshot`
+- [x] Skip duplicate snapshots
+- [x] Swagger UI & OpenAPI (`/swagger-ui.html`, `/v3/api-docs`)
+- [x] `GET /api/bazaar/items` & `GET /api/bazaar/items/{productId}` (now served from **HourSummary**)
+- [x] Pagination, filtering, error handling
+- [x] Skyblock Items API + catalog refresh endpoints
+- [x] `GET /api/bazaar/items/{productId}/history?from=&to=&withPoints=` (hour summaries)
+- [ ] **(obsolete)** minute-level snapshots endpoint — replaced by history above
+
+**Web Dashboard (Next.js + TypeScript)**
+- [x] Basic dashboard structure with navigation
+- [x] Bazaar Items page with pagination and filtering
+- [x] Skyblock Items page with filtering
+- [x] Settings page with system status and data management
+- [ ] Charts and data visualization
+- [ ] Advanced filtering and search features
+
+**Trading Strategies & Analysis**
+- [ ] `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]`
+- [ ] Additional strategy endpoints & UI
+- [ ] Replace prior bot interactions with API-powered UI
+- [ ] (Optional) Auth + subscription support
+- [ ] Trade journal storage
+
+**Retention & pruning**
+- [x] **Hourly compaction**  
+  • raw snapshots ➜ HourSummary + kept HourPoints  
+  • deletes heavy snapshots once processed
+- [ ] Nightly job: thin / archive old HourPoints (e.g., keep 7 days, then downsample)
+- [ ] Optional S3 export for long-term history
+- [ ] Cold-snapshot archive to reduce DB footprint
+
+**Other**
+- [ ] Recording rules, alerts, refined Grafana dashboards
+- [ ] Cache hot reads & optimise background jobs
+- [ ] ML modules (prediction, anomaly detection) tied into Core
 - [ ] Scale/shard where necessary
 
 ## ⚡ Quick start
