@@ -18,36 +18,34 @@ import java.time.temporal.ChronoUnit;
 public class BazaarHourlyProcessingJob {
 
     private final BazaarHourlyProcessingService service;
-
-    /** crude in‑JVM lock so two schedulers on the same node don’t collide */
     private static final Object LOCK = new Object();
 
-    /** every 5 minutes, with a 2‑minute grace so the current hour is settled */
+    /**
+     * Runs every 5 minutes, with a 2-minute grace: picks the oldest snapshot as window start
+     */
     @Scheduled(cron = "0 */5 * * * *")
     public void compactLoop() {
         synchronized (LOCK) {
             Instant oldest = service.findOldestSnapshotTimestamp();
-            if (oldest == null) return;                       // nothing pending
+            if (oldest == null) return;
 
-            log.debug("Oldest snapshot timestamp: {}", oldest);
-            // print the pretty date: XXhXX min ago
             Duration duration = Duration.between(oldest, Instant.now());
             long hours = duration.toHours();
             long minutes = duration.minusHours(hours).toMinutes();
             log.info("Compacting bazaar hourly data for {}h{} min ago", hours, minutes);
 
-            Instant hourStart = oldest.truncatedTo(ChronoUnit.HOURS);
-            Instant hourEnd   = hourStart.plus(1, ChronoUnit.HOURS);
+            Instant windowStart = oldest;
+            Instant windowEnd   = windowStart.plus(1, ChronoUnit.HOURS);
 
-            // only proceed if the full hour has definitely finished
-            if (Instant.now().isBefore(hourEnd.plusSeconds(120))) {   // 2 min grace
-                return; // still collecting this hour → wait for next tick
+            // wait until we have a full hour of data (plus 2 min grace)
+            if (Instant.now().isBefore(windowEnd.plusSeconds(120))) {
+                return;
             }
 
             try {
-                service.processSingleHour(hourStart); // **one** hour
+                service.processSingleHour(windowStart);
             } catch (Exception ex) {
-                log.error("Compaction failed for {}", hourStart, ex);
+                log.error("Compaction failed for {}", windowStart, ex);
             }
         }
     }

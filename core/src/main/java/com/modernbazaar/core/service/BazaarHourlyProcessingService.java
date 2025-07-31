@@ -1,24 +1,27 @@
 package com.modernbazaar.core.service;
 
-import com.modernbazaar.core.domain.*;
-import com.modernbazaar.core.repository.*;
+import com.modernbazaar.core.domain.BazaarItemHourPoint;
+import com.modernbazaar.core.domain.BazaarItemHourSummary;
+import com.modernbazaar.core.domain.BazaarItemSnapshot;
+import com.modernbazaar.core.repository.BazaarProductSnapshotRepository;
+import com.modernbazaar.core.repository.BazaarItemHourSummaryRepository;
+import com.modernbazaar.core.repository.BazaarHourPointRepository;
 import com.modernbazaar.core.util.BazaarSnapshotToMinutePointMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -33,56 +36,47 @@ public class BazaarHourlyProcessingService {
 
     @PersistenceContext
     private final EntityManager em;
-    private final Executor bazaarExecutor;
 
-    /* ── heuristics -------------------------------------------------------- */
-
-    /** %‑move that forces us to *keep* the snapshot and resets prev‑price. */
     @Value("${skyblock.bazaar.processing.price-move-threshold:0.2}")
     private double PRICE_MOVE_THRESHOLD;
 
-    /** keep at least one snapshot every N minutes even if prices are flat. */
     @Value("${skyblock.bazaar.processing.max-snapshot-gap-min:5}")
-    private long   MAX_GAP_MINUTES;
+    private long MAX_GAP_MINUTES;
 
-    private static final int BATCH_POINTS = 256;      // flush batch
+    private static final int BATCH_POINTS = 256;
 
-    /* ────────────────────────────────────────────────────────────────────── */
-
-    /** Scheduler entry‑point — compacts exactly one UTC hour bucket. */
+    /**
+     * Processes exactly one 1-hour window starting at the oldest snapshot timestamp.
+     */
     @Transactional
-    public void processSingleHour(Instant hourStart) {
-
-        Instant hourEnd = hourStart.plus(1, ChronoUnit.HOURS);
-        List<String> productIds = snapRepo.findProductIdsInHour(hourStart, hourEnd);
+    public void processSingleHour(Instant windowStart) {
+        Instant windowEnd = windowStart.plus(1, ChronoUnit.HOURS);
+        List<String> productIds = snapRepo.findProductIdsInHour(windowStart, windowEnd);
         if (productIds.isEmpty()) {
-            log.debug("No snapshots to compact for {}", hourStart);
+            log.debug("No snapshots to compact for {}", windowStart);
             return;
         }
 
         int totalKept = 0;
         for (String pid : productIds) {
-            totalKept += compactProductHour(pid, hourStart, hourEnd);
+            totalKept += compactProductHour(pid, windowStart, windowEnd);
         }
 
-        /* heavy table gone → FK cascades wipe order entries */
-        snapRepo.cascadeDeleteHour(hourStart, hourEnd);
+        // Delete all snapshots (and associated order entries) in this window
+        snapRepo.cascadeDeleteHour(windowStart, windowEnd);
 
-        log.info("Hour {} → products={}  points kept={}", hourStart, productIds.size(), totalKept);
+        log.info("Window {} → products={}  points kept={}", windowStart, productIds.size(), totalKept);
     }
 
+    /**
+     * Returns the timestamp of the oldest unprocessed snapshot, or null if none.
+     */
     @Transactional(readOnly = true)
     public Instant findOldestSnapshotTimestamp() {
         return snapRepo.findOldestFetchedAt();
     }
 
-    /* ================================================================= */
-    /*  per‑product streaming compaction                                 */
-    /* ================================================================= */
-
     private int compactProductHour(String productId, Instant from, Instant to) {
-
-        /* ------------------------------------------------ summary initialisation */
         BazaarItemHourSummary sum = summaryRepo
                 .findByProductIdAndHourStart(productId, from)
                 .orElseGet(() -> summaryRepo.save(
@@ -91,7 +85,6 @@ public class BazaarHourlyProcessingService {
                                 .hourStart(from)
                                 .build()));
 
-        /* ------------------------------------------------ iteration state */
         List<BazaarItemSnapshot> kept = new ArrayList<>(BATCH_POINTS);
         int keptCount = 0;
 
@@ -100,17 +93,15 @@ public class BazaarHourlyProcessingService {
         double minBuy = Double.MAX_VALUE, maxBuy = 0;
         double minSell = Double.MAX_VALUE, maxSell = 0;
 
-        long newBuyOrders  = 0, newSellOrders  = 0;
-        long itemsListedBuy  = 0, itemsListedSell = 0;
+        long newBuyOrders = 0, newSellOrders = 0;
+        long itemsListedBuy = 0, itemsListedSell = 0;
 
-        int  prevActiveBuy  = 0, prevActiveSell = 0;
-        long prevBuyVol     = 0, prevSellVol    = 0;
+        int prevActiveBuy = 0, prevActiveSell = 0;
+        long prevBuyVol = 0, prevSellVol = 0;
 
         long processed = 0;
 
-        /* ------------------------------------------------ streaming cursor */
         try (Stream<BazaarItemSnapshot> st =
-//                     snapRepo.streamHourForProduct(productId, from, to)) {
                      snapRepo.streamHourForProductWithOrders(productId, from, to)) {
 
             for (Iterator<BazaarItemSnapshot> it = st.iterator(); it.hasNext(); ) {
@@ -122,71 +113,69 @@ public class BazaarHourlyProcessingService {
                     prevKept = s;
                     prevSnap = s;
 
-                    prevActiveBuy  = s.getActiveBuyOrdersCount();
+                    prevActiveBuy = s.getActiveBuyOrdersCount();
                     prevActiveSell = s.getActiveSellOrdersCount();
-                    prevBuyVol  = s.getBuyVolume();
+                    prevBuyVol = s.getBuyVolume();
                     prevSellVol = s.getSellVolume();
-                    kept.add(s);                           // open
-                } else {
 
-                    /* --- metrics over *all* snapshots ---------------------- */
-                    minBuy  = Math.min(minBuy , s.getInstantBuyPrice());
-                    maxBuy  = Math.max(maxBuy , s.getInstantBuyPrice());
+                    kept.add(s);
+                } else {
+                    prevSnap = s;
+                    // track min/max
+                    minBuy = Math.min(minBuy, s.getInstantBuyPrice());
+                    maxBuy = Math.max(maxBuy, s.getInstantBuyPrice());
                     minSell = Math.min(minSell, s.getInstantSellPrice());
                     maxSell = Math.max(maxSell, s.getInstantSellPrice());
 
+                    // new orders & volumes
                     if (s.getActiveBuyOrdersCount() > prevActiveBuy) {
-                        newBuyOrders   += s.getActiveBuyOrdersCount() - prevActiveBuy;
-                        itemsListedBuy += s.getBuyVolume()  - prevBuyVol;
+                        newBuyOrders += s.getActiveBuyOrdersCount() - prevActiveBuy;
+                        itemsListedBuy += s.getBuyVolume() - prevBuyVol;
                     }
                     if (s.getActiveSellOrdersCount() > prevActiveSell) {
-                        newSellOrders   += s.getActiveSellOrdersCount() - prevActiveSell;
+                        newSellOrders += s.getActiveSellOrdersCount() - prevActiveSell;
                         itemsListedSell += s.getSellVolume() - prevSellVol;
                     }
-                    prevActiveBuy  = s.getActiveBuyOrdersCount();
+                    prevActiveBuy = s.getActiveBuyOrdersCount();
                     prevActiveSell = s.getActiveSellOrdersCount();
-                    prevBuyVol  = s.getBuyVolume();
+                    prevBuyVol = s.getBuyVolume();
                     prevSellVol = s.getSellVolume();
 
-                    /* --- kept minutes selection --------------------------- */
+                    // decide if we should keep this snapshot
                     if (shouldKeep(prevKept, s)) {
                         kept.add(s);
                         prevKept = s;
                     }
                 }
 
-                /* --- batch flush  ---------------------------------------- */
                 if (kept.size() >= BATCH_POINTS) {
-//                    persistPoints(kept, sum);
                     keptCount += persistPoints(kept, sum);
                     kept.clear();
                 }
             }
 
-            /* tail flush */
             if (!kept.isEmpty()) {
                 keptCount += persistPoints(kept, sum);
             }
 
-            /* summary finalisation --------------------------------------- */
+            // Finalize summary
             BazaarItemSnapshot last = prevSnap;
-
-            sum.setOpenInstantBuyPrice (first.getInstantBuyPrice());
+            sum.setOpenInstantBuyPrice(first.getInstantBuyPrice());
             sum.setCloseInstantBuyPrice(last.getInstantBuyPrice());
-            sum.setMinInstantBuyPrice (minBuy);
-            sum.setMaxInstantBuyPrice (maxBuy);
+            sum.setMinInstantBuyPrice(minBuy);
+            sum.setMaxInstantBuyPrice(maxBuy);
 
-            sum.setOpenInstantSellPrice (first.getInstantSellPrice());
+            sum.setOpenInstantSellPrice(first.getInstantSellPrice());
             sum.setCloseInstantSellPrice(last.getInstantSellPrice());
-            sum.setMinInstantSellPrice (minSell);
-            sum.setMaxInstantSellPrice (maxSell);
+            sum.setMinInstantSellPrice(minSell);
+            sum.setMaxInstantSellPrice(maxSell);
 
-            sum.setNewBuyOrders (newBuyOrders);
+            sum.setNewBuyOrders(newBuyOrders);
             sum.setNewSellOrders(newSellOrders);
-            sum.setDeltaNewBuyOrders  (last.getActiveBuyOrdersCount()  - first.getActiveBuyOrdersCount());
-            sum.setDeltaNewSellOrders (last.getActiveSellOrdersCount() - first.getActiveSellOrdersCount());
+            sum.setDeltaNewBuyOrders(last.getActiveBuyOrdersCount() - first.getActiveBuyOrdersCount());
+            sum.setDeltaNewSellOrders(last.getActiveSellOrdersCount() - first.getActiveSellOrdersCount());
 
-            sum.setItemsListedBuyOrders (itemsListedBuy);
+            sum.setItemsListedBuyOrders(itemsListedBuy);
             sum.setItemsListedSellOrders(itemsListedSell);
 
             summaryRepo.save(sum);
@@ -196,22 +185,17 @@ public class BazaarHourlyProcessingService {
         return keptCount;
     }
 
-    /* --------------------------------------------------------------------- */
     private boolean shouldKeep(BazaarItemSnapshot prev, BazaarItemSnapshot curr) {
         if (prev == null) return true;
-
         boolean bigGap = Duration.between(prev.getFetchedAt(), curr.getFetchedAt())
                 .compareTo(Duration.ofMinutes(MAX_GAP_MINUTES)) >= 0;
-
-        boolean priceJump =
-                moved(prev.getInstantSellPrice(), curr.getInstantSellPrice()) ||
-                        moved(prev.getInstantBuyPrice() , curr.getInstantBuyPrice());
-
+        boolean priceJump = moved(prev.getInstantSellPrice(), curr.getInstantSellPrice()) ||
+                moved(prev.getInstantBuyPrice(), curr.getInstantBuyPrice());
         return bigGap || priceJump;
     }
 
     private int persistPoints(List<BazaarItemSnapshot> snaps,
-                               BazaarItemHourSummary summary) {
+                              BazaarItemHourSummary summary) {
         List<BazaarItemHourPoint> pts = snaps.stream()
                 .map(s -> mapper.toMinute(s, summary))
                 .toList();

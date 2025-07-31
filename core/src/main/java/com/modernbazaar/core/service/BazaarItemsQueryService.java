@@ -16,8 +16,7 @@ import java.util.stream.Collectors;
 
 /**
  * Query-side facade that merges the freshest minute snapshot with the last
- * completed hour summary—including displayName lookups—so API callers always
- * receive a live view of the bazaar plus the richer roll-up metrics.
+ * completed hour summary—including displayName lookups—from the catalog.
  */
 @Service
 @RequiredArgsConstructor
@@ -32,15 +31,21 @@ public class BazaarItemsQueryService {
 
     @Transactional(readOnly = true)
     public PagedResponseDTO<BazaarItemLiveViewResponseDTO> getLatestPaginated(
-            BazaarItemFilterDTO filter, Optional<String> sort, int page, int limit) {
+            BazaarItemFilterDTO filter,
+            Optional<String>        sort,
+            int                     page,
+            int                     limit
+    ) {
         var all = getLatest(filter, sort, Optional.empty());
         return PagedResponseDTO.of(all, page, limit);
     }
 
     @Transactional(readOnly = true)
     public List<BazaarItemLiveViewResponseDTO> getLatest(
-            BazaarItemFilterDTO filter, Optional<String> sort, Optional<Integer> limit) {
-
+            BazaarItemFilterDTO filter,
+            Optional<String>     sort,
+            Optional<Integer>    limit
+    ) {
         // 1) fetch raw tables
         List<BazaarItemSnapshot>    snaps = snapRepo.searchLatest(
                 filter.q(), filter.minSell(), filter.maxSell(),
@@ -51,11 +56,13 @@ public class BazaarItemsQueryService {
 
         // 2) index by productId
         Map<String,BazaarItemSnapshot>    snapById    = snaps.stream()
-                .collect(Collectors.toMap(BazaarItemSnapshot::getProductId, Function.identity()));
+                .collect(Collectors.toMap(
+                        BazaarItemSnapshot::getProductId, Function.identity()));
         Map<String,BazaarItemHourSummary>  hourByIdRaw = hours.stream()
-                .collect(Collectors.toMap(BazaarItemHourSummary::getProductId, Function.identity()));
+                .collect(Collectors.toMap(
+                        BazaarItemHourSummary::getProductId, Function.identity()));
 
-        // 3) preload display names for all products
+        // 3) preload display names
         Set<String> allIds = new HashSet<>(snapById.keySet());
         allIds.addAll(hourByIdRaw.keySet());
         Map<String,String> names = preloadNames(allIds);
@@ -63,25 +70,23 @@ public class BazaarItemsQueryService {
         // 4) build composite DTOs
         List<BazaarItemLiveViewResponseDTO> out = allIds.stream()
                 .map(id -> {
-                    BazaarItemSnapshot snap = snapById.get(id);
-                    BazaarItemHourSummary hs = hourByIdRaw.get(id);
-
-                    // lookup the same name for both
-                    String displayName = names.get(id);
+                    BazaarItemSnapshot      snap  = snapById.get(id);
+                    BazaarItemHourSummary   hs    = hourByIdRaw.get(id);
+                    String                  name  = names.get(id);
 
                     BazaarItemSnapshotResponseDTO snapDto = snap != null
-                            ? mapSnapshot(snap, displayName)
+                            ? mapSnapshot(snap, name)
                             : null;
 
                     BazaarItemHourSummaryResponseDTO hourDto = hs != null
-                            ? buildDto(hs, displayName, false)
+                            ? buildDto(hs, name, false)   // never include points here
                             : null;
 
                     return new BazaarItemLiveViewResponseDTO(snapDto, hourDto);
                 })
                 .collect(Collectors.toList());
 
-        // 5. optional sorting
+        // 5) optional sorting
         sort.map(String::trim)
                 .map(String::toLowerCase)
                 .ifPresent(k -> {
@@ -97,7 +102,7 @@ public class BazaarItemsQueryService {
                     if (cmp != null) out.sort(cmp);
                 });
 
-        // 6. optional limit
+        // 6) optional limit
         return limit.filter(l -> l > 0 && l < out.size())
                 .map(l -> out.subList(0, l))
                 .orElse(out);
@@ -112,38 +117,40 @@ public class BazaarItemsQueryService {
                 .findTopByProductIdOrderByFetchedAtDesc(productId)
                 .orElse(null);
 
-        // latest hour summary + points
+        // latest summary (we still omit points here)
         BazaarItemHourSummary hs = hourRepo
                 .findLatestWithPoints(productId).stream()
                 .findFirst().orElse(null);
 
-        // single lookup for displayName
         String displayName = itemRepo.findById(productId)
                 .map(BazaarItem::getSkyblockItem)
                 .map(SkyblockItem::getName)
                 .orElse(null);
 
-        BazaarItemSnapshotResponseDTO snapshotDto = snap != null
+        BazaarItemSnapshotResponseDTO snapDto = snap != null
                 ? mapSnapshot(snap, displayName)
                 : null;
 
         BazaarItemHourSummaryResponseDTO hourDto = hs != null
-                ? buildDto(hs, displayName, true)
+                ? buildDto(hs, displayName, false)
                 : null;
 
-        if (snapshotDto == null && hourDto == null) {
+        if (snapDto == null && hourDto == null) {
             throw new NoSuchElementException("Item not found: " + productId);
         }
 
-        return new BazaarItemLiveViewResponseDTO(snapshotDto, hourDto);
+        return new BazaarItemLiveViewResponseDTO(snapDto, hourDto);
     }
 
     /* ───────────────────── HISTORY ────────────────── */
 
     @Transactional(readOnly = true)
     public List<BazaarItemHourSummaryResponseDTO> getHistory(
-            String productId, Instant from, Instant to, boolean withPoints) {
-
+            String  productId,
+            Instant from,
+            Instant to,
+            boolean withPoints
+    ) {
         Instant start = from != null ? from : Instant.EPOCH;
         Instant end   = to   != null ? to   : Instant.now();
         if (!start.isBefore(end)) {
@@ -152,7 +159,7 @@ public class BazaarItemsQueryService {
 
         List<BazaarItemHourSummary> rows = withPoints
                 ? hourRepo.findRangeWithPoints(productId, start, end)
-                : hourRepo.findRange(productId,          start, end);
+                : hourRepo.findRange(productId, start, end);
 
         if (rows.isEmpty()) {
             throw new NoSuchElementException("No data for product " + productId);
@@ -160,6 +167,35 @@ public class BazaarItemsQueryService {
 
         return rows.stream()
                 .map(r -> BazaarItemHourSummaryResponseDTO.of(r, withPoints))
+                .map(dto -> {
+                    if (!withPoints) return dto;
+                    // Dedupe by exact snapshotTime so you never get 3 600 entries:
+                    Map<Instant, BazaarItemHourPointDTO> unique = new LinkedHashMap<>();
+                    assert dto.points() != null;
+                    for (var p : dto.points()) {
+                        unique.putIfAbsent(p.snapshotTime(), p);
+                    }
+                    return new BazaarItemHourSummaryResponseDTO(
+                            dto.productId(),
+                            dto.displayName(),
+                            dto.hourStart(),
+                            dto.openInstantBuyPrice(),
+                            dto.closeInstantBuyPrice(),
+                            dto.minInstantBuyPrice(),
+                            dto.maxInstantBuyPrice(),
+                            dto.openInstantSellPrice(),
+                            dto.closeInstantSellPrice(),
+                            dto.minInstantSellPrice(),
+                            dto.maxInstantSellPrice(),
+                            dto.newSellOrders(),
+                            dto.deltaNewSellOrders(),
+                            dto.newBuyOrders(),
+                            dto.deltaNewBuyOrders(),
+                            dto.itemsListedSellOrders(),
+                            dto.itemsListedBuyOrders(),
+                            new ArrayList<>(unique.values())
+                    );
+                })
                 .toList();
     }
 
@@ -175,8 +211,9 @@ public class BazaarItemsQueryService {
     }
 
     private BazaarItemSnapshotResponseDTO mapSnapshot(
-            BazaarItemSnapshot s, @Nullable String displayName) {
-
+            BazaarItemSnapshot s,
+            @Nullable String    displayName
+    ) {
         return new BazaarItemSnapshotResponseDTO(
                 s.getProductId(),
                 displayName,
@@ -194,24 +231,26 @@ public class BazaarItemsQueryService {
                 s.getBuyOrders().stream()
                         .map(o -> new OrderEntryResponseDTO(
                                 o.getOrderIndex(), o.getPricePerUnit(),
-                                o.getAmount(),     o.getOrders()))
+                                o.getAmount(), o.getOrders()))
                         .toList(),
                 s.getSellOrders().stream()
                         .map(o -> new OrderEntryResponseDTO(
                                 o.getOrderIndex(), o.getPricePerUnit(),
-                                o.getAmount(),     o.getOrders()))
+                                o.getAmount(), o.getOrders()))
                         .toList()
         );
     }
 
     private BazaarItemHourSummaryResponseDTO buildDto(
             BazaarItemHourSummary h,
-            @Nullable String displayName,
-            boolean withPoints) {
-
-        var pts = withPoints && h.getPoints() != null
+            @Nullable String       displayName,
+            boolean                withPoints
+    ) {
+        // we never use this pts if withPoints is false
+        List<BazaarItemHourPointDTO> pts = withPoints && h.getPoints() != null
                 ? h.getPoints().stream()
-                .sorted(Comparator.comparing(BazaarItemHourPoint::getSnapshotTime))
+                .sorted(Comparator.comparing(
+                        BazaarItemHourPoint::getSnapshotTime))
                 .map(p -> new BazaarItemHourPointDTO(
                         p.getSnapshotTime(),
                         p.getInstantBuyPrice(),
@@ -221,15 +260,15 @@ public class BazaarItemsQueryService {
                         p.getBuyOrders().stream()
                                 .map(o -> new OrderEntryResponseDTO(
                                         o.getOrderIndex(), o.getPricePerUnit(),
-                                        o.getAmount(),     o.getOrders()))
+                                        o.getAmount(), o.getOrders()))
                                 .toList(),
                         p.getSellOrders().stream()
                                 .map(o -> new OrderEntryResponseDTO(
                                         o.getOrderIndex(), o.getPricePerUnit(),
-                                        o.getAmount(),     o.getOrders()))
+                                        o.getAmount(), o.getOrders()))
                                 .toList()))
                 .toList()
-                : List.<BazaarItemHourPointDTO>of();
+                : List.of();
 
         return new BazaarItemHourSummaryResponseDTO(
                 h.getProductId(),
@@ -252,7 +291,8 @@ public class BazaarItemsQueryService {
                 pts
         );
     }
-    // pricing helpers used by comparators
+
+    // pricing helpers for sorting
 
     private double sellPrice(BazaarItemLiveViewResponseDTO dto) {
         return dto.snapshot() != null
