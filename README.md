@@ -28,7 +28,7 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Background job: poll Hypixel → `BazaarItemSnapshot`
 - [x] Skip duplicate snapshots
 - [x] Swagger UI & OpenAPI (`/swagger-ui.html`, `/v3/api-docs`)
-- [x] `GET /api/bazaar/items` & `GET /api/bazaar/items/{productId}` (now served from **HourSummary**)
+- [x] `GET /api/bazaar/items` & `GET /api/bazaar/items/{productId}` (now live snapshot + HourSummary)
 - [x] Pagination, filtering, error handling
 - [x] Skyblock Items API + catalog refresh endpoints
 - [x] `GET /api/bazaar/items/{productId}/history?from=&to=&withPoints=` (hour summaries)
@@ -36,10 +36,12 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 
 **Web Dashboard (Next.js + TypeScript)**
 - [x] Basic dashboard structure with navigation
-- [x] Bazaar Items page with pagination and filtering
+- [x] Bazaar Items page with pagination, filtering, composite live view
 - [x] Skyblock Items page with filtering
 - [x] Settings page with system status and data management
-- [ ] Charts and data visualization
+- [x] Multi-metric ECharts implementation (Price, Orders, Delta, Volume)
+- [x] Interactive time-range controls (1H, 6H, 24H, 7D, Total)
+- [x] Responsive layout, tooltips, zoom/pan, smooth animations
 - [ ] Advanced filtering and search features
 
 **Trading Strategies & Analysis**
@@ -53,13 +55,13 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] **Hourly compaction**  
   • raw snapshots ➜ HourSummary + kept HourPoints  
   • deletes heavy snapshots once processed
-- [ ] Nightly job: thin / archive old HourPoints (e.g., keep 7 days, then downsample)
+- [ ] Nightly job: thin/archive old HourPoints (e.g., keep 7 days, then downsample)
 - [ ] Optional S3 export for long-term history
 - [ ] Cold-snapshot archive to reduce DB footprint
 
 **Other**
 - [ ] Recording rules, alerts, refined Grafana dashboards
-- [ ] Cache hot reads & optimise background jobs
+- [ ] Cache hot reads & optimize background jobs
 - [ ] ML modules (prediction, anomaly detection) tied into Core
 - [ ] Scale/shard where necessary
 
