@@ -39,6 +39,7 @@ class BazaarItemsControllerTest {
     @Test
     void listEndpoint_returns_json_array() throws Exception {
 
+        // ── build DTOs ────────────────────────────────────────────────────
         BazaarItemHourSummaryResponseDTO summary =
                 new BazaarItemHourSummaryResponseDTO(
                         "ID1","Name1",
@@ -48,17 +49,23 @@ class BazaarItemsControllerTest {
                         100,200,
                         null);
 
+        BazaarItemLiveViewResponseDTO live =
+                new BazaarItemLiveViewResponseDTO(null, summary);
 
-        PagedResponseDTO<BazaarItemHourSummaryResponseDTO> page =
-                PagedResponseDTO.of(List.of(summary),0,50);
+        PagedResponseDTO<BazaarItemLiveViewResponseDTO> page =
+                PagedResponseDTO.of(List.of(live), 0, 50);
 
-        when(service.getLatestPaginated(any(), eq(Optional.empty()), eq(0),eq(50)))
+        // ── mock service ──────────────────────────────────────────────────
+        when(service.getLatestPaginated(any(), eq(Optional.empty()), eq(0), eq(50)))
                 .thenReturn(page);
 
+        // ── perform request ───────────────────────────────────────────────
         mockMvc.perform(get("/api/bazaar/items"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].productId").value("ID1"))
-                .andExpect(jsonPath("$.items[0].displayName").value("Name1"))
+                .andExpect(jsonPath("$.items[0].lastHourSummary.productId")
+                        .value("ID1"))
+                .andExpect(jsonPath("$.items[0].lastHourSummary.displayName")
+                        .value("Name1"))
                 .andExpect(jsonPath("$.totalItems").value(1));
     }
 }

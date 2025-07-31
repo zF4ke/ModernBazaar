@@ -28,7 +28,7 @@ public class BazaarItemsController {
     @GetMapping
     @Operation(summary = "Latest items (hourly close)",
             responses = @ApiResponse(responseCode = "200"))
-    public PagedResponseDTO<BazaarItemHourSummaryResponseDTO> getItems(
+    public PagedResponseDTO<BazaarItemLiveViewResponseDTO> getItems(
             // … same @RequestParam parameters …
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Double minSell,
@@ -51,11 +51,11 @@ public class BazaarItemsController {
             responses = {
                     @ApiResponse(responseCode = "200"),
                     @ApiResponse(responseCode = "404")})
-    public BazaarItemHourSummaryResponseDTO getItem(
+    public BazaarItemLiveViewResponseDTO getItem(
             @Parameter(in = ParameterIn.PATH, required = true)
             @PathVariable String productId) {
 
-        return service.getItemSummary(productId);
+        return service.getItem(productId);
     }
 
     /* ---------- HISTORY ---------- */

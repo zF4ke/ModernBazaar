@@ -14,7 +14,7 @@ import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import type { BazaarItem, BazaarItemsQuery, BazaarItemsResponse } from "@/types/bazaar"
+import type { BazaarItemLiveView, BazaarItemsQuery, BazaarItemsResponse } from "@/types/bazaar"
 import { fetchWithBackendUrl, buildQueryParams } from "@/lib/api"
 import { useDebounce } from "@/hooks/use-debounce"
 
@@ -28,7 +28,7 @@ async function fetchBazaarItems(query: BazaarItemsQuery): Promise<BazaarItemsRes
 
 export default function BazaarItemsPage() {
   const [query, setQuery] = useState<BazaarItemsQuery>({
-    sort: "default",
+    sort: undefined,
     limit: 50,
     page: 0,
   })
@@ -84,7 +84,7 @@ export default function BazaarItemsPage() {
   }
 
   const resetFilters = () => {
-    setQuery({ sort: "", limit: 50, page: 0 })
+    setQuery({ sort: undefined, limit: 50, page: 0 })
     setSpreadRange([0])
     setSearchText("")
     setPriceFilters({
@@ -199,8 +199,8 @@ export default function BazaarItemsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="default" className="cursor-pointer">Default</SelectItem>
                   <SelectItem value="spreadDesc" className="cursor-pointer">Highest Spread</SelectItem>
+                  <SelectItem value="spreadAsc" className="cursor-pointer">Lowest Spread</SelectItem>
                   <SelectItem value="sellDesc" className="cursor-pointer">Highest Sell Price</SelectItem>
                   <SelectItem value="sellAsc" className="cursor-pointer">Lowest Sell Price</SelectItem>
                   <SelectItem value="buyDesc" className="cursor-pointer">Highest Buy Price</SelectItem>
@@ -340,41 +340,48 @@ export default function BazaarItemsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                itemsArray.map((item: BazaarItem) => (
-                  <TableRow
-                    key={item.productId}
-                    className="cursor-pointer hover:bg-muted-foreground/5"
-                  >
-                    <TableCell>
-                      <Link href={`/bazaar-items/${item.productId}`} className="font-medium text-primary hover:underline">
-                        {item.productId}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{item.displayName}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="font-mono">{item.instantBuyPrice.toFixed(2)}</div>
-                      <div className="text-xs text-muted-foreground font-mono">
-                        weighted: {item.weightedTwoPercentBuyPrice.toFixed(2)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="font-mono">{item.instantSellPrice.toFixed(2)}</div>
-                      <div className="text-xs text-muted-foreground font-mono">
-                        weighted: {item.weightedTwoPercentSellPrice.toFixed(2)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      <span className={item.spread > 0.5 ? "text-green-500 font-semibold" : ""}>
-                        {item.spread.toFixed(2)}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">{item.activeBuyOrdersCount}</TableCell>
-                    <TableCell className="text-right">{item.activeSellOrdersCount}</TableCell>
-                    <TableCell className="text-right text-sm text-muted-foreground">
-                      {new Date(item.lastUpdated).toLocaleTimeString()}
-                    </TableCell>
-                  </TableRow>
-                ))
+                itemsArray.map((item: BazaarItemLiveView) => {
+                  const snapshot = item.snapshot
+                  const hourSummary = item.lastHourSummary
+                  
+                  if (!snapshot) return null // Skip items without snapshot data
+                  
+                  return (
+                    <TableRow
+                      key={snapshot.productId}
+                      className="cursor-pointer hover:bg-muted-foreground/5"
+                    >
+                      <TableCell>
+                        <Link href={`/bazaar-items/${snapshot.productId}`} className="font-medium text-primary hover:underline">
+                          {snapshot.productId}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{snapshot.displayName || "Unknown"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="font-mono">{snapshot.instantBuyPrice.toFixed(2)}</div>
+                        <div className="text-xs text-muted-foreground font-mono">
+                          weighted: {snapshot.weightedTwoPercentBuyPrice.toFixed(2)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="font-mono">{snapshot.instantSellPrice.toFixed(2)}</div>
+                        <div className="text-xs text-muted-foreground font-mono">
+                          weighted: {snapshot.weightedTwoPercentSellPrice.toFixed(2)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        <span className={snapshot.spread > 0.5 ? "text-green-500 font-semibold" : ""}>
+                          {snapshot.spread.toFixed(2)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">{snapshot.activeBuyOrdersCount}</TableCell>
+                      <TableCell className="text-right">{snapshot.activeSellOrdersCount}</TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">
+                        {new Date(snapshot.lastUpdated).toLocaleTimeString()}
+                      </TableCell>
+                    </TableRow>
+                  )
+                }).filter(Boolean)
               )}
             </TableBody>
           </Table>

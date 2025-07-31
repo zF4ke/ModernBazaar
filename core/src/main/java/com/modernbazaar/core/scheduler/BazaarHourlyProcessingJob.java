@@ -29,6 +29,13 @@ public class BazaarHourlyProcessingJob {
             Instant oldest = service.findOldestSnapshotTimestamp();
             if (oldest == null) return;                       // nothing pending
 
+            log.debug("Oldest snapshot timestamp: {}", oldest);
+            // print the pretty date: XXhXX min ago
+            Duration duration = Duration.between(oldest, Instant.now());
+            long hours = duration.toHours();
+            long minutes = duration.minusHours(hours).toMinutes();
+            log.info("Compacting bazaar hourly data for {}h{} min ago", hours, minutes);
+
             Instant hourStart = oldest.truncatedTo(ChronoUnit.HOURS);
             Instant hourEnd   = hourStart.plus(1, ChronoUnit.HOURS);
 

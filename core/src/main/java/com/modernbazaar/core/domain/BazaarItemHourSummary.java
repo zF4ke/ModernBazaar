@@ -1,6 +1,7 @@
 package com.modernbazaar.core.domain;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,15 +23,15 @@ public class BazaarItemHourSummary {
 
     @Column(nullable=false, updatable=false) private Instant hourStart;
 
+    @Builder.ObtainVia(method = "ignore")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(                             // ← uses the *same* column
+    @JoinColumn(
             name               = "product_id",
             referencedColumnName = "product_id",
             insertable         = false,
             updatable          = false,
             foreignKey         = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     @ToString.Exclude
-    @Setter(AccessLevel.NONE)
     private BazaarItem item;
 
     /* --- OHLC for BUY side (2% weighted price) ----------------------------- */

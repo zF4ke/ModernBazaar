@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import type { BazaarItemDetail } from "@/types/bazaar"
+import type { BazaarItemLiveView } from "@/types/bazaar"
 import { fetchFromBackend } from "@/lib/api"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ productId: string }> }) {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { productId } = resolvedParams
 
   try {
-    const item: BazaarItemDetail = await fetchFromBackend(
+    const item: BazaarItemLiveView = await fetchFromBackend(
       request, 
       `/api/bazaar/items/${encodeURIComponent(productId)}`
     )

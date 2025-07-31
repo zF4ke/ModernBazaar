@@ -1,6 +1,7 @@
 package com.modernbazaar.core.service;
 
 import com.modernbazaar.core.api.dto.BazaarItemHourSummaryResponseDTO;
+import com.modernbazaar.core.api.dto.BazaarItemLiveViewResponseDTO;
 import com.modernbazaar.core.domain.*;
 import com.modernbazaar.core.repository.BazaarItemHourSummaryRepository;
 import com.modernbazaar.core.repository.BazaarItemRepository;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,20 +58,39 @@ class BazaarItemsQueryServiceTest {
     }
 
     @Test
-    void getItemSummary_returns_hour_summary_with_name() {
+    void getItem_returns_live_view_with_hour_summary_and_name() {
+        // ── no snapshot available
+        when(snapshotRepo.findTopByProductIdOrderByFetchedAtDesc("A"))
+                .thenReturn(Optional.empty());
 
-        when(hourRepo.findLatestWithPoints("A")).thenReturn(List.of(sum));
+        // ── return our hour summary
+        when(hourRepo.findLatestWithPoints("A"))
+                .thenReturn(List.of(sum));
 
-        SkyblockItem sky = SkyblockItem.builder().id("A").name("Name A").build();
-        BazaarItem item  = BazaarItem.builder().productId("A").skyblockItem(sky).build();
-        when(itemRepo.findById("A")).thenReturn(Optional.of(item));
+        // ── stub the catalog lookup to supply the displayName
+        SkyblockItem sky = SkyblockItem.builder()
+                .id("A")
+                .name("Name A")
+                .build();
+        BazaarItem item = BazaarItem.builder()
+                .productId("A")
+                .skyblockItem(sky)
+                .build();
+        when(itemRepo.findById("A"))
+                .thenReturn(Optional.of(item));
 
-        BazaarItemHourSummaryResponseDTO dto = service.getItemSummary("A");
+        // ── invoke
+        BazaarItemLiveViewResponseDTO dto = service.getItem("A");
 
-        assertThat(dto.productId()).isEqualTo("A");
-        assertThat(dto.displayName()).isEqualTo("Name A");
-        assertThat(dto.closeInstantBuyPrice()).isEqualTo(55);
-        assertThat(dto.closeInstantSellPrice()).isEqualTo(110);
-        assertThat(dto.points()).isEmpty();          // none mocked
+        // ── assertions
+        assertThat(dto.snapshot()).isNull();
+
+        BazaarItemHourSummaryResponseDTO bar = dto.lastHourSummary();
+        assertThat(bar).isNotNull();
+        assertThat(bar.productId()).isEqualTo("A");
+        assertThat(bar.displayName()).isEqualTo("Name A");
+        assertThat(bar.closeInstantBuyPrice()).isEqualTo(55);
+        assertThat(bar.closeInstantSellPrice()).isEqualTo(110);
+        assertThat(bar.points()).isEmpty();
     }
 }
