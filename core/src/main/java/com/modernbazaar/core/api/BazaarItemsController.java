@@ -18,83 +18,56 @@ import java.util.Optional;
 @RestController
 @RequestMapping(path = "/api/bazaar/items", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
-@Tag(name = "Bazaar Items", description = "Operations related to Bazaar items")
+@Tag(name = "Bazaar Items")
 public class BazaarItemsController {
 
     private final BazaarItemsQueryService service;
 
-    @Operation(
-            summary = "Get all items (latest snapshot)",
-            description = "Returns a list of item summaries, optionally filtered and sorted. Supports pagination.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Successful operation")
-            }
-    )
+    /* ---------- LIST ---------- */
+
     @GetMapping
-    public PagedResponseDTO<BazaarItemSummaryResponseDTO> getItems(
-            @Parameter(description = "Search query to filter items by name or ID")
+    @Operation(summary = "Latest items (hourly close)",
+            responses = @ApiResponse(responseCode = "200"))
+    public PagedResponseDTO<BazaarItemHourSummaryResponseDTO> getItems(
+            // … same @RequestParam parameters …
             @RequestParam(required = false) String q,
-
-            @Parameter(description = "Minimum sell price filter")
             @RequestParam(required = false) Double minSell,
-
-            @Parameter(description = "Maximum sell price filter")
             @RequestParam(required = false) Double maxSell,
-
-            @Parameter(description = "Minimum buy price filter")
             @RequestParam(required = false) Double minBuy,
-
-            @Parameter(description = "Maximum buy price filter")
             @RequestParam(required = false) Double maxBuy,
-
-            @Parameter(description = "Minimum spread filter")
             @RequestParam(required = false) Double minSpread,
-
-            @Parameter(
-                    description = "Sorting order. Options: 'spreadDesc', 'profitDesc', etc.",
-                    example = "spreadDesc"
-            )
             @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "0")  Integer page,
+            @RequestParam(defaultValue = "50") Integer limit) {
 
-            @Parameter(description = "Page number (0-based)")
-            @RequestParam(required = false, defaultValue = "0") Integer page,
-
-            @Parameter(description = "Number of items per page")
-            @RequestParam(required = false, defaultValue = "50") Integer limit
-    ) {
         var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread);
         return service.getLatestPaginated(filter, Optional.ofNullable(sort), page, limit);
     }
 
-    @Operation(
-            summary = "Get item by product ID",
-            description = "Returns full item detail for a specific product ID.",
-            responses = {
-                    @ApiResponse(responseCode = "200", description = "Item found"),
-                    @ApiResponse(responseCode = "404", description = "Item not found")
-            }
-    )
+    /* ---------- DETAIL ---------- */
+
     @GetMapping("/{productId}")
-    public BazaarItemDetailResponseDTO getItem(
-            @Parameter(in = ParameterIn.PATH, description = "The product ID of the item", required = true)
-            @PathVariable String productId
-    ) {
-        return service.getItemDetail(productId);
+    @Operation(summary = "Single item (latest hour)",
+            responses = {
+                    @ApiResponse(responseCode = "200"),
+                    @ApiResponse(responseCode = "404")})
+    public BazaarItemHourSummaryResponseDTO getItem(
+            @Parameter(in = ParameterIn.PATH, required = true)
+            @PathVariable String productId) {
+
+        return service.getItemSummary(productId);
     }
 
-    @Operation(
-            summary = "Hourly history for a product",
-            description = """
-        Returns all BazaarItemHourSummary rows for `productId` ordered ASC by hourStart.
-        Optional `from` / `to` narrow the range (inclusive lower‑bound, exclusive upper‑bound).
-        Optional `withPoints=true` embeds the kept minute points for each hour.
-        """)
+    /* ---------- HISTORY ---------- */
+
     @GetMapping("/{productId}/history")
-    public List<BazaarHourSummaryResponseDTO> getItemHistory(
+    @Operation(summary = "Hourly history",
+            description = "With ?withPoints=true each hour embeds its kept minute points.")
+    public List<BazaarItemHourSummaryResponseDTO> getHistory(
             @PathVariable String productId,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to,
-            @RequestParam(defaultValue = "false") boolean withPoints) {
+            @RequestParam(defaultValue = "true") boolean withPoints) {
 
         return service.getHistory(productId, from, to, withPoints);
     }

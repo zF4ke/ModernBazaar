@@ -4,44 +4,48 @@ import com.modernbazaar.core.domain.*;
         import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class BazaarSnapshotToMinutePointMapper {
 
-    public BazaarItemHourPoint toMinute(BazaarItemSnapshot s, BazaarItemHourSummary hs) {
-        // note: order lists copied shallowly; we don't need deep clones – JPA will persist them under new parent
-        BazaarItemHourPoint hp = BazaarItemHourPoint.builder()
-                .hourSummary(hs)
-                .productId(s.getProductId())
-                .snapshotTime(s.getFetchedAt())
-                .apiLastUpdated(s.getLastUpdated())
-                .instantBuyPrice (s.getInstantBuyPrice())
-                .instantSellPrice(s.getInstantSellPrice())
-                .weightedTwoPercentBuyPrice (s.getWeightedTwoPercentBuyPrice())
-                .weightedTwoPercentSellPrice(s.getWeightedTwoPercentSellPrice())
-                .buyMovingWeek (s.getBuyMovingWeek())
-                .sellMovingWeek(s.getSellMovingWeek())
-                .activeBuyOrdersCount (s.getActiveBuyOrdersCount())
-                .activeSellOrdersCount(s.getActiveSellOrdersCount())
-                .build();
+    private static final int DEPTH = 30;  // how many order levels to keep
 
-        // copy order‑books
-        s.getBuyOrders().forEach(o ->
-                hp.getBuyOrders().add(
-                        o.toBuilder()
-                                .id(null)                  // make sure we build a NEW row
-                                .snapshot(null)
-                                .hourPoint(hp)           // ← now legal
-                                .build()));
+    public BazaarItemHourPoint toMinute(BazaarItemSnapshot s,
+                                        BazaarItemHourSummary parent) {
 
-        s.getSellOrders().forEach(o ->
-                hp.getSellOrders().add(
-                        o.toBuilder()
-                                .id(null)
-                                .snapshot(null)
-                                .hourPoint(hp)
-                                .build()));
+        BazaarItemHourPoint p = new BazaarItemHourPoint();
+        p.setHourSummary(parent);
+        p.setSnapshotTime(s.getFetchedAt());
 
-        return hp;
+        p.setInstantBuyPrice (s.getInstantBuyPrice());
+        p.setInstantSellPrice(s.getInstantSellPrice());
+        p.setActiveBuyOrdersCount (s.getActiveBuyOrdersCount());
+        p.setActiveSellOrdersCount(s.getActiveSellOrdersCount());
+
+        /* ---- copy (trimmed) order-books -------------------------------- */
+        p.setBuyOrders (cloneOrders(
+                s.getBuyOrders(), BuyOrderEntry.class,  p));
+        p.setSellOrders(cloneOrders(
+                s.getSellOrders(), SellOrderEntry.class, p));
+
+        return p;
+    }
+
+    /** deep-clone the first N order levels so we can delete the parent snapshot. */
+    private <T extends BazaarOrderEntry> List<T> cloneOrders(
+            List<? extends BazaarOrderEntry> src,
+            Class<T> type,
+            BazaarItemHourPoint owner) {
+
+        return src.stream()
+                .limit(BazaarSnapshotToMinutePointMapper.DEPTH)
+                .map(o -> {
+                    T copy = type.cast(o.cloneShallow());   // add a copy helper or ctor
+                    copy.setHourPoint(owner);
+                    return copy;
+                })
+                .toList();
     }
 }

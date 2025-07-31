@@ -17,8 +17,20 @@ import java.util.List;
 public class BazaarItemHourSummary {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
 
-    @Column(nullable=false, updatable=false) private String  productId;
-    @Column(nullable=false, updatable=false) private Instant hourStart; // 2025‑07‑28T17:00Z
+    @Column(name = "product_id", nullable = false, updatable = false)
+    private String productId;
+
+    @Column(nullable=false, updatable=false) private Instant hourStart;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(                             // ← uses the *same* column
+            name               = "product_id",
+            referencedColumnName = "product_id",
+            insertable         = false,
+            updatable          = false,
+            foreignKey         = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @ToString.Exclude
+    private BazaarItem item;
 
     /* --- OHLC for BUY side (2% weighted price) ----------------------------- */
     private double openInstantBuyPrice;

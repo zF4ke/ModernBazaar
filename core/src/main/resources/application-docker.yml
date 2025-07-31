@@ -31,7 +31,7 @@ management:
 skyblock:
   bazaar:
     poll:
-      enabled: false
+      enabled: true
       interval-seconds: 60 # 1 minute
     processing:
       hourly:

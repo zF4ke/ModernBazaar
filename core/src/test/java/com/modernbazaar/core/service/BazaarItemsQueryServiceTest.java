@@ -1,17 +1,21 @@
 package com.modernbazaar.core.service;
 
-import com.modernbazaar.core.api.dto.*;
+import com.modernbazaar.core.api.dto.BazaarItemHourSummaryResponseDTO;
 import com.modernbazaar.core.domain.*;
+import com.modernbazaar.core.repository.BazaarItemHourSummaryRepository;
 import com.modernbazaar.core.repository.BazaarItemRepository;
 import com.modernbazaar.core.repository.BazaarProductSnapshotRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
-import java.util.*;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -20,101 +24,54 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class BazaarItemsQueryServiceTest {
 
-    @Mock
-    private BazaarProductSnapshotRepository snapshotRepo;
-
-    @Mock
-    private BazaarItemRepository itemRepo;
+    @Mock private BazaarProductSnapshotRepository snapshotRepo;
+    @Mock private BazaarItemRepository            itemRepo;
+    @Mock private BazaarItemHourSummaryRepository hourRepo;
 
     @InjectMocks
     private BazaarItemsQueryService service;
 
-    private BazaarItemSnapshot snapA;
-    private BazaarItemSnapshot snapB;
+    private BazaarItemHourSummary sum;
 
     @BeforeEach
     void setUp() {
-        Instant ts = Instant.parse("2025-07-26T10:00:00Z");
+        Instant hr = Instant.parse("2025-07-26T10:00:00Z")
+                .truncatedTo(ChronoUnit.HOURS);
 
-        snapA = BazaarItemSnapshot.builder()
+        sum = BazaarItemHourSummary.builder()
                 .id(1L)
                 .productId("A")
-                .lastUpdated(ts)
-                .fetchedAt(ts.plusSeconds(1))
-                .weightedTwoPercentBuyPrice(50.0)
-                .weightedTwoPercentSellPrice(100.0) // spread 50
-                .buyMovingWeek(10)
-                .sellMovingWeek(20)
-                .activeBuyOrdersCount(2)
-                .activeSellOrdersCount(3)
-                .build();
-
-        snapB = BazaarItemSnapshot.builder()
-                .id(2L)
-                .productId("B")
-                .lastUpdated(ts)
-                .fetchedAt(ts.plusSeconds(2))
-                .weightedTwoPercentBuyPrice(80.0)
-                .weightedTwoPercentSellPrice(90.0) // spread 10
-                .buyMovingWeek(5)
-                .sellMovingWeek(7)
-                .activeBuyOrdersCount(1)
-                .activeSellOrdersCount(1)
+                .hourStart(hr)
+                .openInstantBuyPrice (50)
+                .closeInstantBuyPrice(55)
+                .minInstantBuyPrice  (49)
+                .maxInstantBuyPrice  (56)
+                .openInstantSellPrice(100)
+                .closeInstantSellPrice(110)
+                .minInstantSellPrice (98)
+                .maxInstantSellPrice (111)
+                .newBuyOrders(10).newSellOrders(12)
+                .deltaNewBuyOrders(2).deltaNewSellOrders(3)
+                .itemsListedBuyOrders(500)
+                .itemsListedSellOrders(600)
                 .build();
     }
 
-//    @Test
-//    void getLatest_maps_display_name_from_skyblock_item_and_sorts_when_requested() {
-//        when(snapshotRepo.searchLatest(any(), any(), any(), any(), any(), any()))
-//                .thenReturn(List.of(snapA, snapB));
-//
-//        // Prepare BazaarItem + SkyblockItem
-//        SkyblockItem skyA = SkyblockItem.builder().id("A").name("Name A").build();
-//        SkyblockItem skyB = SkyblockItem.builder().id("B").name("Name B").build();
-//
-//        BazaarItem itemA = BazaarItem.builder().productId("A").skyblockItem(skyA).build();
-//        BazaarItem itemB = BazaarItem.builder().productId("B").skyblockItem(skyB).build();
-//
-//        when(itemRepo.findAllWithSkyblockByIdIn(anySet()))
-//                .thenReturn(List.of(itemA, itemB));
-//
-//        BazaarItemFilterDTO filter = BazaarItemFilterDTO.of(null, null, null, null, null, null);
-//
-//        // sort by spreadDesc
-//        List<BazaarItemSummaryResponseDTO> out = service.getLatest(filter, Optional.of("spreadDesc"), Optional.empty());
-//
-//        assertThat(out).hasSize(2);
-//        assertThat(out.get(0).productId()).isEqualTo("A");
-//        assertThat(out.get(0).displayName()).isEqualTo("Name A");
-//        assertThat(out.get(0).spread()).isEqualTo(50.0);
-//        assertThat(out.get(1).productId()).isEqualTo("B");
-//        assertThat(out.get(1).displayName()).isEqualTo("Name B");
-//        assertThat(out.get(1).spread()).isEqualTo(10.0);
-//    }
-
     @Test
-    void getItemDetail_returns_detail_with_orders_and_name_from_catalog() {
-        // build orders
-        BuyOrderEntry b0 = BuyOrderEntry.builder().orderIndex(0).pricePerUnit(55.0).amount(10).orders(2).build();
-        SellOrderEntry s0 = SellOrderEntry.builder().orderIndex(0).pricePerUnit(95.0).amount(5).orders(1).build();
+    void getItemSummary_returns_hour_summary_with_name() {
 
-        snapA.getBuyOrders().add(b0);
-        snapA.getSellOrders().add(s0);
+        when(hourRepo.findLatestWithPoints("A")).thenReturn(List.of(sum));
 
-        when(snapshotRepo.findTopByProductIdOrderByFetchedAtDesc("A"))
-                .thenReturn(Optional.of(snapA));
+        SkyblockItem sky = SkyblockItem.builder().id("A").name("Name A").build();
+        BazaarItem item  = BazaarItem.builder().productId("A").skyblockItem(sky).build();
+        when(itemRepo.findById("A")).thenReturn(Optional.of(item));
 
-        SkyblockItem skyA = SkyblockItem.builder().id("A").name("Name A").build();
-        BazaarItem itemA = BazaarItem.builder().productId("A").skyblockItem(skyA).build();
+        BazaarItemHourSummaryResponseDTO dto = service.getItemSummary("A");
 
-        when(itemRepo.findById("A")).thenReturn(Optional.of(itemA));
-
-        BazaarItemDetailResponseDTO dto = service.getItemDetail("A");
         assertThat(dto.productId()).isEqualTo("A");
         assertThat(dto.displayName()).isEqualTo("Name A");
-        assertThat(dto.buyOrders()).hasSize(1);
-        assertThat(dto.sellOrders()).hasSize(1);
-        assertThat(dto.weightedTwoPercentBuyPrice()).isEqualTo(50.0);
-        assertThat(dto.weightedTwoPercentSellPrice()).isEqualTo(100.0);
+        assertThat(dto.closeInstantBuyPrice()).isEqualTo(55);
+        assertThat(dto.closeInstantSellPrice()).isEqualTo(110);
+        assertThat(dto.points()).isEmpty();          // none mocked
     }
 }

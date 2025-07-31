@@ -110,7 +110,8 @@ public class BazaarHourlyProcessingService {
 
         /* ------------------------------------------------ streaming cursor */
         try (Stream<BazaarItemSnapshot> st =
-                     snapRepo.streamHourForProduct(productId, from, to)) {
+//                     snapRepo.streamHourForProduct(productId, from, to)) {
+                     snapRepo.streamHourForProductWithOrders(productId, from, to)) {
 
             for (Iterator<BazaarItemSnapshot> it = st.iterator(); it.hasNext(); ) {
                 BazaarItemSnapshot s = it.next();

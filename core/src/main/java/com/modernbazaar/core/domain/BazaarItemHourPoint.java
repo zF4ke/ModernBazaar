@@ -47,12 +47,15 @@ public class BazaarItemHourPoint {
     private Instant apiLastUpdated;
 
     // ── order‑book lists (same mapping style as BazaarItemSnapshot) ──────────
-    @OneToMany(mappedBy = "hourPoint", orphanRemoval = true)
+    @OneToMany(mappedBy = "hourPoint", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
     @OrderColumn(name = "order_index")
     @Builder.Default
     private List<BuyOrderEntry> buyOrders = new ArrayList<>();
 
-    @OneToMany(mappedBy = "hourPoint", orphanRemoval = true)
+
+    @OneToMany(mappedBy = "hourPoint", cascade = CascadeType.ALL, orphanRemoval = true,
+            fetch = FetchType.LAZY)
     @OrderColumn(name = "order_index")
     @Builder.Default
     private List<SellOrderEntry> sellOrders = new ArrayList<>();

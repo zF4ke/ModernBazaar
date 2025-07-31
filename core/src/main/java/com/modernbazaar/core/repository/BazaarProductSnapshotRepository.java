@@ -87,6 +87,23 @@ public interface BazaarProductSnapshotRepository
                                                     @Param("to")   Instant to);
 
     @Query("""
+       select s
+       from BazaarItemSnapshot s
+            left join fetch s.buyOrders
+            left join fetch s.sellOrders
+       where s.productId = :productId
+         and s.fetchedAt >= :from
+         and s.fetchedAt <  :to
+       order by s.fetchedAt asc
+       """)
+    @QueryHints({
+            @QueryHint( name = org.hibernate.jpa.QueryHints.HINT_FETCH_SIZE , value = "256" )
+    })
+    Stream<BazaarItemSnapshot> streamHourForProductWithOrders(@Param("productId") String productId,
+                                                              @Param("from") Instant from,
+                                                              @Param("to")   Instant to);
+
+    @Query("""
         select distinct s.productId
         from BazaarItemSnapshot s
         where s.fetchedAt >= :from and s.fetchedAt < :to

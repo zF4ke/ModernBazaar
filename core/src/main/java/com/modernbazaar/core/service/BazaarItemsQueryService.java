@@ -2,219 +2,246 @@ package com.modernbazaar.core.service;
 
 import com.modernbazaar.core.api.dto.*;
 import com.modernbazaar.core.domain.*;
-import com.modernbazaar.core.repository.BazaarItemHourSummaryRepository;
-import com.modernbazaar.core.repository.BazaarItemRepository;
-import com.modernbazaar.core.repository.BazaarProductSnapshotRepository;
+import com.modernbazaar.core.repository.*;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BazaarItemsQueryService {
 
-    private final BazaarProductSnapshotRepository snapshotRepo;
-    private final BazaarItemRepository itemRepo;
-    private final BazaarItemHourSummaryRepository hourSummaryRepo;
+    private final BazaarItemHourSummaryRepository hourRepo;
+    private final BazaarProductSnapshotRepository snapRepo;
+    private final BazaarItemRepository            itemRepo;
 
-    /**
-     * Fetches the latest BazaarProductSnapshots based on the provided filter criteria with pagination.
-     * This method retrieves snapshots that match the filter conditions, sorts them according to the specified sort order,
-     * and returns paginated results.
-     *
-     * @param filter the filter criteria to apply when searching for items
-     * @param sort an optional sort order, which can be one of the following: sellAsc, sellDesc, buyAsc,
-     *            buyDesc, spreadAsc, spreadDesc.
-     * @param page the page number (0-based)
-     * @param limit the number of items per page
-     * @return a PagedItemsResponseDTO containing the paginated item summaries
-     */
+    /* ───────────────────── LIST ───────────────────── */
+
     @Transactional(readOnly = true)
-    public PagedResponseDTO<BazaarItemSummaryResponseDTO> getLatestPaginated(BazaarItemFilterDTO filter, Optional<String> sort, int page, int limit) {
-        List<BazaarItemSummaryResponseDTO> allItems = getLatest(filter, sort, Optional.empty());
-        return PagedResponseDTO.of(allItems, page, limit);
+    public PagedResponseDTO<BazaarItemHourSummaryResponseDTO> getLatestPaginated(
+            BazaarItemFilterDTO filter, Optional<String> sort, int page, int limit) {
+
+        var all = getLatest(filter, sort, Optional.empty());
+        return PagedResponseDTO.of(all, page, limit);
     }
 
-    /**
-     * Fetches the latest BazaarProductSnapshots based on the provided filter criteria.
-     * This method retrieves snapshots that match the filter conditions, sorts them according to the specified sort order,
-     * and limits the results to the specified number if provided.
-     *
-     * @param filter the filter criteria to apply when searching for items
-     * @param sort an optional sort order, which can be one of the following: sellAsc, sellDesc, buyAsc,
-     *            buyDesc, spreadAsc, spreadDesc.
-     * @param limit an optional limit on the number of results to return
-     * @return a list of ItemSummaryResponseDTO containing the latest item summaries
-     */
     @Transactional(readOnly = true)
-    public List<BazaarItemSummaryResponseDTO> getLatest(BazaarItemFilterDTO filter, Optional<String> sort, Optional<Integer> limit) {
-        List<BazaarItemSnapshot> snaps = snapshotRepo.searchLatest(
+    public List<BazaarItemHourSummaryResponseDTO> getLatest(
+            BazaarItemFilterDTO filter, Optional<String> sort, Optional<Integer> limit) {
+
+        List<BazaarItemHourSummary> rows = hourRepo.searchLatest(
                 filter.q(), filter.minSell(), filter.maxSell(),
-                filter.minBuy(), filter.maxBuy(), filter.minSpread()
-        );
+                filter.minBuy(), filter.maxBuy(), filter.minSpread());
 
-        // Preload BazaarItem + SkyblockItem for all productIds to avoid N+1.
-        Set<String> ids = snaps.stream().map(BazaarItemSnapshot::getProductId).collect(Collectors.toSet());
-        List<BazaarItem> items = itemRepo.findAllWithSkyblockByIdIn(ids);
-        Map<String, BazaarItem> byId = items.stream()
-                .collect(Collectors.toMap(BazaarItem::getProductId, Function.identity()));
+        boolean useSnapshots = rows.isEmpty();
+        List<BazaarItemHourSummaryResponseDTO> out =
+                useSnapshots ? mapSnapshots(snapRepo.searchLatest(
+                        filter.q(), filter.minSell(), filter.maxSell(),
+                        filter.minBuy(), filter.maxBuy(), filter.minSpread()))
+                        : mapSummaries(rows);
 
-        List<BazaarItemSummaryResponseDTO> list = snaps.stream()
-                .map(s -> toSummaryDTO(s, byId.get(s.getProductId())))
-                .collect(Collectors.toList());
+        sort.ifPresent(k -> out.sort(switch (k) {
+            case "sellAsc"   -> Comparator.comparing(BazaarItemHourSummaryResponseDTO::closeInstantSellPrice);
+            case "sellDesc"  -> Comparator.comparing(BazaarItemHourSummaryResponseDTO::closeInstantSellPrice).reversed();
+            case "buyAsc"    -> Comparator.comparing(BazaarItemHourSummaryResponseDTO::closeInstantBuyPrice);
+            case "buyDesc"   -> Comparator.comparing(BazaarItemHourSummaryResponseDTO::closeInstantBuyPrice).reversed();
+            case "spreadAsc" -> Comparator.<BazaarItemHourSummaryResponseDTO, Double>comparing(dto ->
+                    dto.closeInstantSellPrice() - dto.closeInstantBuyPrice());
+            case "spreadDesc"-> Comparator.<BazaarItemHourSummaryResponseDTO, Double>comparing(dto ->
+                    dto.closeInstantSellPrice() - dto.closeInstantBuyPrice()).reversed();
+            default -> throw new IllegalArgumentException("Unknown sort key: " + k);
+        }));
 
-        // optional sorting
-        sort.ifPresent(key -> {
-            Comparator<BazaarItemSummaryResponseDTO> cmp = switch (key) {
-                case "sellAsc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::instantSellPrice);
-                case "sellDesc"  -> Comparator.comparing(BazaarItemSummaryResponseDTO::instantSellPrice).reversed();
-                case "buyAsc"    -> Comparator.comparing(BazaarItemSummaryResponseDTO::instantBuyPrice);
-                case "buyDesc"   -> Comparator.comparing(BazaarItemSummaryResponseDTO::instantBuyPrice).reversed();
-                case "spreadAsc" -> Comparator.comparing(BazaarItemSummaryResponseDTO::spread);
-                case "spreadDesc"-> Comparator.comparing(BazaarItemSummaryResponseDTO::spread).reversed();
-                default -> null;
-            };
-
-            if (cmp != null) {
-                list.sort(cmp);
-            }
-        });
-
-        return limit.filter(l -> l > 0 && l < list.size())
-                .map(l -> list.subList(0, l))
-                .orElse(list);
+        return limit.filter(l -> l > 0 && l < out.size())
+                .map(l -> out.subList(0, l))
+                .orElse(out);
     }
+
+    /* ───────────────────── DETAIL ─────────────────── */
 
     @Transactional(readOnly = true)
-    public BazaarItemDetailResponseDTO getItemDetail(String productId) {
-        BazaarItem item = itemRepo.findById(productId).orElse(null);
-        BazaarItemSnapshot snap = snapshotRepo
-                .findTopByProductIdOrderByFetchedAtDesc(productId)
-                .orElseThrow(() -> new NoSuchElementException("Item not found: " + productId));
-        return toDetailDTO(snap, item);
-    }
+    public BazaarItemHourSummaryResponseDTO getItemSummary(String productId) {
 
-    /**
-     * Fetches the BazaarItemSnapshot for a specific product ID.
-     * This method retrieves the most recent snapshot for the given product ID.
-     *
-     * @param productId the ID of the product to fetch
-     * @return a BazaarItemSnapshotResponseDTO containing the snapshot details
-     */
-    @Transactional(readOnly = true)
-    public List<BazaarHourSummaryResponseDTO> getHistory(
-            String  productId,
-            Instant from,          // may be null
-            Instant to,            // may be null
-            boolean withPoints) {
+        /* newest hour bar (with minute points) */
+        BazaarItemHourSummary sum = hourRepo.findLatestWithPoints(productId)
+                .stream().findFirst().orElse(null);
 
-        // normalise range
-        Instant start = (from != null) ? from : Instant.EPOCH; // “since forever”
-        Instant end   = (to   != null) ? to   : Instant.now(); // “until now”
+        String name = itemRepo.findById(productId)
+                .map(BazaarItem::getSkyblockItem)
+                .map(SkyblockItem::getName)
+                .orElse(null);
 
-        if (!start.isBefore(end)) {
-            throw new IllegalArgumentException("'from' must be before 'to' (or both null)");
+        if (sum != null) {
+            return buildDto(sum, name, true);
         }
 
-        List<BazaarItemHourSummary> rows = withPoints
-                ? hourSummaryRepo.findRangeWithPoints(productId, start, end)
-                : hourSummaryRepo.findRange(productId,          start, end);
+        /* no hourly data yet → fabricate from last raw snapshot */
+        BazaarItemSnapshot s = snapRepo.findTopByProductIdOrderByFetchedAtDesc(productId)
+                .orElseThrow(() ->
+                        new NoSuchElementException("Item not found: " + productId));
 
-        if (rows.isEmpty()) {
-            throw new NoSuchElementException("No data for product " + productId);
-        }
+        Instant hourStart = s.getFetchedAt().truncatedTo(ChronoUnit.HOURS);
 
-        // build DTOs (already ordered ASC in JPQL)
-        return rows.stream()
-                .map(s -> BazaarHourSummaryResponseDTO.of(s, withPoints))
-                .toList();
-    }
-
-
-    // ── mapping ────────────────────────────────────────────────────────────────
-
-    /**
-     * Converts a BazaarProductSnapshot to an ItemSummaryResponseDTO.
-     * This method extracts the necessary fields from the snapshot and the associated BazaarItem
-     *
-     * @param s the BazaarProductSnapshot to convert
-     * @param item the associated BazaarItem, may be null if not found
-     * @return an ItemSummaryResponseDTO containing the summary information
-     */
-    private BazaarItemSummaryResponseDTO toSummaryDTO(BazaarItemSnapshot s, BazaarItem item) {
-        String name = null;
-        if (item != null && item.getSkyblockItem() != null) {
-            name = item.getSkyblockItem().getName();
-        }
-
-        double buy  = s.getInstantBuyPrice();
-        double sell = s.getInstantSellPrice();
-
-        return new BazaarItemSummaryResponseDTO(
-                s.getProductId(),
-                name,
-                s.getLastUpdated(),
+        BazaarItemHourPointDTO pt = new BazaarItemHourPointDTO(
                 s.getFetchedAt(),
-                s.getWeightedTwoPercentBuyPrice(),
-                s.getWeightedTwoPercentSellPrice(),
-                buy,
-                sell,
-                sell - buy,
-                s.getBuyMovingWeek(),
-                s.getSellMovingWeek(),
-                s.getActiveBuyOrdersCount(),
-                s.getActiveSellOrdersCount()
-        );
-    }
-
-    /**
-     * Converts a BazaarProductSnapshot to an ItemDetailResponseDTO.
-     * This method extracts detailed order information and the associated BazaarItem.
-     *
-     * @param s the BazaarProductSnapshot to convert
-     * @param item the associated BazaarItem, may be null if not found
-     * @return an ItemDetailResponseDTO containing detailed information about the item
-     */
-    private BazaarItemDetailResponseDTO toDetailDTO(BazaarItemSnapshot s, BazaarItem item) {
-        String name = null;
-        if (item != null && item.getSkyblockItem() != null) {
-            name = item.getSkyblockItem().getName();
-        }
-
-        double buy  = s.getInstantBuyPrice();
-        double sell = s.getInstantSellPrice();
-
-        List<OrderEntryResponseDTO> buyOrders = s.getBuyOrders().stream()
-                .sorted(Comparator.comparingInt(BuyOrderEntry::getOrderIndex))
-                .map(o -> new OrderEntryResponseDTO(o.getOrderIndex(), o.getPricePerUnit(), o.getAmount(), o.getOrders()))
-                .toList();
-
-        List<OrderEntryResponseDTO> sellOrders = s.getSellOrders().stream()
-                .sorted(Comparator.comparingInt(SellOrderEntry::getOrderIndex))
-                .map(o -> new OrderEntryResponseDTO(o.getOrderIndex(), o.getPricePerUnit(), o.getAmount(), o.getOrders()))
-                .toList();
-
-        return new BazaarItemDetailResponseDTO(
-                s.getProductId(),
-                name,
-                s.getLastUpdated(),
-                s.getFetchedAt(),
-                s.getWeightedTwoPercentBuyPrice(),
-                s.getWeightedTwoPercentSellPrice(),
-                buy,
-                sell,
-                sell - buy,
-                s.getBuyMovingWeek(),
-                s.getSellMovingWeek(),
+                s.getInstantBuyPrice(),
+                s.getInstantSellPrice(),
                 s.getActiveBuyOrdersCount(),
                 s.getActiveSellOrdersCount(),
-                buyOrders,
-                sellOrders
+                s.getBuyOrders().stream()
+                        .map(o -> new OrderEntryResponseDTO(
+                                o.getOrderIndex(), o.getPricePerUnit(),
+                                o.getAmount(),     o.getOrders()))
+                        .toList(),
+                s.getSellOrders().stream()
+                        .map(o -> new OrderEntryResponseDTO(
+                                o.getOrderIndex(), o.getPricePerUnit(),
+                                o.getAmount(),     o.getOrders()))
+                        .toList());
+
+        return new BazaarItemHourSummaryResponseDTO(
+                s.getProductId(), name,
+                hourStart,
+
+                s.getInstantBuyPrice(),  s.getInstantBuyPrice(),
+                s.getInstantBuyPrice(),  s.getInstantBuyPrice(),
+
+                s.getInstantSellPrice(), s.getInstantSellPrice(),
+                s.getInstantSellPrice(), s.getInstantSellPrice(),
+
+                0,0,0,0,0,0,
+                List.of(pt)
+        );
+    }
+
+    /* ───────────────────── HISTORY ────────────────── */
+
+    @Transactional(readOnly = true)
+    public List<BazaarItemHourSummaryResponseDTO> getHistory(
+            String productId, Instant from, Instant to, boolean withPoints) {
+
+        Instant start = from != null ? from : Instant.EPOCH;
+        Instant end   = to   != null ? to   : Instant.now();
+
+        if (!start.isBefore(end))
+            throw new IllegalArgumentException("'from' must be before 'to'");
+
+        List<BazaarItemHourSummary> rows = withPoints
+                ? hourRepo.findRangeWithPoints(productId, start, end)
+                : hourRepo.findRange(productId,          start, end);
+
+        if (rows.isEmpty())
+            throw new NoSuchElementException("No data for product " + productId);
+
+        String name = itemRepo.findById(productId)
+                .map(BazaarItem::getSkyblockItem)
+                .map(SkyblockItem::getName)
+                .orElse(null);
+
+        return rows.stream()
+                .map(r -> BazaarItemHourSummaryResponseDTO.of(r, withPoints))
+                .toList();
+    }
+
+    /* ───────────────────── helpers ────────────────── */
+
+    private Map<String,String> preloadNames(Set<String> ids) {
+        return itemRepo.findAllByProductIdIn(ids).stream()
+                .filter(it -> it.getSkyblockItem() != null)
+                .collect(Collectors.toMap(
+                        BazaarItem::getProductId,
+                        it -> it.getSkyblockItem().getName()));
+    }
+
+    private List<BazaarItemHourSummaryResponseDTO> mapSummaries(List<BazaarItemHourSummary> rows) {
+        Map<String,String> names = preloadNames(rows.stream()
+                .map(BazaarItemHourSummary::getProductId)
+                .collect(Collectors.toSet()));
+
+        return rows.stream()
+                .map(r -> buildDto(r, names.get(r.getProductId()), false))
+                .toList();
+    }
+
+    private List<BazaarItemHourSummaryResponseDTO> mapSnapshots(List<BazaarItemSnapshot> snaps) {
+        Map<String,String> names = preloadNames(snaps.stream()
+                .map(BazaarItemSnapshot::getProductId)
+                .collect(Collectors.toSet()));
+        return snaps.stream().map(s -> {
+            Instant hourStart = s.getFetchedAt().truncatedTo(ChronoUnit.HOURS);
+            return new BazaarItemHourSummaryResponseDTO(
+                    s.getProductId(), names.get(s.getProductId()),
+                    hourStart,
+                    s.getInstantBuyPrice(),  s.getInstantBuyPrice(),
+                    s.getInstantBuyPrice(),  s.getInstantBuyPrice(),
+                    s.getInstantSellPrice(), s.getInstantSellPrice(),
+                    s.getInstantSellPrice(), s.getInstantSellPrice(),
+                    0,0,0,0,0,0,
+                    List.of()          // no points kept yet
+            );
+        }).toList();
+    }
+
+    /** Builds the DTO and injects the (possibly-null) Skyblock display name. */
+    private BazaarItemHourSummaryResponseDTO buildDto(BazaarItemHourSummary h,
+                                                      @Nullable String name,
+                                                      boolean withPoints) {
+
+        return new BazaarItemHourSummaryResponseDTO(
+                h.getProductId(),           // productId
+                name,                       // displayName
+                h.getHourStart(),           // hour bucket
+
+                h.getOpenInstantBuyPrice(),
+                h.getCloseInstantBuyPrice(),
+                h.getMinInstantBuyPrice(),
+                h.getMaxInstantBuyPrice(),
+
+                h.getOpenInstantSellPrice(),
+                h.getCloseInstantSellPrice(),
+                h.getMinInstantSellPrice(),
+                h.getMaxInstantSellPrice(),
+
+                h.getNewSellOrders(),       h.getDeltaNewSellOrders(),
+                h.getNewBuyOrders(),        h.getDeltaNewBuyOrders(),
+                h.getItemsListedSellOrders(),
+                h.getItemsListedBuyOrders(),
+
+                (withPoints && h.getPoints() != null)
+                        ? h.getPoints().stream()
+                        .sorted(Comparator.comparing(
+                                BazaarItemHourPoint::getSnapshotTime))
+                        .map(p -> new BazaarItemHourPointDTO(
+                                p.getSnapshotTime(),
+                                p.getInstantBuyPrice(),
+                                p.getInstantSellPrice(),
+                                p.getActiveBuyOrdersCount(),
+                                p.getActiveSellOrdersCount(),
+                                p.getBuyOrders().stream()
+                                        .map(o -> new OrderEntryResponseDTO(
+                                                o.getOrderIndex(),
+                                                o.getPricePerUnit(),
+                                                o.getAmount(),
+                                                o.getOrders()))
+                                        .toList(),
+                                p.getSellOrders().stream()
+                                        .map(o -> new OrderEntryResponseDTO(
+                                                o.getOrderIndex(),
+                                                o.getPricePerUnit(),
+                                                o.getAmount(),
+                                                o.getOrders()))
+                                        .toList()))
+                        .toList()
+                        : List.of()
         );
     }
 }
