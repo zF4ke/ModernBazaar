@@ -5,86 +5,101 @@ services:
         env_file:
             - .env # load environment variables from the .env file
         environment:
-            POSTGRES_DB: ${POSTGRES_DB:-bazaar} # the "-bazaar" is the default database name
-            POSTGRES_USER: ${POSTGRES_USER:-bazaar} # the "-bazaar" is the default username
-            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bazaar} # the "-bazaar" is the default password
-        volumes: # the volume with data outside the container to store persistent data
-            - dbdata:/var/lib/postgresql/data
+            POSTGRES_DB:       ${POSTGRES_DB:-bazaar}       # default database name
+            POSTGRES_USER:     ${POSTGRES_USER:-bazaar}     # default username
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bazaar} # default password
+        volumes:
+            - dbdata:/var/lib/postgresql/data # persistent data
         ports:
             - "5432:5432" # expose the port 5432 to the host machine for debugging
-        healthcheck: # healthcheck to ensure the database is ready before starting the Core service
-            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bazaar}"]
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bazaar}"] # ensure database is ready before Core service
             interval: 10s
             timeout: 3s
             retries: 5
         networks:
-            - bazaar-net # connect to the custom network
+            - internal # service-to-service only
 
     core:
         build:
             context: .. # points to the root directory
             dockerfile: infra/docker/core.Dockerfile # path to the Dockerfile for the Core service
-        image: modern-bazaar/core:local # tags the built image (handy if you want to push it to a registry)
+        image: modern-bazaar/core:local # tags the built image
         depends_on:
             db:
-              condition: service_healthy
+                condition: service_healthy
         env_file:
             - .env # load environment variables from the .env file
         environment:
-            SPRING_PROFILES_ACTIVE: docker # tells the Core service to use the application-docker.yml profile
-            SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB} # the database URL
-            SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER} # the database username
-            SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD} # the database password
+            SPRING_PROFILES_ACTIVE:     docker                      # tells Core to use application-docker.yml
+            SPRING_DATASOURCE_URL:      jdbc:postgresql://db:5432/${POSTGRES_DB} # database URL
+            SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}             # database username
+            SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}         # database password
+            SPRING_SECURITY_USER_NAME:      ${SPRING_SECURITY_USER_NAME:-admin}
+            SPRING_SECURITY_USER_PASSWORD:  ${SPRING_SECURITY_USER_PASSWORD}
         ports:
-            - "8080:8080" # expose core's port 8080
+            - "8080:8080" # expose Core's port 8080
         healthcheck:
-          test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep UP || exit 1"] # healthcheck to ensure the Core service is ready
-        networks:
-            - bazaar-net
+            test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep UP || exit 1"] # ensure Core is ready
+            interval: 10s
+            timeout: 3s
+            retries: 5
         volumes:
-            - core-heapdumps:/app/heapdumps
-            - core-logs:/app/logs
+            - ./keystore.p12:/config/keystore.p12:ro
+            - core-heapdumps:/app/heapdumps # store heap dumps
+            - core-logs:/app/logs           # store logs
+        networks:
+            - public   # accessible externally
+            - internal # service-to-service only
 
     prometheus: # Prometheus service for monitoring
         image: prom/prometheus:latest
         volumes:
-            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro # config file
         ports:
             - "9090:9090" # expose Prometheus port 9090
         networks:
-            - bazaar-net
+            - internal # service-to-service only
 
     grafana: # Grafana service for visualization, dashboards, etc.
         image: grafana/grafana:latest
+        env_file:
+            - .env # load environment variables from the .env file
         environment:
-          - GF_SECURITY_ADMIN_PASSWORD=admin # default admin password for Grafana
+            GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD} # admin password for Grafana
         volumes:
-          - grafana-data:/var/lib/grafana # persistent storage for Grafana data
-          - ./grafana/provisioning:/etc/grafana/provisioning:ro # provisioning files for Grafana: used to configure data sources and dashboards automatically; ro means read-only
+            - grafana-data:/var/lib/grafana                 # persistent storage for Grafana data
+            - ./grafana/provisioning:/etc/grafana/provisioning:ro # provisioning files for Grafana
         ports:
             - "3000:3000" # expose Grafana port 3000
-        depends_on: # we don't have a healthcheck for prometheus, so we don't use `condition: service_healthy`
-            - prometheus
+        depends_on:
+            - prometheus # ensure Prometheus is up first
         networks:
-            - bazaar-net
+            - public   # accessible externally
+            - internal # service-to-service only
 
     postgres-exporter:
         image: prometheuscommunity/postgres-exporter
+        env_file:
+            - .env # load environment variables from the .env file
         environment:
-            DATA_SOURCE_NAME: "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@db:5432/$POSTGRES_DB?sslmode=disable"
+            DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable" # connection string
         ports:
-            - "9187:9187"
+            - "9187:9187" # expose exporter port
         depends_on:
-            - db
+            - db # ensure DB is up first
         networks:
-            - bazaar-net
+            - internal # service-to-service only
 
 volumes:
-    dbdata: # volume for PostgreSQL data
-    grafana-data: # volume for Grafana data
+    dbdata:         # volume for PostgreSQL data
+    grafana-data:   # volume for Grafana data
     core-heapdumps: # volume for Core service heap dumps
-    core-logs: # volume for Core service logs
+    core-logs:      # volume for Core service logs
 
 networks:
-    bazaar-net: # custom network for the services to communicate with each other
-        driver: bridge # use the default bridge network driver
+    public:   # host-facing network
+        driver: bridge
+    internal: # isolated network for inter-service traffic
+        driver: bridge
+        internal: true

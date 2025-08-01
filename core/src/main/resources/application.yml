@@ -1,5 +1,10 @@
 server:
   port: 8080
+#  ssl:
+#    key-store: file:/config/keystore.p12
+#    key-store-password: ${KEYSTORE_PASSWORD}
+#    key-store-type: PKCS12
+#    key-alias: tomcat
   compression:
     enabled: true
     min-response-size: 2KB
@@ -18,6 +23,10 @@ spring:
     properties:
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
+#  security:
+#    user:
+#      name: ${ADMIN_USER:admin}
+#      password: ${ADMIN_PASSWORD:?required}  # fail fast if not set
 
 management:
   endpoints:

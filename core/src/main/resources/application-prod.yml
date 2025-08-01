@@ -1,56 +1,59 @@
 server:
   port: 8080
+  # disable HTTP-only in prod—you’ll only expose HTTPS via the proxy
+  # compression stays the same
+#  ssl:
+#    key-store: file:/config/keystore.p12
+#    key-store-password: ${KEYSTORE_PASSWORD}
+#    key-store-type: PKCS12
+#    key-alias: tomcat
   compression:
     enabled: true
     min-response-size: 2KB
     mime-types: application/json,application/javascript,text/css,text/html
 
 spring:
+  # datasource creds now come from Docker secrets or env
   datasource:
     url:      ${SPRING_DATASOURCE_URL}
-    username: ${POSTGRES_USER}
-    password: ${POSTGRES_PASSWORD}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: none                        # no schema changes at runtime
+      ddl-auto: none
     open-in-view: false
     properties:
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
   flyway:
-    enabled: true                           # enable Flyway migrations
+    enabled: true
     locations: classpath:db/migration
+  # -------- Add Spring Security --------
+#  security:
+#    user:
+#      name: ${ADMIN_USER:admin}
+#      password: ${ADMIN_PASSWORD:?required}  # fail fast if not set
 
+
+
+# only expose exactly what you need
 management:
   endpoints:
     web:
       exposure:
-        include: scheduledtasks, health, metrics, info, prometheus
+        include: health, info, prometheus
   endpoint:
     health:
-      show-details: always                  # more detail in prod health checks
+      show-details: when-authorized
 
-skyblock:
-  bazaar:
-    poll:
-      enabled: true
-      interval-seconds: 60 # 1 minute
-    processing:
-      price-move-threshold: 0.2 # 0.2%
-      max-snapshot-gap-min: 15 # 5 minutes
-      hourly:
-        enabled: true
-    retention:
-      enabled: false
-      interval-hours: 24 # 1 day
-  catalog:
-    enabled: true
-    refresh-days: 7
-    cron: "0 0 3 * * *"   # 03:00 every day
-
-
+# disable swagger in prod
 springdoc:
-  api-docs:
-    path: /v3/api-docs
   swagger-ui:
-    path: /swagger-ui.html
+    enabled: false
+  api-docs:
+    path: /v3/api-docs    # you could even disable this in prod
+
+# tighten CORS: only your dashboard domain
+cors:
+  allowed-origins: https://localhost:3001,https://bazaar.example.com
+  allowed-methods: GET,POST,PUT,DELETE
