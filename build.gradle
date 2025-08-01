@@ -67,5 +67,62 @@ tasks.register('fullRestart') {
     dependsOn 'fullDown', 'fullUp'
 }
 
+tasks.register("exportCoreImage", Exec) {
+    group       = "docker"
+    description = "Export modern-bazaar/core:local → images/core.tar"
+    commandLine = ["docker","save","modern-bazaar/core:local","-o","images/core.tar"]
+}
+
+// Export Grafana image
+tasks.register("exportGrafanaImage", Exec) {
+    group       = "docker"
+    description = "Export grafana/grafana:latest → images/grafana.tar"
+    commandLine = ["docker","save","grafana/grafana:latest","-o","images/grafana.tar"]
+}
+
+// Export Prometheus image
+tasks.register("exportPrometheusImage", Exec) {
+    group       = "docker"
+    description = "Export prom/prometheus:latest → images/prometheus.tar"
+    commandLine = ["docker","save","prom/prometheus:latest","-o","images/prometheus.tar"]
+}
+
+// Export Postgres image
+tasks.register("exportDbImage", Exec) {
+    group       = "docker"
+    description = "Export postgres:16 → images/postgres.tar"
+    commandLine = ["docker","save","postgres:16","-o","images/postgres.tar"]
+}
+
+// Export Postgres-exporter image
+tasks.register("exportPostgresExporterImage", Exec) {
+    group       = "docker"
+    description = "Export prometheuscommunity/postgres-exporter:latest → images/postgres-exporter.tar"
+    commandLine = ["docker","save","prometheuscommunity/postgres-exporter:latest","-o","images/postgres-exporter.tar"]
+}
+
+// delete any existing tarballs under images/
+tasks.register("cleanImages", Delete) {
+    group       = "docker"
+    description = "Deletes all existing tar files in the images/ directory"
+    delete fileTree("images") {
+        include "*.tar"
+    }
+}
+
+// Aggregate task
+tasks.register("exportAllImages") {
+    group       = "docker"
+    description = "Export all Docker images to .tar files"
+    dependsOn   = [
+            "cleanImages",
+            "exportCoreImage",
+            "exportGrafanaImage",
+            "exportPrometheusImage",
+            "exportDbImage",
+            "exportPostgresExporterImage"
+    ]
+}
+
 // fix Task 'prepareKotlinBuildScriptModel' not found in project ':core'.Task 'prepareKotlinBuildScriptModel' not found in project ':core'.
 //tasks.register("prepareKotlinBuildScriptModel"){}

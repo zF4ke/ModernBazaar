@@ -49,7 +49,7 @@ export default function SettingsPage() {
   const { toast } = useToast()
   const [pruningEnabled, setPruningEnabled] = useState(true)
   const [pruningDays, setPruningDays] = useState("30")
-  const [apiEndpoint, setApiEndpoint] = useState("http://localhost:8080")
+  const [apiEndpoint, setApiEndpoint] = useState("http://188.166.192.72:8080")
   const [skyblockRefreshDays, setSkyblockRefreshDays] = useState(30)
 
   // Skyblock refresh queries
@@ -341,12 +341,12 @@ export default function SettingsPage() {
               id="api-endpoint"
               value={apiEndpoint}
               onChange={(e) => setApiEndpoint(e.target.value)}
-              placeholder="http://localhost:8080"
+              placeholder="http://188.166.192.72:8080"
             />
             <p className="text-sm text-muted-foreground">
               The URL of the backend API server. Changes take effect immediately after saving.
             </p>
-            {apiEndpoint !== "http://localhost:8080" && (
+            {apiEndpoint !== "http://188.166.192.72:8080" && (
               <p className="text-xs text-blue-600 dark:text-blue-400">
                 Currently using: {apiEndpoint}
               </p>

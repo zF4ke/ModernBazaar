@@ -18,8 +18,4 @@ sudo systemctl restart docker
 # echo "→ Pruning unused Docker data…"
 # sudo docker system prune -af
 
-# 5) Bring the stack back up, detached
-echo "→ Bringing the stack back up…"
-docker-compose up -d
-
-echo "✅ Docker daemon restarted and stack relaunched."
+echo "✅ Docker daemon restarted and stack stopped."
