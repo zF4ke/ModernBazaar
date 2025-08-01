@@ -367,9 +367,13 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 group relative">
                 <ArrowDownRight className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Buy Orders</CardTitle>
+                <div className="relative opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-popover border rounded-md px-2 py-1 shadow-md z-10 whitespace-nowrap">
+                  <div className="text-sm font-medium">{snapshot.activeBuyOrdersCount.toLocaleString()} orders</div>
+                  <div className="text-xs text-muted-foreground">may be inaccurate</div>
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -451,9 +455,13 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 group relative">
                 <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Sell Orders</CardTitle>
+                <div className="relative opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-popover border rounded-md px-2 py-1 shadow-md z-10 whitespace-nowrap">
+                  <div className="text-sm font-medium">{snapshot.activeSellOrdersCount.toLocaleString()} orders</div>
+                  <div className="text-xs text-muted-foreground">may be inaccurate</div>
+                </div>
               </div>
               <Button
                 variant="ghost"
