@@ -32,6 +32,7 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Pagination, filtering, error handling
 - [x] Skyblock Items API + catalog refresh endpoints
 - [x] `GET /api/bazaar/items/{productId}/history?from=&to=&withPoints=` (hour summaries)
+- [x] HTTP Basic authentication on API and actuator endpoints (Spring Security)
 - [ ] **(obsolete)** minute-level snapshots endpoint — replaced by history above
 
 **Web Dashboard (Next.js + TypeScript)**
