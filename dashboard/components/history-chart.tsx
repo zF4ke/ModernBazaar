@@ -121,14 +121,47 @@ export default function HistoryChart({ data }: HistoryChartProps) {
       volumeSell: '#ec4899'     // Pink
     }
 
-    // Price series (left Y-axis)
+    // Get all selected metrics in order
+    const allSelectedMetrics = [
+      { key: 'prices', name: 'Prices', selected: selectedMetrics.prices },
+      { key: 'orders', name: 'Orders', selected: selectedMetrics.orders },
+      { key: 'deltas', name: 'Delta', selected: selectedMetrics.deltas },
+      { key: 'volumes', name: 'Items', selected: selectedMetrics.volumes },
+      { key: 'totalVolumes', name: 'Total Items', selected: selectedMetrics.totalVolumes }
+    ].filter(m => m.selected)
+
+    // Dynamic axis positioning: first axis on left, rest on right with increasing offsets
+    const getAxisConfig = (index: number, total: number, name: string) => {
+      if (index === 0) {
+        // First axis always goes on the left
+        return {
+          position: 'left',
+          offset: 0,
+          nameGap: 70 // More space for left axis labels to avoid overlap
+        }
+      } else {
+        // Subsequent axes go on the right with increasing offsets
+        return {
+          position: 'right',
+          offset: (index - 1) * 70, // Reduced from 80 to make them closer
+          nameGap: 50
+        }
+      }
+    }
+
+    // Process each selected metric in order
+    let currentAxisIndex = 0
+
+    // Price series
     if (selectedMetrics.prices) {
+      const axisConfig = getAxisConfig(currentAxisIndex, allSelectedMetrics.length, 'Price')
       yAxis.push({
         type: 'value',
-        position: 'left',
+        position: axisConfig.position,
         name: 'Price',
         nameLocation: 'middle',
-        nameGap: 50,
+        nameGap: axisConfig.nameGap,
+        offset: axisConfig.offset,
         axisLabel: {
           formatter: '{value}'
         },
@@ -141,7 +174,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         {
           name: 'Buy Price',
           type: 'line',
-          yAxisIndex: 0,
+          yAxisIndex: currentAxisIndex,
           data: chartData.map(d => [d.timestamp, d.buyPrice]),
           lineStyle: { width: 2 },
           itemStyle: { color: colors.buyPrice },
@@ -152,7 +185,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         {
           name: 'Sell Price',
           type: 'line',
-          yAxisIndex: 0,
+          yAxisIndex: currentAxisIndex,
           data: chartData.map(d => [d.timestamp, d.sellPrice]),
           lineStyle: { width: 2 },
           itemStyle: { color: colors.sellPrice },
@@ -163,7 +196,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         {
           name: 'Spread',
           type: 'line',
-          yAxisIndex: 0,
+          yAxisIndex: currentAxisIndex,
           data: chartData.map(d => [d.timestamp, d.spread]),
           lineStyle: { 
             width: 1, 
@@ -178,16 +211,19 @@ export default function HistoryChart({ data }: HistoryChartProps) {
       )
 
       legendData.push('Buy Price', 'Sell Price', 'Spread')
+      currentAxisIndex++
     }
 
-    // Orders series (right Y-axis)
+    // Orders series
     if (selectedMetrics.orders) {
+      const axisConfig = getAxisConfig(currentAxisIndex, allSelectedMetrics.length, 'Orders')
       yAxis.push({
         type: 'value',
-        position: 'right',
+        position: axisConfig.position,
         name: 'Orders',
         nameLocation: 'middle',
-        nameGap: 50,
+        nameGap: axisConfig.nameGap,
+        offset: axisConfig.offset,
         splitLine: {
           show: false
         }
@@ -197,7 +233,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         {
           name: 'Created Buy Orders',
           type: 'bar',
-          yAxisIndex: yAxis.length - 1,
+          yAxisIndex: currentAxisIndex,
           data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.createdBuyOrders]),
           itemStyle: { 
             color: colors.createdBuyOrders,
@@ -208,7 +244,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         {
           name: 'Created Sell Orders',
           type: 'bar',
-          yAxisIndex: yAxis.length - 1,
+          yAxisIndex: currentAxisIndex,
           data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.createdSellOrders]),
           itemStyle: { 
             color: colors.createdSellOrders,
@@ -219,28 +255,29 @@ export default function HistoryChart({ data }: HistoryChartProps) {
       )
 
       legendData.push('Created Buy Orders', 'Created Sell Orders')
+      currentAxisIndex++
     }
 
-    // Deltas series (right Y-axis)
+    // Deltas series
     if (selectedMetrics.deltas) {
-      if (!selectedMetrics.orders) {
-        yAxis.push({
-          type: 'value',
-          position: 'right',
-          name: 'Delta',
-          nameLocation: 'middle',
-          nameGap: 50,
-          splitLine: {
-            show: false
-          }
-        })
-      }
+      const axisConfig = getAxisConfig(currentAxisIndex, allSelectedMetrics.length, 'Delta')
+      yAxis.push({
+        type: 'value',
+        position: axisConfig.position,
+        name: 'Delta',
+        nameLocation: 'middle',
+        nameGap: axisConfig.nameGap,
+        offset: axisConfig.offset,
+        splitLine: {
+          show: false
+        }
+      })
 
       series.push(
         {
           name: 'Buy Orders Δ',
           type: 'line',
-          yAxisIndex: yAxis.length - 1,
+          yAxisIndex: currentAxisIndex,
           data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.deltaBuyOrders]),
           lineStyle: { 
             width: 1, 
@@ -255,7 +292,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         {
           name: 'Sell Orders Δ',
           type: 'line',
-          yAxisIndex: yAxis.length - 1,
+          yAxisIndex: currentAxisIndex,
           data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.deltaSellOrders]),
           lineStyle: { 
             width: 1, 
@@ -270,28 +307,29 @@ export default function HistoryChart({ data }: HistoryChartProps) {
       )
 
       legendData.push('Buy Orders Δ', 'Sell Orders Δ')
+      currentAxisIndex++
     }
 
-    // Volumes series (right Y-axis)
+    // Volumes series
     if (selectedMetrics.volumes) {
-      if (!selectedMetrics.orders && !selectedMetrics.deltas) {
-        yAxis.push({
-          type: 'value',
-          position: 'right',
-          name: 'Items',
-          nameLocation: 'middle',
-          nameGap: 50,
-          splitLine: {
-            show: false
-          }
-        })
-      }
+      const axisConfig = getAxisConfig(currentAxisIndex, allSelectedMetrics.length, 'Items')
+      yAxis.push({
+        type: 'value',
+        position: axisConfig.position,
+        name: 'Items',
+        nameLocation: 'middle',
+        nameGap: axisConfig.nameGap,
+        offset: axisConfig.offset,
+        splitLine: {
+          show: false
+        }
+      })
 
       series.push(
         {
           name: 'Added Buy Items',
           type: 'line',
-          yAxisIndex: yAxis.length - 1,
+          yAxisIndex: currentAxisIndex,
           data: chartData.map(d => [d.timestamp, d.addedItemsBuyOrders]),
           lineStyle: { 
             width: 1, 
@@ -306,7 +344,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         {
           name: 'Added Sell Items',
           type: 'line',
-          yAxisIndex: yAxis.length - 1,
+          yAxisIndex: currentAxisIndex,
           data: chartData.map(d => [d.timestamp, d.addedItemsSellOrders]),
           lineStyle: { 
             width: 1, 
@@ -321,43 +359,29 @@ export default function HistoryChart({ data }: HistoryChartProps) {
       )
 
       legendData.push('Added Buy Items', 'Added Sell Items')
+      currentAxisIndex++
     }
 
-    // Total Volumes series (right Y-axis)
+    // Total Volumes series
     if (selectedMetrics.totalVolumes) {
-      if (!selectedMetrics.orders && !selectedMetrics.deltas && !selectedMetrics.volumes) {
-        yAxis.push({
-          type: 'value',
-          position: 'right',
-          name: 'Total Items',
-          nameLocation: 'middle',
-          nameGap: 50,
-          splitLine: {
-            show: false
-          }
-        })
-      } else {
-        // Use the existing right Y-axis if other metrics are selected
-        const existingRightAxis = yAxis.find(axis => axis.position === 'right')
-        if (!existingRightAxis) {
-          yAxis.push({
-            type: 'value',
-            position: 'right',
-            name: 'Total Items',
-            nameLocation: 'middle',
-            nameGap: 50,
-            splitLine: {
-              show: false
-            }
-          })
+      const axisConfig = getAxisConfig(currentAxisIndex, allSelectedMetrics.length, 'Total Items')
+      yAxis.push({
+        type: 'value',
+        position: axisConfig.position,
+        name: 'Total Items',
+        nameLocation: 'middle',
+        nameGap: axisConfig.nameGap,
+        offset: axisConfig.offset,
+        splitLine: {
+          show: false
         }
-      }
+      })
 
       series.push(
         {
           name: 'Total Items Buy Orders',
           type: 'line',
-          yAxisIndex: yAxis.findIndex(axis => axis.position === 'right'),
+          yAxisIndex: currentAxisIndex,
           data: chartData.filter(d => !d.isHourlySummary).map(d => [d.timestamp, d.buyVolume]),
           lineStyle: { 
             width: 2,
@@ -371,7 +395,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         {
           name: 'Total Items Sell Orders',
           type: 'line',
-          yAxisIndex: yAxis.findIndex(axis => axis.position === 'right'),
+          yAxisIndex: currentAxisIndex,
           data: chartData.filter(d => !d.isHourlySummary).map(d => [d.timestamp, d.sellVolume]),
           lineStyle: { 
             width: 2,
@@ -385,15 +409,23 @@ export default function HistoryChart({ data }: HistoryChartProps) {
       )
 
       legendData.push('Total Items Buy Orders', 'Total Items Sell Orders')
+      currentAxisIndex++
     }
+
+    // Calculate grid margins based on number of axes and their positions
+    const rightAxesCount = allSelectedMetrics.length > 1 ? allSelectedMetrics.length - 1 : 0
+    const gridRight = rightAxesCount === 0 ? '12%' : 
+                     rightAxesCount === 1 ? '12%' : 
+                     rightAxesCount === 2 ? '12%' : 
+                     rightAxesCount === 3 ? '12%' : '12%'
 
     return {
       backgroundColor: 'transparent',
       grid: {
-        left: '10%',
-        right: '10%',
+        left: '10%', // Increased from 10% to give more space for the left axis label
+        right: gridRight,
         top: '15%',
-        bottom: '40%', // Significantly increased bottom margin
+        bottom: '30%',
         containLabel: true
       },
       tooltip: {
