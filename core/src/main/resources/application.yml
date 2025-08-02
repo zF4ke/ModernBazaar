@@ -23,6 +23,9 @@ spring:
     properties:
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 1
 #  security:
 #    user:
 #      name: ${ADMIN_USER:admin}
@@ -37,13 +40,13 @@ management:
 skyblock:
   bazaar:
     poll:
-      enabled: true
+      enabled: false
       interval-seconds: 60 # 1 minute
     processing:
       price-move-threshold: 0.2 # 0.2%
       max-snapshot-gap-min: 5 # 5 minutes
       hourly:
-        enabled: true
+        enabled: false
     retention:
       enabled: false
       interval-hours: 24 # 1 day

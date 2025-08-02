@@ -50,10 +50,10 @@ class BazaarItemsQueryServiceTest {
                 .closeInstantSellPrice(110)
                 .minInstantSellPrice (98)
                 .maxInstantSellPrice (111)
-                .newBuyOrders(10).newSellOrders(12)
-                .deltaNewBuyOrders(2).deltaNewSellOrders(3)
-                .itemsListedBuyOrders(500)
-                .itemsListedSellOrders(600)
+                .createdBuyOrders(10).createdSellOrders(12)
+                .deltaBuyOrders(2).deltaSellOrders(3)
+                .addedItemsSellOrders(500)
+                .addedItemsBuyOrders(600)
                 .build();
     }
 

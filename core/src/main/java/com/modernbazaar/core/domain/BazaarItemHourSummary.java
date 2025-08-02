@@ -48,16 +48,16 @@ public class BazaarItemHourSummary {
 
     /* --- raw volume & order‑book deltas ------------------------------------- */
     /** ∑ new sell orders opened in the hour */
-    private long   newSellOrders;
+    private long   createdBuyOrders;
     /** delta of active sell orders (close‑open) */
-    private long   deltaNewSellOrders;
+    private long   deltaBuyOrders;
 
-    private long   newBuyOrders;
-    private long   deltaNewBuyOrders;
+    private long   createdSellOrders;
+    private long   deltaSellOrders;
 
     /** total items listed in new sell orders */
-    private long   itemsListedSellOrders;
-    private long   itemsListedBuyOrders;
+    private long   addedItemsBuyOrders;
+    private long   addedItemsSellOrders;
 
     /** total items insta‑sold / insta‑bought in the hour (quick‑trades) */
     private long   instaSoldItems;

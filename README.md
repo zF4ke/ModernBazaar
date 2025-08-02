@@ -28,12 +28,22 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Background job: poll Hypixel → `BazaarItemSnapshot`
 - [x] Skip duplicate snapshots
 - [x] Swagger UI & OpenAPI (`/swagger-ui.html`, `/v3/api-docs`)
+- [x] **Hourly compaction**  
+  • raw snapshots ➜ HourSummary + kept HourPoints  
+  • deletes heavy snapshots once processed
 - [x] `GET /api/bazaar/items` & `GET /api/bazaar/items/{productId}` (now live snapshot + HourSummary)
 - [x] Pagination, filtering, error handling
 - [x] Skyblock Items API + catalog refresh endpoints
 - [x] `GET /api/bazaar/items/{productId}/history?from=&to=&withPoints=` (hour summaries)
 - [x] HTTP Basic authentication on API and actuator endpoints (Spring Security)
-- [ ] **(obsolete)** minute-level snapshots endpoint — replaced by history above
+- [x] Service cache and rate limiting
+- [ ] Nightly job: thin/archive old HourPoints (e.g., keep 7 days, then downsample)
+- [ ] Optional S3 export for long-term history
+- [ ] Cold-snapshot archive to reduce DB footprint
+- [ ] Optimize DB queries
+- [ ] `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]`
+- [ ] Trading strategies Services and endpoints
+- [ ] (Optional) Trade journal tracking and storage
 
 **Web Dashboard (Next.js + TypeScript)**
 - [x] Basic dashboard structure with navigation
@@ -43,27 +53,15 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Multi-metric ECharts implementation (Price, Orders, Delta, Volume)
 - [x] Interactive time-range controls (1H, 6H, 24H, 7D, Total)
 - [x] Responsive layout, tooltips, zoom/pan, smooth animations
-- [ ] Advanced filtering and search features
-
-**Trading Strategies & Analysis**
-- [ ] `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]`
-- [ ] Additional strategy endpoints & UI
+- [x] Advanced filtering and search features
+- [ ] Add more sorting options for every attribute
 - [ ] Replace prior bot interactions with API-powered UI
+- [ ] Trading strategies category and pages
 - [ ] (Optional) Auth + subscription support
-- [ ] Trade journal storage
-
-**Retention & pruning**
-- [x] **Hourly compaction**  
-  • raw snapshots ➜ HourSummary + kept HourPoints  
-  • deletes heavy snapshots once processed
-- [ ] Nightly job: thin/archive old HourPoints (e.g., keep 7 days, then downsample)
-- [ ] Optional S3 export for long-term history
-- [ ] Cold-snapshot archive to reduce DB footprint
 
 **Other**
-- [ ] Recording rules, alerts, refined Grafana dashboards
-- [ ] Cache hot reads & optimize background jobs
 - [ ] ML modules (prediction, anomaly detection) tied into Core
+- [ ] Recording rules, alerts, refined Grafana dashboards
 - [ ] Scale/shard where necessary
 
 ## ⚡ Quick start

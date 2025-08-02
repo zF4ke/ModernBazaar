@@ -1,7 +1,7 @@
 .idea
 infra/.env
 images/*.tar
-
+upload_images.ps1
 
 .gradle
 build/

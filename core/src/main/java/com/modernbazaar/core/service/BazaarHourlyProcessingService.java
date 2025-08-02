@@ -93,8 +93,8 @@ public class BazaarHourlyProcessingService {
         double minBuy = Double.MAX_VALUE, maxBuy = 0;
         double minSell = Double.MAX_VALUE, maxSell = 0;
 
-        long newBuyOrders = 0, newSellOrders = 0;
-        long itemsListedBuy = 0, itemsListedSell = 0;
+        long createdBuyOrders = 0, createdSellOrders = 0;
+        long addedItemsBuyOrders = 0, addedItemsSellOrders = 0;
 
         int prevActiveBuy = 0, prevActiveSell = 0;
         long prevBuyVol = 0, prevSellVol = 0;
@@ -129,12 +129,17 @@ public class BazaarHourlyProcessingService {
 
                     // new orders & volumes
                     if (s.getActiveBuyOrdersCount() > prevActiveBuy) {
-                        newBuyOrders += s.getActiveBuyOrdersCount() - prevActiveBuy;
-                        itemsListedBuy += s.getBuyVolume() - prevBuyVol;
+//                        newBuyOrders += s.getActiveBuyOrdersCount() - prevActiveBuy;
+                        // absolute difference in buy orders Math.abs()
+                        createdBuyOrders += Math.abs(s.getActiveBuyOrdersCount() - prevActiveBuy);
+//                        itemsListedBuy += s.getBuyVolume() - prevBuyVol;
+                        addedItemsBuyOrders += Math.abs(s.getBuyVolume() - prevBuyVol);
                     }
                     if (s.getActiveSellOrdersCount() > prevActiveSell) {
-                        newSellOrders += s.getActiveSellOrdersCount() - prevActiveSell;
-                        itemsListedSell += s.getSellVolume() - prevSellVol;
+//                        newSellOrders += s.getActiveSellOrdersCount() - prevActiveSell;
+                        // absolute difference in sell orders Math.abs()
+                        createdSellOrders += Math.abs(s.getActiveSellOrdersCount() - prevActiveSell);
+                        addedItemsSellOrders += Math.abs(s.getSellVolume() - prevSellVol);
                     }
                     prevActiveBuy = s.getActiveBuyOrdersCount();
                     prevActiveSell = s.getActiveSellOrdersCount();
@@ -170,13 +175,21 @@ public class BazaarHourlyProcessingService {
             sum.setMinInstantSellPrice(minSell);
             sum.setMaxInstantSellPrice(maxSell);
 
-            sum.setNewBuyOrders(newBuyOrders);
-            sum.setNewSellOrders(newSellOrders);
-            sum.setDeltaNewBuyOrders(last.getActiveBuyOrdersCount() - first.getActiveBuyOrdersCount());
-            sum.setDeltaNewSellOrders(last.getActiveSellOrdersCount() - first.getActiveSellOrdersCount());
-
-            sum.setItemsListedBuyOrders(itemsListedBuy);
-            sum.setItemsListedSellOrders(itemsListedSell);
+//            sum.setCreatedBuyOrders(createdBuyOrders);
+//            sum.setCreatedSellOrders(createdSellOrders);
+//            sum.setDeltaBuyOrders(last.getActiveBuyOrdersCount() - first.getActiveBuyOrdersCount());
+//            sum.setDeltaSellOrders(last.getActiveSellOrdersCount() - first.getActiveSellOrdersCount());
+//
+//            sum.setAddedItemsSellOrders(addedItemsSellOrders);
+//            sum.setAddedItemsBuyOrders(addedItemsBuyOrders);
+//
+//            sum.setDeltaItemsBuyOrders(
+//                    last.getBuyVolume() - first.getBuyVolume());
+//            sum.setDeltaItemsSellOrders(
+//                    last.getSellVolume() - first.getSellVolume());
+//
+//            sum.setListedItemsBuyOrders(last.getBuyVolume());
+//            sum.setListedItemsSellOrders(last.getSellVolume());
 
             summaryRepo.save(sum);
         }

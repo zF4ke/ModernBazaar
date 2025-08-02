@@ -22,12 +22,12 @@ public record BazaarItemHourSummaryResponseDTO(
         double  closeInstantSellPrice,
         double  minInstantSellPrice,
         double  maxInstantSellPrice,
-        long    newSellOrders,
-        long    deltaNewSellOrders,
-        long    newBuyOrders,
-        long    deltaNewBuyOrders,
-        long    itemsListedSellOrders,
-        long    itemsListedBuyOrders,
+        long    createdBuyOrders,
+        long    deltaBuyOrders,
+        long    createdSellOrders,
+        long    deltaSellOrders,
+        long    addedItemsBuyOrders,
+        long    addedItemsSellOrders,
         @Nullable List<BazaarItemHourPointDTO> points
 ) {
     public static BazaarItemHourSummaryResponseDTO of(
@@ -74,9 +74,9 @@ public record BazaarItemHourSummaryResponseDTO(
                 s.getMinInstantBuyPrice(),      s.getMaxInstantBuyPrice(),
                 s.getOpenInstantSellPrice(),    s.getCloseInstantSellPrice(),
                 s.getMinInstantSellPrice(),     s.getMaxInstantSellPrice(),
-                s.getNewSellOrders(),           s.getDeltaNewSellOrders(),
-                s.getNewBuyOrders(),            s.getDeltaNewBuyOrders(),
-                s.getItemsListedSellOrders(),   s.getItemsListedBuyOrders(),
+                s.getCreatedBuyOrders(),        s.getDeltaBuyOrders(),
+                s.getCreatedSellOrders(),       s.getDeltaSellOrders(),
+                s.getAddedItemsBuyOrders(),     s.getAddedItemsSellOrders(),
                 pts
         );
     }

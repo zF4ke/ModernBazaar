@@ -14,12 +14,12 @@ interface ChartDataPoint {
   buyPrice: number
   sellPrice: number
   spread: number
-  newBuyOrders: number
-  newSellOrders: number
-  deltaNewBuyOrders: number
-  deltaNewSellOrders: number
-  itemsListedBuyOrders: number
-  itemsListedSellOrders: number
+  createdSellOrders: number
+  createdBuyOrders: number
+  deltaSellOrders: number
+  deltaBuyOrders: number
+  addedItemsBuyOrders: number
+  addedItemsSellOrders: number
   points: any[]
   isHourlySummary: boolean
 }
@@ -55,12 +55,12 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         buyPrice: item.closeInstantBuyPrice,
         sellPrice: item.closeInstantSellPrice,
         spread: item.closeInstantSellPrice - item.closeInstantBuyPrice,
-        newBuyOrders: item.newBuyOrders,
-        newSellOrders: item.newSellOrders,
-        deltaNewBuyOrders: item.deltaNewBuyOrders,
-        deltaNewSellOrders: item.deltaNewSellOrders,
-        itemsListedBuyOrders: item.itemsListedBuyOrders,
-        itemsListedSellOrders: item.itemsListedSellOrders,
+        createdSellOrders: item.createdSellOrders,
+        createdBuyOrders: item.createdBuyOrders,
+        deltaSellOrders: item.deltaSellOrders,
+        deltaBuyOrders: item.deltaBuyOrders,
+        addedItemsSellOrders: item.addedItemsSellOrders,
+        addedItemsBuyOrders: item.addedItemsBuyOrders,
         points: item.points || [],
         isHourlySummary: true
       })
@@ -79,12 +79,12 @@ export default function HistoryChart({ data }: HistoryChartProps) {
             buyPrice: point.instantBuyPrice,
             sellPrice: point.instantSellPrice,
             spread: point.instantSellPrice - point.instantBuyPrice,
-            newBuyOrders: 0, // Individual points don't have these metrics
-            newSellOrders: 0,
-            deltaNewBuyOrders: 0,
-            deltaNewSellOrders: 0,
-            itemsListedBuyOrders: point.activeBuyOrdersCount,
-            itemsListedSellOrders: point.activeSellOrdersCount,
+            createdSellOrders: 0, // Individual points don't have these metrics
+            createdBuyOrders: 0,
+            deltaSellOrders: 0,
+            deltaBuyOrders: 0,
+            addedItemsBuyOrders: point.activeBuyOrdersCount,
+            addedItemsSellOrders: point.activeSellOrdersCount,
             points: [],
             isHourlySummary: false
           })
@@ -106,8 +106,8 @@ export default function HistoryChart({ data }: HistoryChartProps) {
       buyPrice: '#3b82f6',      // Blue
       sellPrice: '#10b981',     // Green
       spread: '#f59e0b',        // Orange
-      newBuyOrders: '#8b5cf6',  // Purple
-      newSellOrders: '#ef4444', // Red
+      createdBuyOrders: '#8b5cf6',  // Purple
+      createdSellOrders: '#ef4444', // Red
       deltaBuy: '#06b6d4',      // Cyan
       deltaSell: '#f97316',     // Amber
       volumeBuy: '#84cc16',     // Lime
@@ -191,9 +191,9 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           name: 'New Buy Orders',
           type: 'bar',
           yAxisIndex: yAxis.length - 1,
-          data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.newBuyOrders]),
+          data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.createdBuyOrders]),
           itemStyle: { 
-            color: colors.newBuyOrders,
+            color: colors.createdBuyOrders,
             opacity: 0.7
           },
           barWidth: '60%'
@@ -202,9 +202,9 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           name: 'New Sell Orders',
           type: 'bar',
           yAxisIndex: yAxis.length - 1,
-          data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.newSellOrders]),
+          data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.createdSellOrders]),
           itemStyle: { 
-            color: colors.newSellOrders,
+            color: colors.createdSellOrders,
             opacity: 0.7
           },
           barWidth: '60%'
@@ -234,7 +234,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           name: 'Buy Orders Δ',
           type: 'line',
           yAxisIndex: yAxis.length - 1,
-          data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.deltaNewBuyOrders]),
+          data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.deltaBuyOrders]),
           lineStyle: { 
             width: 1, 
             type: 'dashed',
@@ -249,7 +249,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           name: 'Sell Orders Δ',
           type: 'line',
           yAxisIndex: yAxis.length - 1,
-          data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.deltaNewSellOrders]),
+          data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.deltaSellOrders]),
           lineStyle: { 
             width: 1, 
             type: 'dashed',
@@ -285,7 +285,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           name: 'Listed Buy Items',
           type: 'line',
           yAxisIndex: yAxis.length - 1,
-          data: chartData.map(d => [d.timestamp, d.itemsListedBuyOrders]),
+          data: chartData.map(d => [d.timestamp, d.addedItemsBuyOrders]),
           lineStyle: { 
             width: 1, 
             type: 'dashed',
@@ -300,7 +300,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           name: 'Listed Sell Items',
           type: 'line',
           yAxisIndex: yAxis.length - 1,
-          data: chartData.map(d => [d.timestamp, d.itemsListedSellOrders]),
+          data: chartData.map(d => [d.timestamp, d.addedItemsSellOrders]),
           lineStyle: { 
             width: 1, 
             type: 'dashed',
@@ -404,16 +404,16 @@ export default function HistoryChart({ data }: HistoryChartProps) {
             // Show order metrics if toggled (for hourly summaries or individual snapshots with parent data)
             if (selectedMetrics.orders) {
               const orderData = dataPoint.isHourlySummary ? dataPoint : parentHourlySummary
-              if (orderData && orderData.newBuyOrders !== undefined) {
+              if (orderData && orderData.createdBuyOrders !== undefined) {
                 result += `<div style="margin: 4px 0;">
-                  <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.newBuyOrders}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.newBuyOrders};">New Buy Orders: ${orderData.newBuyOrders}</span>
+                  <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.createdBuyOrders}; margin-right: 8px;"></span>
+                  <span style="color: ${colors.createdBuyOrders};">New Buy Orders: ${orderData.createdBuyOrders}</span>
                 </div>`
               }
-              if (orderData && orderData.newSellOrders !== undefined) {
+              if (orderData && orderData.createdSellOrders !== undefined) {
                 result += `<div style="margin: 4px 0;">
-                  <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.newSellOrders}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.newSellOrders};">New Sell Orders: ${orderData.newSellOrders}</span>
+                  <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.createdSellOrders}; margin-right: 8px;"></span>
+                  <span style="color: ${colors.createdSellOrders};">New Sell Orders: ${orderData.createdSellOrders}</span>
                 </div>`
               }
             }
@@ -421,32 +421,32 @@ export default function HistoryChart({ data }: HistoryChartProps) {
             // Show delta metrics if toggled (for hourly summaries or individual snapshots with parent data)
             if (selectedMetrics.deltas) {
               const deltaData = dataPoint.isHourlySummary ? dataPoint : parentHourlySummary
-              if (deltaData && deltaData.deltaNewBuyOrders !== undefined) {
+              if (deltaData && deltaData.deltaBuyOrders !== undefined) {
                 result += `<div style="margin: 4px 0;">
                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.deltaBuy}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.deltaBuy};">Buy Orders Δ: ${deltaData.deltaNewBuyOrders}</span>
+                  <span style="color: ${colors.deltaBuy};">Buy Orders Δ: ${deltaData.deltaBuyOrders}</span>
                 </div>`
               }
-              if (deltaData && deltaData.deltaNewSellOrders !== undefined) {
+              if (deltaData && deltaData.deltaSellOrders !== undefined) {
                 result += `<div style="margin: 4px 0;">
                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.deltaSell}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.deltaSell};">Sell Orders Δ: ${deltaData.deltaNewSellOrders}</span>
+                  <span style="color: ${colors.deltaSell};">Sell Orders Δ: ${deltaData.deltaSellOrders}</span>
                 </div>`
               }
             }
             
             // Show volume metrics if toggled
             if (selectedMetrics.volumes) {
-              if (dataPoint.itemsListedBuyOrders !== undefined) {
+              if (dataPoint.addedItemsBuyOrders !== undefined) {
                 result += `<div style="margin: 4px 0;">
                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.volumeBuy}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.volumeBuy};">Listed Buy Items: ${dataPoint.itemsListedBuyOrders}</span>
+                  <span style="color: ${colors.volumeBuy};">Listed Buy Items: ${dataPoint.addedItemsBuyOrders}</span>
                 </div>`
               }
-              if (dataPoint.itemsListedSellOrders !== undefined) {
+              if (dataPoint.addedItemsSellOrders !== undefined) {
                 result += `<div style="margin: 4px 0;">
                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.volumeSell}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.volumeSell};">Listed Sell Items: ${dataPoint.itemsListedSellOrders}</span>
+                  <span style="color: ${colors.volumeSell};">Listed Sell Items: ${dataPoint.addedItemsSellOrders}</span>
                 </div>`
               }
             }

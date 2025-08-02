@@ -191,12 +191,12 @@ public class BazaarItemsQueryService {
                             dto.closeInstantSellPrice(),
                             dto.minInstantSellPrice(),
                             dto.maxInstantSellPrice(),
-                            dto.newSellOrders(),
-                            dto.deltaNewSellOrders(),
-                            dto.newBuyOrders(),
-                            dto.deltaNewBuyOrders(),
-                            dto.itemsListedSellOrders(),
-                            dto.itemsListedBuyOrders(),
+                            dto.createdBuyOrders(),
+                            dto.deltaBuyOrders(),
+                            dto.createdSellOrders(),
+                            dto.deltaSellOrders(),
+                            dto.addedItemsBuyOrders(),
+                            dto.addedItemsSellOrders(),
                             new ArrayList<>(unique.values())
                     );
                 })
@@ -286,12 +286,12 @@ public class BazaarItemsQueryService {
                 h.getCloseInstantSellPrice(),
                 h.getMinInstantSellPrice(),
                 h.getMaxInstantSellPrice(),
-                h.getNewSellOrders(),
-                h.getDeltaNewSellOrders(),
-                h.getNewBuyOrders(),
-                h.getDeltaNewBuyOrders(),
-                h.getItemsListedSellOrders(),
-                h.getItemsListedBuyOrders(),
+                h.getCreatedBuyOrders(),
+                h.getDeltaBuyOrders(),
+                h.getCreatedSellOrders(),
+                h.getDeltaSellOrders(),
+                h.getAddedItemsBuyOrders(),
+                h.getAddedItemsSellOrders(),
                 pts
         );
     }

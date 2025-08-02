@@ -28,12 +28,12 @@ export interface BazaarItemHourSummary {
   closeInstantSellPrice: number
   minInstantSellPrice: number
   maxInstantSellPrice: number
-  newSellOrders: number
-  deltaNewSellOrders: number
-  newBuyOrders: number
-  deltaNewBuyOrders: number
-  itemsListedSellOrders: number
-  itemsListedBuyOrders: number
+  createdBuyOrders: number
+  deltaBuyOrders: number
+  createdSellOrders: number
+  deltaSellOrders: number
+  addedItemsBuyOrders: number
+  addedItemsSellOrders: number
   points?: BazaarItemHourPoint[]
 }
 

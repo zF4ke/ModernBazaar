@@ -43,13 +43,13 @@ public class RawBazaarProductToSnapshotMapper {
                 .instantSellPrice(instantSellPrice)
                 .weightedTwoPercentSellPrice(raw.getQuickStatus().getSellPrice())
                 .sellMovingWeek(raw.getQuickStatus().getSellMovingWeek())
-                .activeSellOrdersCount(raw.getQuickStatus().getSellOrders())
                 .instantBuyPrice(instantBuyPrice)
                 .weightedTwoPercentBuyPrice(raw.getQuickStatus().getBuyPrice())
                 .buyMovingWeek(raw.getQuickStatus().getBuyMovingWeek())
-                .activeBuyOrdersCount(raw.getQuickStatus().getBuyOrders())
-                .buyVolume(raw.getQuickStatus().getBuyVolume())
-                .sellVolume(raw.getQuickStatus().getSellVolume())
+                .activeSellOrdersCount(raw.getQuickStatus().getBuyOrders()) // flipped because hypixel
+                .activeBuyOrdersCount(raw.getQuickStatus().getSellOrders())  // flipped because hypixel
+                .buyVolume(raw.getQuickStatus().getSellVolume()) // flipped because hypixel
+                .sellVolume(raw.getQuickStatus().getBuyVolume()) // flipped because hypixel
                 .build();
 
         // sell_summary (sellers) -> BUY orders

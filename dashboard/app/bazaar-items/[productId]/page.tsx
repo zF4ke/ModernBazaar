@@ -316,10 +316,10 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                   <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm font-medium">New Buy Orders</p>
                 </div>
-                <p className="text-2xl font-bold">{hourSummary.newBuyOrders}</p>
+                <p className="text-2xl font-bold">{hourSummary.createdBuyOrders}</p>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Activity className="h-3 w-3" />
-                  <span>Δ: {hourSummary.deltaNewBuyOrders}</span>
+                  <span>Δ: {hourSummary.deltaBuyOrders}</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -327,10 +327,10 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                   <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
                   <p className="text-sm font-medium">New Sell Orders</p>
                 </div>
-                <p className="text-2xl font-bold">{hourSummary.newSellOrders}</p>
+                <p className="text-2xl font-bold">{hourSummary.createdSellOrders}</p>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Activity className="h-3 w-3" />
-                  <span>Δ: {hourSummary.deltaNewSellOrders}</span>
+                  <span>Δ: {hourSummary.deltaSellOrders}</span>
                 </div>
               </div>
             </div>
