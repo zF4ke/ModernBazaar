@@ -60,8 +60,8 @@ public class BazaarItemHourSummary {
     private long   addedItemsSellOrders;
 
     /** total items insta‑sold / insta‑bought in the hour (quick‑trades) */
-    private long   instaSoldItems;
-    private long   instaBoughtItems;
+//    private long   instaSoldItems;
+//    private long   instaBoughtItems;
 
     /* link back to minute points for debugging (lazy) */
     @OneToMany(mappedBy="hourSummary", fetch=FetchType.LAZY)

@@ -261,6 +261,8 @@ public class BazaarItemsQueryService {
                         p.getInstantSellPrice(),
                         p.getActiveBuyOrdersCount(),
                         p.getActiveSellOrdersCount(),
+                        p.getBuyVolume(),
+                        p.getSellVolume(),
                         p.getBuyOrders().stream()
                                 .map(o -> new OrderEntryResponseDTO(
                                         o.getOrderIndex(), o.getPricePerUnit(),

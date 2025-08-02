@@ -175,19 +175,19 @@ public class BazaarHourlyProcessingService {
             sum.setMinInstantSellPrice(minSell);
             sum.setMaxInstantSellPrice(maxSell);
 
-//            sum.setCreatedBuyOrders(createdBuyOrders);
-//            sum.setCreatedSellOrders(createdSellOrders);
-//            sum.setDeltaBuyOrders(last.getActiveBuyOrdersCount() - first.getActiveBuyOrdersCount());
-//            sum.setDeltaSellOrders(last.getActiveSellOrdersCount() - first.getActiveSellOrdersCount());
-//
-//            sum.setAddedItemsSellOrders(addedItemsSellOrders);
-//            sum.setAddedItemsBuyOrders(addedItemsBuyOrders);
-//
-//            sum.setDeltaItemsBuyOrders(
-//                    last.getBuyVolume() - first.getBuyVolume());
-//            sum.setDeltaItemsSellOrders(
-//                    last.getSellVolume() - first.getSellVolume());
-//
+            sum.setCreatedBuyOrders(createdBuyOrders);
+            sum.setCreatedSellOrders(createdSellOrders);
+            sum.setDeltaBuyOrders(last.getActiveBuyOrdersCount() - first.getActiveBuyOrdersCount());
+            sum.setDeltaSellOrders(last.getActiveSellOrdersCount() - first.getActiveSellOrdersCount());
+
+            sum.setAddedItemsSellOrders(addedItemsSellOrders);
+            sum.setAddedItemsBuyOrders(addedItemsBuyOrders);
+
+            sum.setDeltaBuyOrders(
+                    last.getBuyVolume() - first.getBuyVolume());
+            sum.setDeltaSellOrders(
+                    last.getSellVolume() - first.getSellVolume());
+
 //            sum.setListedItemsBuyOrders(last.getBuyVolume());
 //            sum.setListedItemsSellOrders(last.getSellVolume());
 

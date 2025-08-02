@@ -44,6 +44,8 @@ public record BazaarItemHourSummaryResponseDTO(
                             p.getInstantSellPrice(),
                             p.getActiveBuyOrdersCount(),
                             p.getActiveSellOrdersCount(),
+                            p.getBuyVolume(),
+                            p.getSellVolume(),
                             /* buy side */
                             p.getBuyOrders().stream()
                                     .sorted(Comparator.comparingInt(BuyOrderEntry::getOrderIndex))

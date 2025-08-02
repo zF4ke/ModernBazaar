@@ -18,6 +18,8 @@ public record BazaarItemHourPointDTO(
         double  instantSellPrice,
         int     activeBuyOrdersCount,
         int     activeSellOrdersCount,
+        long    buyVolume,
+        long    sellVolume,
         List<OrderEntryResponseDTO> buyOrders,
         List<OrderEntryResponseDTO> sellOrders
 ) {}

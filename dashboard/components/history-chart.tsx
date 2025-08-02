@@ -20,6 +20,8 @@ interface ChartDataPoint {
   deltaBuyOrders: number
   addedItemsBuyOrders: number
   addedItemsSellOrders: number
+  buyVolume: number
+  sellVolume: number
   points: any[]
   isHourlySummary: boolean
 }
@@ -29,7 +31,8 @@ export default function HistoryChart({ data }: HistoryChartProps) {
     prices: true,
     orders: false,
     deltas: false,
-    volumes: false
+    volumes: false,
+    totalVolumes: false
   })
 
   // Force chart re-render when metrics change
@@ -61,6 +64,8 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         deltaBuyOrders: item.deltaBuyOrders,
         addedItemsSellOrders: item.addedItemsSellOrders,
         addedItemsBuyOrders: item.addedItemsBuyOrders,
+        buyVolume: 0, // Hourly summaries don't have volume
+        sellVolume: 0,
         points: item.points || [],
         isHourlySummary: true
       })
@@ -85,6 +90,8 @@ export default function HistoryChart({ data }: HistoryChartProps) {
             deltaBuyOrders: 0,
             addedItemsBuyOrders: point.activeBuyOrdersCount,
             addedItemsSellOrders: point.activeSellOrdersCount,
+            buyVolume: point.buyVolume,
+            sellVolume: point.sellVolume,
             points: [],
             isHourlySummary: false
           })
@@ -188,7 +195,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
 
       series.push(
         {
-          name: 'New Buy Orders',
+          name: 'Created Buy Orders',
           type: 'bar',
           yAxisIndex: yAxis.length - 1,
           data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.createdBuyOrders]),
@@ -199,7 +206,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           barWidth: '60%'
         },
         {
-          name: 'New Sell Orders',
+          name: 'Created Sell Orders',
           type: 'bar',
           yAxisIndex: yAxis.length - 1,
           data: chartData.filter(d => d.isHourlySummary).map(d => [d.timestamp, d.createdSellOrders]),
@@ -211,7 +218,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         }
       )
 
-      legendData.push('New Buy Orders', 'New Sell Orders')
+      legendData.push('Created Buy Orders', 'Created Sell Orders')
     }
 
     // Deltas series (right Y-axis)
@@ -282,7 +289,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
 
       series.push(
         {
-          name: 'Listed Buy Items',
+          name: 'Added Buy Items',
           type: 'line',
           yAxisIndex: yAxis.length - 1,
           data: chartData.map(d => [d.timestamp, d.addedItemsBuyOrders]),
@@ -297,7 +304,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           smooth: true
         },
         {
-          name: 'Listed Sell Items',
+          name: 'Added Sell Items',
           type: 'line',
           yAxisIndex: yAxis.length - 1,
           data: chartData.map(d => [d.timestamp, d.addedItemsSellOrders]),
@@ -313,7 +320,71 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         }
       )
 
-      legendData.push('Listed Buy Items', 'Listed Sell Items')
+      legendData.push('Added Buy Items', 'Added Sell Items')
+    }
+
+    // Total Volumes series (right Y-axis)
+    if (selectedMetrics.totalVolumes) {
+      if (!selectedMetrics.orders && !selectedMetrics.deltas && !selectedMetrics.volumes) {
+        yAxis.push({
+          type: 'value',
+          position: 'right',
+          name: 'Total Items',
+          nameLocation: 'middle',
+          nameGap: 50,
+          splitLine: {
+            show: false
+          }
+        })
+      } else {
+        // Use the existing right Y-axis if other metrics are selected
+        const existingRightAxis = yAxis.find(axis => axis.position === 'right')
+        if (!existingRightAxis) {
+          yAxis.push({
+            type: 'value',
+            position: 'right',
+            name: 'Total Items',
+            nameLocation: 'middle',
+            nameGap: 50,
+            splitLine: {
+              show: false
+            }
+          })
+        }
+      }
+
+      series.push(
+        {
+          name: 'Total Items Buy Orders',
+          type: 'line',
+          yAxisIndex: yAxis.findIndex(axis => axis.position === 'right'),
+          data: chartData.filter(d => !d.isHourlySummary).map(d => [d.timestamp, d.buyVolume]),
+          lineStyle: { 
+            width: 2,
+            color: colors.volumeBuy
+          },
+          itemStyle: { color: colors.volumeBuy },
+          symbol: 'circle',
+          symbolSize: 4,
+          smooth: true
+        },
+        {
+          name: 'Total Items Sell Orders',
+          type: 'line',
+          yAxisIndex: yAxis.findIndex(axis => axis.position === 'right'),
+          data: chartData.filter(d => !d.isHourlySummary).map(d => [d.timestamp, d.sellVolume]),
+          lineStyle: { 
+            width: 2,
+            color: colors.volumeSell
+          },
+          itemStyle: { color: colors.volumeSell },
+          symbol: 'circle',
+          symbolSize: 4,
+          smooth: true
+        }
+      )
+
+      legendData.push('Total Items Buy Orders', 'Total Items Sell Orders')
     }
 
     return {
@@ -404,18 +475,18 @@ export default function HistoryChart({ data }: HistoryChartProps) {
             // Show order metrics if toggled (for hourly summaries or individual snapshots with parent data)
             if (selectedMetrics.orders) {
               const orderData = dataPoint.isHourlySummary ? dataPoint : parentHourlySummary
-              if (orderData && orderData.createdBuyOrders !== undefined) {
-                result += `<div style="margin: 4px 0;">
-                  <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.createdBuyOrders}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.createdBuyOrders};">New Buy Orders: ${orderData.createdBuyOrders}</span>
-                </div>`
-              }
-              if (orderData && orderData.createdSellOrders !== undefined) {
-                result += `<div style="margin: 4px 0;">
-                  <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.createdSellOrders}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.createdSellOrders};">New Sell Orders: ${orderData.createdSellOrders}</span>
-                </div>`
-              }
+                             if (orderData && orderData.createdBuyOrders !== undefined) {
+                 result += `<div style="margin: 4px 0;">
+                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.createdBuyOrders}; margin-right: 8px;"></span>
+                   <span style="color: ${colors.createdBuyOrders};">Created Buy Orders: ${orderData.createdBuyOrders}</span>
+                 </div>`
+               }
+               if (orderData && orderData.createdSellOrders !== undefined) {
+                 result += `<div style="margin: 4px 0;">
+                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.createdSellOrders}; margin-right: 8px;"></span>
+                   <span style="color: ${colors.createdSellOrders};">Created Sell Orders: ${orderData.createdSellOrders}</span>
+                 </div>`
+               }
             }
             
             // Show delta metrics if toggled (for hourly summaries or individual snapshots with parent data)
@@ -435,18 +506,34 @@ export default function HistoryChart({ data }: HistoryChartProps) {
               }
             }
             
-            // Show volume metrics if toggled
-            if (selectedMetrics.volumes) {
-              if (dataPoint.addedItemsBuyOrders !== undefined) {
+                         // Show volume metrics if toggled
+             if (selectedMetrics.volumes) {
+               if (dataPoint.addedItemsBuyOrders !== undefined) {
+                 result += `<div style="margin: 4px 0;">
+                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.volumeBuy}; margin-right: 8px;"></span>
+                   <span style="color: ${colors.volumeBuy};">Added Buy Items: ${dataPoint.addedItemsBuyOrders}</span>
+                 </div>`
+               }
+               if (dataPoint.addedItemsSellOrders !== undefined) {
+                 result += `<div style="margin: 4px 0;">
+                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.volumeSell}; margin-right: 8px;"></span>
+                   <span style="color: ${colors.volumeSell};">Added Sell Items: ${dataPoint.addedItemsSellOrders}</span>
+                 </div>`
+               }
+             }
+            
+            // Show total volume metrics if toggled
+            if (selectedMetrics.totalVolumes) {
+              if (dataPoint.buyVolume !== undefined && dataPoint.buyVolume > 0) {
                 result += `<div style="margin: 4px 0;">
                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.volumeBuy}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.volumeBuy};">Listed Buy Items: ${dataPoint.addedItemsBuyOrders}</span>
+                  <span style="color: ${colors.volumeBuy};">Total Items Buy Orders: ${dataPoint.buyVolume}</span>
                 </div>`
               }
-              if (dataPoint.addedItemsSellOrders !== undefined) {
+              if (dataPoint.sellVolume !== undefined && dataPoint.sellVolume > 0) {
                 result += `<div style="margin: 4px 0;">
                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.volumeSell}; margin-right: 8px;"></span>
-                  <span style="color: ${colors.volumeSell};">Listed Sell Items: ${dataPoint.addedItemsSellOrders}</span>
+                  <span style="color: ${colors.volumeSell};">Total Items Sell Orders: ${dataPoint.sellVolume}</span>
                 </div>`
               }
             }
@@ -548,7 +635,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
               : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'
           }`}
         >
-          New Orders
+          Created Orders
         </button>
         <button
           onClick={() => setSelectedMetrics(prev => ({ ...prev, deltas: !prev.deltas }))}
@@ -568,7 +655,17 @@ export default function HistoryChart({ data }: HistoryChartProps) {
               : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'
           }`}
         >
-          Listed Items
+          Added Items
+        </button>
+        <button
+          onClick={() => setSelectedMetrics(prev => ({ ...prev, totalVolumes: !prev.totalVolumes }))}
+          className={`px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 border ${
+            selectedMetrics.totalVolumes 
+              ? 'bg-primary text-primary-foreground border-primary shadow-lg' 
+              : 'bg-background text-foreground border-border hover:bg-accent hover:text-accent-foreground'
+          }`}
+        >
+          Total Volume
         </button>
       </div>
 

@@ -48,6 +48,8 @@ export interface BazaarItemHourPoint {
   instantSellPrice: number
   activeBuyOrdersCount: number
   activeSellOrdersCount: number
+  buyVolume: number
+  sellVolume: number
   buyOrders: OrderBookEntry[]
   sellOrders: OrderBookEntry[]
 }

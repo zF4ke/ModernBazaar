@@ -17,14 +17,14 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: none      # still auto-update schema during container development
+      ddl-auto: update      # still auto-update schema during container development
     show-sql: false
     open-in-view: false
     properties:
       hibernate.cache.use_second_level_cache: false
       hibernate.cache.use_query_cache: false
   flyway:
-    enabled: true
+    enabled: false
     baseline-on-migrate: true
     baseline-version: 1
 #  security:
