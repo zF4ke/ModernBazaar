@@ -37,6 +37,7 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] `GET /api/bazaar/items/{productId}/history?from=&to=&withPoints=` (hour summaries)
 - [x] HTTP Basic authentication on API and actuator endpoints (Spring Security)
 - [x] Service cache and rate limiting
+- [x] Flyway baseline and initial migration
 - [ ] Nightly job: thin/archive old HourPoints (e.g., keep 7 days, then downsample)
 - [ ] Optional S3 export for long-term history
 - [ ] Cold-snapshot archive to reduce DB footprint
