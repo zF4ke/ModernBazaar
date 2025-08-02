@@ -2,6 +2,7 @@ package com.modernbazaar.core.api;
 
 import com.modernbazaar.core.api.dto.*;
 import com.modernbazaar.core.service.BazaarItemsQueryService;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -28,6 +29,7 @@ public class BazaarItemsController {
     @GetMapping
     @Operation(summary = "Latest items (hourly close)",
             responses = @ApiResponse(responseCode = "200"))
+    @RateLimiter(name = "bazaarEndpoint")
     public PagedResponseDTO<BazaarItemLiveViewResponseDTO> getItems(
             // … same @RequestParam parameters …
             @RequestParam(required = false) String q,
@@ -51,6 +53,7 @@ public class BazaarItemsController {
             responses = {
                     @ApiResponse(responseCode = "200"),
                     @ApiResponse(responseCode = "404")})
+    @RateLimiter(name = "bazaarEndpoint")
     public BazaarItemLiveViewResponseDTO getItem(
             @Parameter(in = ParameterIn.PATH, required = true)
             @PathVariable String productId) {
@@ -63,6 +66,7 @@ public class BazaarItemsController {
     @GetMapping("/{productId}/history")
     @Operation(summary = "Hourly history",
             description = "With ?withPoints=true each hour embeds its kept minute points.")
+    @RateLimiter(name = "bazaarEndpoint")
     public List<BazaarItemHourSummaryResponseDTO> getHistory(
             @PathVariable String productId,
             @RequestParam(required = false) Instant from,

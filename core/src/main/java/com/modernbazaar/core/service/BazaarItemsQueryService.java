@@ -6,6 +6,7 @@ import com.modernbazaar.core.repository.*;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ public class BazaarItemsQueryService {
 
     /* ───────────────────── LIST ───────────────────── */
 
+    @Cacheable(value = "liveViewList", key = "'list-'+#filter.hashCode()+#sort.orElse('')+#limit")
     @Transactional(readOnly = true)
     public PagedResponseDTO<BazaarItemLiveViewResponseDTO> getLatestPaginated(
             BazaarItemFilterDTO filter,
@@ -36,12 +38,12 @@ public class BazaarItemsQueryService {
             int                     page,
             int                     limit
     ) {
-        var all = getLatest(filter, sort, Optional.empty());
+        var all = getLatestInternal(filter, sort, Optional.empty());
         return PagedResponseDTO.of(all, page, limit);
     }
 
     @Transactional(readOnly = true)
-    public List<BazaarItemLiveViewResponseDTO> getLatest(
+    protected List<BazaarItemLiveViewResponseDTO> getLatestInternal(
             BazaarItemFilterDTO filter,
             Optional<String>     sort,
             Optional<Integer>    limit
@@ -110,6 +112,7 @@ public class BazaarItemsQueryService {
 
     /* ───────────────────── DETAIL ─────────────────── */
 
+    @Cacheable(value = "liveViewItem", key = "#productId")
     @Transactional(readOnly = true)
     public BazaarItemLiveViewResponseDTO getItem(String productId) {
         // freshest snapshot
@@ -145,6 +148,7 @@ public class BazaarItemsQueryService {
     /* ───────────────────── HISTORY ────────────────── */
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "liveViewHistory", key = "'history-'+#productId+'-'+#from+'-'+#to+'-'+#withPoints")
     public List<BazaarItemHourSummaryResponseDTO> getHistory(
             String  productId,
             Instant from,

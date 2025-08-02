@@ -283,6 +283,61 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
         </Card>
       </div>
 
+      
+
+      {/* Hour Summary Stats (if available) */}
+      {hourSummary && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Last Hour Summary</CardTitle>
+            </div>
+            <CardDescription>Activity during the last completed hour</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <TrendingDown className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">Price Range (Buy)</p>
+                </div>
+                <p className="text-2xl font-bold">{hourSummary.minInstantBuyPrice.toFixed(2)} - {hourSummary.maxInstantBuyPrice.toFixed(2)}</p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">Price Range (Sell)</p>
+                </div>
+                <p className="text-2xl font-bold">{hourSummary.minInstantSellPrice.toFixed(2)} - {hourSummary.maxInstantSellPrice.toFixed(2)}</p>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">New Buy Orders</p>
+                </div>
+                <p className="text-2xl font-bold">{hourSummary.newBuyOrders}</p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Activity className="h-3 w-3" />
+                  <span>Δ: {hourSummary.deltaNewBuyOrders}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1">
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                  <p className="text-sm font-medium">New Sell Orders</p>
+                </div>
+                <p className="text-2xl font-bold">{hourSummary.newSellOrders}</p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Activity className="h-3 w-3" />
+                  <span>Δ: {hourSummary.deltaNewSellOrders}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Price History Chart */}
       <Card>
         <CardHeader>
@@ -540,59 +595,6 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
           )}
         </Card>
       </div>
-
-      {/* Hour Summary Stats (if available) */}
-      {hourSummary && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>Last Hour Summary</CardTitle>
-            </div>
-            <CardDescription>Activity during the last completed hour</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <TrendingDown className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">Price Range (Buy)</p>
-                </div>
-                <p className="text-2xl font-bold">{hourSummary.minInstantBuyPrice.toFixed(2)} - {hourSummary.maxInstantBuyPrice.toFixed(2)}</p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">Price Range (Sell)</p>
-                </div>
-                <p className="text-2xl font-bold">{hourSummary.minInstantSellPrice.toFixed(2)} - {hourSummary.maxInstantSellPrice.toFixed(2)}</p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">New Buy Orders</p>
-                </div>
-                <p className="text-2xl font-bold">{hourSummary.newBuyOrders}</p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Activity className="h-3 w-3" />
-                  <span>Δ: {hourSummary.deltaNewBuyOrders}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">New Sell Orders</p>
-                </div>
-                <p className="text-2xl font-bold">{hourSummary.newSellOrders}</p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Activity className="h-3 w-3" />
-                  <span>Δ: {hourSummary.deltaNewSellOrders}</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 } 

@@ -1,5 +1,6 @@
 package com.modernbazaar.core.api;
 
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -93,6 +95,24 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    /**
+     * Thrown when a @RateLimiter rejects a call.
+     */
+    @ExceptionHandler(RequestNotPermitted.class)
+    protected ResponseEntity<ErrorResponse> handleRateLimit(
+            RequestNotPermitted ex,
+            WebRequest request
+    ) {
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.TOO_MANY_REQUESTS.value(),
+                "Rate limit exceeded, please retry in a bit.",
+                null
+        );
+        return new ResponseEntity<>(body, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
 
     /**
      * Standard error payload for all handlers.

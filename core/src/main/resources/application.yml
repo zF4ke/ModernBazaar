@@ -52,6 +52,16 @@ skyblock:
     refresh-days: 7
     cron: "0 0 3 * * *"   # 03:00 every day
 
+resilience4j.ratelimiter:
+  instances:
+    bazaarEndpoint:
+      limitForPeriod: 200     # calls
+      limitRefreshPeriod: 1m  # per minute
+      timeoutDuration: 0      # reject immediately when full
+    skyblockCatalog:
+      limitForPeriod: 100    # calls
+      limitRefreshPeriod: 1m  # per minute
+      timeoutDuration: 0      # reject immediately when full
 
 springdoc:
   api-docs:

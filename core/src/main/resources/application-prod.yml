@@ -46,6 +46,17 @@ management:
     health:
       show-details: when-authorized
 
+resilience4j.ratelimiter:
+  instances:
+    bazaarEndpoint:
+      limitForPeriod: 200     # calls
+      limitRefreshPeriod: 1m  # per minute
+      timeoutDuration: 0      # reject immediately when full
+    skyblockCatalog:
+      limitForPeriod: 100    # calls
+      limitRefreshPeriod: 1m  # per minute
+      timeoutDuration: 0      # reject immediately when full
+
 # disable swagger in prod
 springdoc:
   swagger-ui:
@@ -54,6 +65,6 @@ springdoc:
     path: /v3/api-docs    # you could even disable this in prod
 
 # tighten CORS: only your dashboard domain
-cors:
-  allowed-origins: https://localhost:3001,https://bazaar.example.com
-  allowed-methods: GET,POST,PUT,DELETE
+#cors:
+#  allowed-origins: https://localhost:3001,https://bazaar.example.com
+#  allowed-methods: GET,POST,PUT,DELETE
