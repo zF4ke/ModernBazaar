@@ -7,7 +7,7 @@ server:
 #    key-alias: tomcat
   compression:
     enabled: true
-    min-response-size: 2KB
+    min-response-size: 512
     mime-types: application/json,application/javascript,text/css,text/html
 
 spring:
