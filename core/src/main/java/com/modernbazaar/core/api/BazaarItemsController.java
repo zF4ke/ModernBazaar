@@ -40,10 +40,14 @@ public class BazaarItemsController {
             @RequestParam(required = false) Double minSpread,
             @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0")  Integer page,
-            @RequestParam(defaultValue = "50") Integer limit) {
+            @RequestParam(defaultValue = "50") Integer limit,
+            @RequestParam(
+                name = "withHour",
+                defaultValue = "false"
+            ) boolean withHour) {
 
         var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread);
-        return service.getLatestPaginated(filter, Optional.ofNullable(sort), page, limit);
+        return service.getLatestPaginated(filter, Optional.ofNullable(sort), page, limit, withHour);
     }
 
     /* ---------- DETAIL ---------- */

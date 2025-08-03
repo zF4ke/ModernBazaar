@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.awt.print.Pageable;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,4 +78,12 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
         """)
     List<BazaarItemHourSummary> findLatestWithPoints(@Param("pid") String pid);
 
+    /** Lightweight helper for 2‑query pagination on the Live‑View list. */
+    @Query(value = """
+        select distinct on (hs.product_id) hs.*
+        from   bazaar_hour_summary hs
+        where  hs.product_id in (:ids)
+        order  by hs.product_id, hs.hour_start desc
+        """, nativeQuery = true)
+    List<BazaarItemHourSummary> findLatestByProductIds(@Param("ids") Collection<String> ids);
 }

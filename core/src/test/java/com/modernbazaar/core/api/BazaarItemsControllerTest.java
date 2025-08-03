@@ -56,7 +56,7 @@ class BazaarItemsControllerTest {
                 PagedResponseDTO.of(List.of(live), 0, 50);
 
         // ── mock service ──────────────────────────────────────────────────
-        when(service.getLatestPaginated(any(), eq(Optional.empty()), eq(0), eq(50)))
+        when(service.getLatestPaginated(any(), eq(Optional.empty()), eq(0), eq(50), eq(false)))
                 .thenReturn(page);
 
         // ── perform request ───────────────────────────────────────────────

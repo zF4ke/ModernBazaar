@@ -16,8 +16,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Query-side facade that merges the freshest minute snapshot with the last
- * completed hour summary—including displayName lookups—from the catalog.
+ * Query‑side facade that merges the freshest minute snapshot with the last
+ * completed hour summary — including displayName lookups — from the catalog.
  */
 @Service
 @RequiredArgsConstructor
@@ -36,78 +36,46 @@ public class BazaarItemsQueryService {
             BazaarItemFilterDTO filter,
             Optional<String>        sort,
             int                     page,
-            int                     limit
+            int                     limit,
+            boolean                 includeHour
     ) {
-        var all = getLatestInternal(filter, sort, Optional.empty());
-        return PagedResponseDTO.of(all, page, limit);
-    }
+        // -----------------------------------------------------------------
+        // Step 1  –  IDs only (cheap) -------------------------------------
+        // -----------------------------------------------------------------
+        int offset = Math.max(page, 0) * limit;
+        List<String> pageIds = snapRepo.findLatestProductIdsPaged(
+                filter.q(),
+                filter.minSell(), filter.maxSell(),
+                filter.minBuy(),  filter.maxBuy(),
+                filter.minSpread(),
+                limit, offset);
 
-    @Transactional(readOnly = true)
-    protected List<BazaarItemLiveViewResponseDTO> getLatestInternal(
-            BazaarItemFilterDTO filter,
-            Optional<String>     sort,
-            Optional<Integer>    limit
-    ) {
-        // 1) fetch raw tables
-        List<BazaarItemSnapshot>    snaps = snapRepo.searchLatest(
-                filter.q(), filter.minSell(), filter.maxSell(),
-                filter.minBuy(), filter.maxBuy(), filter.minSpread());
-        List<BazaarItemHourSummary> hours = hourRepo.searchLatest(
-                filter.q(), filter.minSell(), filter.maxSell(),
-                filter.minBuy(), filter.maxBuy(), filter.minSpread());
+        if (pageIds.isEmpty()) {
+            return PagedResponseDTO.of(Collections.emptyList(), page, limit);
+        }
 
-        // 2) index by productId
-        Map<String,BazaarItemSnapshot>    snapById    = snaps.stream()
-                .collect(Collectors.toMap(
-                        BazaarItemSnapshot::getProductId, Function.identity()));
-        Map<String,BazaarItemHourSummary>  hourByIdRaw = hours.stream()
-                .collect(Collectors.toMap(
-                        BazaarItemHourSummary::getProductId, Function.identity()));
+        // -----------------------------------------------------------------
+        // Step 2  –  Fetch latest Snapshot + Hour rows for *this* page only
+        // -----------------------------------------------------------------
+        List<BazaarItemSnapshot>    snaps = snapRepo.findLatestByProductIds(pageIds);
+//        List<BazaarItemHourSummary> hours = hourRepo.findLatestByProductIds(pageIds);
 
-        // 3) preload display names
-        Set<String> allIds = new HashSet<>(snapById.keySet());
-        allIds.addAll(hourByIdRaw.keySet());
-        Map<String,String> names = preloadNames(allIds);
+        List<BazaarItemHourSummary> hours = includeHour
+                ? hourRepo.findLatestByProductIds(pageIds)
+                : Collections.emptyList();
 
-        // 4) build composite DTOs
-        List<BazaarItemLiveViewResponseDTO> out = allIds.stream()
-                .map(id -> {
-                    BazaarItemSnapshot      snap  = snapById.get(id);
-                    BazaarItemHourSummary   hs    = hourByIdRaw.get(id);
-                    String                  name  = names.get(id);
+        // -----------------------------------------------------------------
+        // Step 3  –  Assemble the DTOs (same logic as before) --------------
+        // -----------------------------------------------------------------
+//        List<BazaarItemLiveViewResponseDTO> dtos = buildLiveViewDTOs(pageIds, snaps, hours);
 
-                    BazaarItemSnapshotResponseDTO snapDto = snap != null
-                            ? mapSnapshot(snap, name)
-                            : null;
+        List<BazaarItemLiveViewResponseDTO> dtos =
+                buildLiveViewDTOs(pageIds, snaps, hours, includeHour);
 
-                    BazaarItemHourSummaryResponseDTO hourDto = hs != null
-                            ? buildDto(hs, name, false)   // never include points here
-                            : null;
+        // Preserve caller‑requested ordering ------------------------------
+        applySorting(dtos, sort);
 
-                    return new BazaarItemLiveViewResponseDTO(snapDto, hourDto);
-                })
-                .collect(Collectors.toList());
-
-        // 5) optional sorting
-        sort.map(String::trim)
-                .map(String::toLowerCase)
-                .ifPresent(k -> {
-                    Comparator<BazaarItemLiveViewResponseDTO> cmp = switch (k) {
-                        case "sellasc"   -> Comparator.comparingDouble(this::sellPrice);
-                        case "selldesc"  -> Comparator.comparingDouble(this::sellPrice).reversed();
-                        case "buyasc"    -> Comparator.comparingDouble(this::buyPrice);
-                        case "buydesc"   -> Comparator.comparingDouble(this::buyPrice).reversed();
-                        case "spreadasc" -> Comparator.comparingDouble(this::spread);
-                        case "spreaddesc"-> Comparator.comparingDouble(this::spread).reversed();
-                        default          -> null;
-                    };
-                    if (cmp != null) out.sort(cmp);
-                });
-
-        // 6) optional limit
-        return limit.filter(l -> l > 0 && l < out.size())
-                .map(l -> out.subList(0, l))
-                .orElse(out);
+        return PagedResponseDTO.of(dtos, page, limit);
     }
 
     /* ───────────────────── DETAIL ─────────────────── */
@@ -115,10 +83,17 @@ public class BazaarItemsQueryService {
     @Cacheable(value = "liveViewItem", key = "#productId")
     @Transactional(readOnly = true)
     public BazaarItemLiveViewResponseDTO getItem(String productId) {
-        // freshest snapshot
-        BazaarItemSnapshot snap = snapRepo
+        // 1️⃣  Get the latest Snapshot row *without* collections (no warning)
+        BazaarItemSnapshot meta = snapRepo
                 .findTopByProductIdOrderByFetchedAtDesc(productId)
                 .orElse(null);
+
+        // 2️⃣  Fetch the two order collections in a follow‑up query (safe)
+        BazaarItemSnapshot snap = null;
+        if (meta != null) {
+            snap = snapRepo.findWithOrdersById(meta.getId())
+                    .orElse(meta);
+        }
 
         // latest summary (we still omit points here)
         BazaarItemHourSummary hs = hourRepo
@@ -143,6 +118,59 @@ public class BazaarItemsQueryService {
         }
 
         return new BazaarItemLiveViewResponseDTO(snapDto, hourDto);
+    }
+
+    /* ───────────────────── helpers (factored out) ─────────────────── */
+
+    private List<BazaarItemLiveViewResponseDTO> buildLiveViewDTOs(List<String>        ids,
+                                                                  List<BazaarItemSnapshot>    snaps,
+                                                                  List<BazaarItemHourSummary> hours,
+                                                                  boolean includeHour) {
+        // Index look‑ups ---------------------------------------------------
+        Map<String, BazaarItemSnapshot>    snapById  = snaps.stream()
+                .collect(Collectors.toMap(BazaarItemSnapshot::getProductId, Function.identity()));
+        Map<String,BazaarItemHourSummary> hourById = includeHour
+                ? hours.stream().collect(Collectors.toMap(BazaarItemHourSummary::getProductId,
+                Function.identity()))
+                : Collections.emptyMap();
+
+        Map<String, String> names = preloadNames(new HashSet<>(ids));
+
+        // Build the DTO list preserving the original order ---------------
+        List<BazaarItemLiveViewResponseDTO> out = new ArrayList<>(ids.size());
+        for (String id : ids) {
+            BazaarItemSnapshot    snap  = snapById.get(id);
+            BazaarItemHourSummary hs    = hourById.get(id);
+            String                name  = names.get(id);
+
+            BazaarItemSnapshotResponseDTO snapDto = snap != null
+                    ? mapSnapshot(snap, name)
+                    : null;
+
+            BazaarItemHourSummaryResponseDTO hourDto = hs != null
+                    ? buildDto(hs, name, false)   // never include points here
+                    : null;
+
+            out.add(new BazaarItemLiveViewResponseDTO(snapDto, hourDto));
+        }
+        return out;
+    }
+
+    private void applySorting(List<BazaarItemLiveViewResponseDTO> out, Optional<String> sortKey) {
+        sortKey.map(String::trim)
+                .map(String::toLowerCase)
+                .ifPresent(k -> {
+                    Comparator<BazaarItemLiveViewResponseDTO> cmp = switch (k) {
+                        case "sellasc"   -> Comparator.comparingDouble(this::sellPrice);
+                        case "selldesc"  -> Comparator.comparingDouble(this::sellPrice).reversed();
+                        case "buyasc"    -> Comparator.comparingDouble(this::buyPrice);
+                        case "buydesc"   -> Comparator.comparingDouble(this::buyPrice).reversed();
+                        case "spreadasc" -> Comparator.comparingDouble(this::spread);
+                        case "spreaddesc"-> Comparator.comparingDouble(this::spread).reversed();
+                        default          -> null;
+                    };
+                    if (cmp != null) out.sort(cmp);
+                });
     }
 
     /* ───────────────────── HISTORY ────────────────── */
