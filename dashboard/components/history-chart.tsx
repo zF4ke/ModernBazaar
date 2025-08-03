@@ -556,13 +556,13 @@ export default function HistoryChart({ data }: HistoryChartProps) {
             
             // Show total volume metrics if toggled
             if (selectedMetrics.totalVolumes) {
-              if (dataPoint.buyVolume !== undefined && dataPoint.buyVolume > 0) {
+              if (dataPoint.buyVolume !== undefined) {
                 result += `<div style="margin: 4px 0;">
                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.volumeBuy}; margin-right: 8px;"></span>
                   <span style="color: ${colors.volumeBuy};">Total Items Buy Orders: ${dataPoint.buyVolume}</span>
                 </div>`
               }
-              if (dataPoint.sellVolume !== undefined && dataPoint.sellVolume > 0) {
+              if (dataPoint.sellVolume !== undefined) {
                 result += `<div style="margin: 4px 0;">
                   <span style="display: inline-block; width: 10px; height: 10px; background: ${colors.volumeSell}; margin-right: 8px;"></span>
                   <span style="color: ${colors.volumeSell};">Total Items Sell Orders: ${dataPoint.sellVolume}</span>
