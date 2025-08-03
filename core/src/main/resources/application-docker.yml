@@ -15,6 +15,9 @@ spring:
     url:      ${SPRING_DATASOURCE_URL} # default to "bazaar" if not set
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
+    hikari:
+      maximumPoolSize: 15   # default is 10
+      minimumIdle: 5        # optional: keep a warm floor
   jpa:
     hibernate:
       ddl-auto: update      # still auto-update schema during container development
@@ -34,6 +37,11 @@ spring:
     enabled: false
     baseline-on-migrate: true
     baseline-version: 1
+  task:
+    execution:
+      pool:
+        max-size: 8     # example: double the default on 2 cores
+        core-size: 4    # optional: keep some threads always alive
 #  security:
 #    user:
 #      name: ${ADMIN_USER:admin}
@@ -44,6 +52,10 @@ spring:
 #    org.hibernate.SQL: DEBUG
 #    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 #    org.hibernate.stat: DEBUG
+#
+#reactor:
+#  netty:
+#    ioWorkerCount: 4  # leave default unless you have proof
 
 management:
   endpoints:

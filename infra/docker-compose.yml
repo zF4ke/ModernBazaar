@@ -2,6 +2,12 @@ services:
     db:
         image: postgres:16
         restart: unless-stopped # docker will always restart the container unless it is explicitly stopped
+        command: # trying to optimize PostgreSQL for better performance
+            - "postgres"
+            - "-c"
+            - "max_parallel_workers_per_gather=1"
+            - "-c"
+            - "max_worker_processes=4"
         env_file:
             - .env # load environment variables from the .env file
         environment:
