@@ -17,24 +17,21 @@ spring:
     password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: none      # still auto-update schema during container development
+      ddl-auto: update      # still auto-update schema during container development
     open-in-view: false
     properties:
-#      hibernate.cache.use_second_level_cache: false
-#      hibernate.cache.use_query_cache: false
-# == new properties for analyzing queries ==
-      hibernate.format_sql: true
-#      hibernate.generate_statistics: true
+      #            hibernate.cache.use_second_level_cache: false
+      #            hibernate.cache.use_query_cache: false
+      #            hibernate.format_sql: true
+      #            hibernate.generate_statistics: true
       hibernate.jdbc.batch_size: 50
       hibernate.order_inserts: true
       hibernate.order_updates: true
       hibernate.default_batch_fetch_size: 50
-    show-sql: true
-#    show-sql: false
-
-  # ==========================================
+      #        show-sql: true
+      show-sql: false
   flyway:
-    enabled: true
+    enabled: false
     baseline-on-migrate: true
     baseline-version: 1
 #  security:
