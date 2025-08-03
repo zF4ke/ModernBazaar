@@ -34,15 +34,26 @@ public class BazaarItemsQueryService {
     @Transactional(readOnly = true)
     public PagedResponseDTO<BazaarItemLiveViewResponseDTO> getLatestPaginated(
             BazaarItemFilterDTO filter,
-            Optional<String>        sort,
-            int                     page,
-            int                     limit,
-            boolean                 includeHour
-    ) {
-        // -----------------------------------------------------------------
-        // Step 1  –  IDs only (cheap) -------------------------------------
-        // -----------------------------------------------------------------
-        int offset = Math.max(page, 0) * limit;
+            Optional<String>   sort,
+            int                page,
+            int                limit,
+            boolean            includeHour) {
+
+        /* 0️⃣ total count first */
+        long totalItems = snapRepo.countFilteredProducts(
+                filter.q(),
+                filter.minSell(), filter.maxSell(),
+                filter.minBuy(),  filter.maxBuy(),
+                filter.minSpread());
+
+        /* guard-rails */
+        int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / limit);
+        if (page < 0)               page = 0;
+        else if (page >= totalPages) page = Math.max(0, totalPages - 1);
+
+        int offset = page * limit;
+
+        /* 1️⃣ page of IDs */
         List<String> pageIds = snapRepo.findLatestProductIdsPaged(
                 filter.q(),
                 filter.minSell(), filter.maxSell(),
@@ -51,31 +62,32 @@ public class BazaarItemsQueryService {
                 limit, offset);
 
         if (pageIds.isEmpty()) {
-            return PagedResponseDTO.of(Collections.emptyList(), page, limit);
+            return new PagedResponseDTO<>(
+                    List.of(), page, limit,
+                    (int) totalItems, totalPages,
+                    page < totalPages - 1, page > 0);
         }
 
-        // -----------------------------------------------------------------
-        // Step 2  –  Fetch latest Snapshot + Hour rows for *this* page only
-        // -----------------------------------------------------------------
-        List<BazaarItemSnapshot>    snaps = snapRepo.findLatestByProductIds(pageIds);
-//        List<BazaarItemHourSummary> hours = hourRepo.findLatestByProductIds(pageIds);
-
-        List<BazaarItemHourSummary> hours = includeHour
+        /* 2️⃣ fetch rows */
+        List<BazaarItemSnapshot> snaps = snapRepo.findLatestByProductIds(pageIds);
+        List<BazaarItemHourSummary> hrs = includeHour
                 ? hourRepo.findLatestByProductIds(pageIds)
-                : Collections.emptyList();
+                : List.of();
 
-        // -----------------------------------------------------------------
-        // Step 3  –  Assemble the DTOs (same logic as before) --------------
-        // -----------------------------------------------------------------
-//        List<BazaarItemLiveViewResponseDTO> dtos = buildLiveViewDTOs(pageIds, snaps, hours);
-
+        /* 3️⃣ assemble & sort */
         List<BazaarItemLiveViewResponseDTO> dtos =
-                buildLiveViewDTOs(pageIds, snaps, hours, includeHour);
-
-        // Preserve caller‑requested ordering ------------------------------
+                buildLiveViewDTOs(pageIds, snaps, hrs, includeHour);
         applySorting(dtos, sort);
 
-        return PagedResponseDTO.of(dtos, page, limit);
+        /* 4️⃣ final DTO with correct totals */
+        return new PagedResponseDTO<>(
+                dtos,
+                page,
+                limit,
+                (int) totalItems,
+                totalPages,
+                page < totalPages - 1,
+                page > 0);
     }
 
     /* ───────────────────── DETAIL ─────────────────── */

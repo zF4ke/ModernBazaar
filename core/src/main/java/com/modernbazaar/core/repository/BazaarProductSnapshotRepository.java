@@ -128,6 +128,30 @@ public interface BazaarProductSnapshotRepository
         """, nativeQuery = true)
     List<BazaarItemSnapshot> findLatestByProductIds(@Param("ids") Collection<String> ids);
 
+    /** **NEW** — count of distinct product IDs that satisfy the same filters. */
+    @Query(value = """
+        select count(*) from (
+          select distinct on (s.product_id) s.product_id
+          from   bazaar_product_snapshot s
+                 left join skyblock_item si on si.id = s.product_id
+          where  (:q is null
+                    or si.name ilike concat('%', :q, '%')
+                    or s.product_id ilike concat('%', :q, '%'))
+            and  (:minSell  is null or s.weighted_two_percent_sell_price >= :minSell)
+            and  (:maxSell  is null or s.weighted_two_percent_sell_price <= :maxSell)
+            and  (:minBuy   is null or s.weighted_two_percent_buy_price  >= :minBuy)
+            and  (:maxBuy   is null or s.weighted_two_percent_buy_price  <= :maxBuy)
+            and  (:minSpread is null
+                    or (s.weighted_two_percent_sell_price - s.weighted_two_percent_buy_price) >= :minSpread)
+        ) sub
+        """, nativeQuery = true)
+    long countFilteredProducts(@Param("q")        String q,
+                               @Param("minSell")  Double minSell,
+                               @Param("maxSell")  Double maxSell,
+                               @Param("minBuy")   Double minBuy,
+                               @Param("maxBuy")   Double maxBuy,
+                               @Param("minSpread") Double minSpread);
+
     /* ───────────────────── AGGREGATIONS & STREAMS (unchanged) ───────────────────── */
 
     @Query(value = "select max(fetched_at) from bazaar_product_snapshot", nativeQuery = true)
