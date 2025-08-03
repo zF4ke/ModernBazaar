@@ -30,7 +30,7 @@ public class BazaarItemsQueryService {
 
     /* ───────────────────── LIST ───────────────────── */
 
-    @Cacheable(value = "liveViewList", key = "'list-'+#filter.hashCode()+#sort.orElse('')+#limit")
+    @Cacheable(value = "liveViewList", key = "'list-'+#filter.hashCode()+#sort.orElse('')+#limit+'-'+#page")
     @Transactional(readOnly = true)
     public PagedResponseDTO<BazaarItemLiveViewResponseDTO> getLatestPaginated(
             BazaarItemFilterDTO filter,
