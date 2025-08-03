@@ -58,6 +58,10 @@ export default function BazaarItemsPage() {
     maxSell: debouncedPriceFilters.maxSell ? Number.parseFloat(debouncedPriceFilters.maxSell) : undefined,
   }
 
+
+
+
+
   const {
     data: response,
     isLoading,
@@ -66,8 +70,9 @@ export default function BazaarItemsPage() {
   } = useQuery({
     queryKey: ["bazaar-items", finalQuery],
     queryFn: () => fetchBazaarItems(finalQuery),
-    placeholderData: (previousData) => previousData,
     staleTime: 30000, // 30 seconds
+    refetchOnWindowFocus: false,
+
   })
 
   const itemsArray = response?.items || []
@@ -101,6 +106,18 @@ export default function BazaarItemsPage() {
     }
   }
 
+  const goToPreviousPage = () => {
+    if (currentPage > 0) {
+      updatePage(currentPage - 1)
+    }
+  }
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages - 1) {
+      updatePage(currentPage + 1)
+    }
+  }
+
   const PaginationControls = () => (
     <div className="flex items-center justify-between">
       <div className="text-sm text-muted-foreground">
@@ -110,7 +127,7 @@ export default function BazaarItemsPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => goToPage(currentPage - 1)}
+          onClick={goToPreviousPage}
           disabled={currentPage === 0}
         >
           <ChevronLeft className="h-4 w-4" />
@@ -122,7 +139,7 @@ export default function BazaarItemsPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => goToPage(currentPage + 1)}
+          onClick={goToNextPage}
           disabled={currentPage >= totalPages - 1}
         >
           Next

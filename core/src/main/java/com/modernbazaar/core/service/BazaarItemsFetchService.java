@@ -13,9 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
-
 import java.time.Instant;
-import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +26,7 @@ public class BazaarItemsFetchService {
     private final BazaarItemRepository itemRepo;
 
     private final static String BAZAAR_API_URI = "/skyblock/bazaar";
-    private static final int BATCH = 20;
+    private static final int BATCH_SIZE = 50;
 
     @PersistenceContext
     private EntityManager em;
@@ -37,18 +35,25 @@ public class BazaarItemsFetchService {
     @Transactional
     public void fetchAndStore() {
         RawBazaarResponse resp = fetchBazaar();
-        if (resp == null || !resp.isSuccess()) {
-            //log.warn("Bazaar fetch failed or null");
-            return;
-        }
+        if (resp == null || !resp.isSuccess()) return;
 
         Instant apiTs = Instant.ofEpochMilli(resp.getLastUpdated());
-        //log.info("Poll start: products={}", resp.getProducts().size());
-
         upsertNewItems(resp);
-        ingestNewSnapshots(resp, apiTs);
 
-        //log.info("Poll end.");
+        int sinceFlush = 0;
+        for (RawBazaarProduct raw : resp.getProducts().values()) {
+            if (!shouldPersist(raw.getProductId(), apiTs)) continue;
+            BazaarItemSnapshot snap = buildSnapshot(raw, resp.getLastUpdated());
+            em.persist(snap);
+
+            if (++sinceFlush >= BATCH_SIZE) {
+                em.flush();
+                em.clear();
+                sinceFlush = 0;
+            }
+        }
+        em.flush();
+        em.clear();
     }
 
     /** Calls Hypixel and maps the JSON payload. */
@@ -67,34 +72,6 @@ public class BazaarItemsFetchService {
         }
     }
 
-    /** Maps, dedupes, and persists snapshots in small batches. */
-    private void ingestNewSnapshots(RawBazaarResponse resp, Instant apiTs) {
-        int persisted = 0;
-        int skipped = 0;
-        int sinceFlush = 0;
-
-        Collection<RawBazaarProduct> products = resp.getProducts().values();
-        for (RawBazaarProduct raw : products) {
-            if (!shouldPersist(raw.getProductId(), apiTs)) {
-                skipped++;
-                continue;
-            }
-
-            BazaarItemSnapshot snap = buildSnapshot(raw, resp.getLastUpdated());
-            em.persist(snap);
-            persisted++;
-            sinceFlush++;
-
-            if (sinceFlush >= BATCH) {
-                flushAndClear();
-                sinceFlush = 0;
-            }
-        }
-
-        flushAndClear();
-        //log.info("Persisted {} snapshots (skipped {}).", persisted, skipped);
-    }
-
     /** Fast boolean dedupe: skip if same productId + lastUpdated already stored. */
     private boolean shouldPersist(String productId, Instant apiTs) {
         return !snapshotRepo.existsByProductIdAndLastUpdated(productId, apiTs);
@@ -111,11 +88,5 @@ public class BazaarItemsFetchService {
             snap.getSellOrders().get(i).setOrderIndex(i);
         }
         return snap;
-    }
-
-    /** Flush JDBC batch and drop references from the persistence context. */
-    private void flushAndClear() {
-        em.flush();
-        em.clear();
     }
 }

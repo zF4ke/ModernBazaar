@@ -2,6 +2,7 @@ package com.modernbazaar.core.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -11,7 +12,8 @@ import java.util.List;
 @Table(name = "bazaar_product_snapshot",
         indexes = {
                 @Index(columnList = "product_id"),
-                @Index(columnList = "last_updated")
+                @Index(columnList = "last_updated"),
+                @Index(columnList = "fetched_at")
         })
 @Data
 @NoArgsConstructor
@@ -58,6 +60,7 @@ public class BazaarItemSnapshot {
     @OneToMany(mappedBy = "snapshot", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderColumn(name = "order_index")
     @Builder.Default
+    @BatchSize(size = 50)
     private List<BuyOrderEntry> buyOrders = new ArrayList<>();
 
     /**
@@ -67,6 +70,7 @@ public class BazaarItemSnapshot {
     @OneToMany(mappedBy = "snapshot", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderColumn(name = "order_index")
     @Builder.Default
+    @BatchSize(size = 50)
     private List<SellOrderEntry> sellOrders = new ArrayList<>();
 
     /**

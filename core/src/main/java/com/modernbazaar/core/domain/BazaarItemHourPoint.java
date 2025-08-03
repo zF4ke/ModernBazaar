@@ -2,6 +2,7 @@ package com.modernbazaar.core.domain;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -51,6 +52,7 @@ public class BazaarItemHourPoint {
             fetch = FetchType.LAZY)
     @OrderColumn(name = "order_index")
     @Builder.Default
+    @BatchSize(size = 50)
     private List<BuyOrderEntry> buyOrders = new ArrayList<>();
 
 
@@ -58,6 +60,7 @@ public class BazaarItemHourPoint {
             fetch = FetchType.LAZY)
     @OrderColumn(name = "order_index")
     @Builder.Default
+    @BatchSize(size = 50)
     private List<SellOrderEntry> sellOrders = new ArrayList<>();
 
     // ── weighted price & rolling volume stats ───────────────────────────────
