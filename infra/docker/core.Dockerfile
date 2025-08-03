@@ -49,7 +49,8 @@ EXPOSE 8080
 # it also enables the G1 Garbage Collector (G1GC), which is suitable for applications with large heaps and low pause time requirements
 #ENV JAVA_OPTS="-Xms512m -Xmx1G -XX:+UseG1GC -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/heapdumps/ -Xlog:gc*:file=/app/logs/gc.log:tags,uptime,level"
 
-ENV JAVA_OPTS="-XX:+UseZGC -Xmx1000m -Xms1000m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/heapdumps/ -Xlog:gc*:file=/app/logs/gc.log:tags,uptime,level"
+#ENV JAVA_OPTS="-XX:+UseZGC -Xmx1000m -Xms1000m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/heapdumps/ -Xlog:gc*:file=/app/logs/gc.log:tags,uptime,level"
+ENV JAVA_OPTS="-XX:+UseG1GC -Xms512m -Xmx768m -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/heapdumps -Xlog:gc*:file=/app/logs/gc.log:time,uptime,level,tags"
 
 # healthcheck to ensure the application is running
 # this command checks the health of the application by making a request to the /actuator/health endpoint every 30 seconds
