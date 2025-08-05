@@ -83,6 +83,27 @@ export interface BazaarItemsResponse {
   hasPrevious: boolean
 }
 
+export interface BazaarItemHourAverage {
+  productId: string
+  displayName?: string
+  calculatedAt: string
+  summaryCount: number
+  averageOpenInstantBuyPrice: number
+  averageCloseInstantBuyPrice: number
+  averageMinInstantBuyPrice: number
+  averageMaxInstantBuyPrice: number
+  averageOpenInstantSellPrice: number
+  averageCloseInstantSellPrice: number
+  averageMinInstantSellPrice: number
+  averageMaxInstantSellPrice: number
+  averageCreatedBuyOrders: number
+  averageDeltaBuyOrders: number
+  averageCreatedSellOrders: number
+  averageDeltaSellOrders: number
+  averageAddedItemsBuyOrders: number
+  averageAddedItemsSellOrders: number
+}
+
 // Legacy types for backward compatibility (can be removed later)
 export interface BazaarItem {
   productId: string
