@@ -50,9 +50,15 @@ public class CacheConfig {
                         .maximumSize(10_000)
                         .build());
 
+        CaffeineCache liveViewHourAverageCache = new CaffeineCache("liveViewHourAverage",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(historyTtlSeconds, TimeUnit.SECONDS) // Same TTL as history
+                        .maximumSize(10_000)
+                        .build());
+
         // Use SimpleCacheManager to manage multiple caches
         SimpleCacheManager cacheManager = new SimpleCacheManager();
-        cacheManager.setCaches(Arrays.asList(liveViewListCache, liveViewItemCache, liveViewHistoryCache));
+        cacheManager.setCaches(Arrays.asList(liveViewListCache, liveViewItemCache, liveViewHistoryCache, liveViewHourAverageCache));
 
         return cacheManager;
     }

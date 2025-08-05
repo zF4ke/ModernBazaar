@@ -79,4 +79,17 @@ public class BazaarItemsController {
 
         return service.getHistory(productId, from, to, withPoints);
     }
+
+    /* ---------- AVERAGE ---------- */
+
+    @GetMapping("/{productId}/average")
+    @Operation(summary = "Last 48 hour average",
+            description = "Get the average of the last 48 hour summaries for a product.")
+    @RateLimiter(name = "bazaarEndpoint")
+    public BazaarItemHourAverageResponseDTO getLast48HourAverage(
+            @Parameter(in = ParameterIn.PATH, required = true)
+            @PathVariable String productId) {
+
+        return service.getLast48HourAverage(productId);
+    }
 }

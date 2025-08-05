@@ -243,6 +243,48 @@ public class BazaarItemsQueryService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    @Cacheable(value = "liveViewHourAverage", key = "'hourAverage-'+#productId")
+    public BazaarItemHourAverageResponseDTO getLast48HourAverage(String productId) {
+        List<BazaarItemHourSummary> summaries = hourRepo.findLastNByProductId(productId, 48);
+        
+        if (summaries.isEmpty()) {
+            throw new NoSuchElementException("No hour summaries found for product " + productId);
+        }
+
+        // Get display name
+        String displayName = itemRepo.findById(productId)
+                .flatMap(item -> Optional.ofNullable(item.getSkyblockItem()))
+                .map(skyblockItem -> skyblockItem.getName())
+                .orElse(null);
+
+        // Calculate averages
+        double avgOpenBuy = summaries.stream().mapToDouble(BazaarItemHourSummary::getOpenInstantBuyPrice).average().orElse(0.0);
+        double avgCloseBuy = summaries.stream().mapToDouble(BazaarItemHourSummary::getCloseInstantBuyPrice).average().orElse(0.0);
+        double avgMinBuy = summaries.stream().mapToDouble(BazaarItemHourSummary::getMinInstantBuyPrice).average().orElse(0.0);
+        double avgMaxBuy = summaries.stream().mapToDouble(BazaarItemHourSummary::getMaxInstantBuyPrice).average().orElse(0.0);
+        
+        double avgOpenSell = summaries.stream().mapToDouble(BazaarItemHourSummary::getOpenInstantSellPrice).average().orElse(0.0);
+        double avgCloseSell = summaries.stream().mapToDouble(BazaarItemHourSummary::getCloseInstantSellPrice).average().orElse(0.0);
+        double avgMinSell = summaries.stream().mapToDouble(BazaarItemHourSummary::getMinInstantSellPrice).average().orElse(0.0);
+        double avgMaxSell = summaries.stream().mapToDouble(BazaarItemHourSummary::getMaxInstantSellPrice).average().orElse(0.0);
+        
+        double avgCreatedBuy = summaries.stream().mapToDouble(s -> s.getCreatedBuyOrders()).average().orElse(0.0);
+        double avgDeltaBuy = summaries.stream().mapToDouble(s -> s.getDeltaBuyOrders()).average().orElse(0.0);
+        double avgCreatedSell = summaries.stream().mapToDouble(s -> s.getCreatedSellOrders()).average().orElse(0.0);
+        double avgDeltaSell = summaries.stream().mapToDouble(s -> s.getDeltaSellOrders()).average().orElse(0.0);
+        
+        double avgAddedBuy = summaries.stream().mapToDouble(s -> s.getAddedItemsBuyOrders()).average().orElse(0.0);
+        double avgAddedSell = summaries.stream().mapToDouble(s -> s.getAddedItemsSellOrders()).average().orElse(0.0);
+
+        return BazaarItemHourAverageResponseDTO.of(
+                productId, displayName, Instant.now(), summaries.size(),
+                avgOpenBuy, avgCloseBuy, avgMinBuy, avgMaxBuy,
+                avgOpenSell, avgCloseSell, avgMinSell, avgMaxSell,
+                avgCreatedBuy, avgDeltaBuy, avgCreatedSell, avgDeltaSell,
+                avgAddedBuy, avgAddedSell);
+    }
+
     /* ───────────────────── helpers ────────────────── */
 
     private Map<String,String> preloadNames(Set<String> ids) {

@@ -86,4 +86,16 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
         order  by hs.product_id, hs.hour_start desc
         """, nativeQuery = true)
     List<BazaarItemHourSummary> findLatestByProductIds(@Param("ids") Collection<String> ids);
+
+    /** Get the last N hour summaries for a product, ordered by hour start descending */
+    @Query("""
+        select s
+        from   BazaarItemHourSummary s
+        where  s.productId = :productId
+        order  by s.hourStart desc
+        limit  :limit
+        """)
+    List<BazaarItemHourSummary> findLastNByProductId(
+            @Param("productId") String productId,
+            @Param("limit") int limit);
 }
