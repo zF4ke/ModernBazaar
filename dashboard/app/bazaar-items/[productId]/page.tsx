@@ -29,7 +29,7 @@ import {
   Scale,
   Timer
 } from "lucide-react"
-import type { BazaarItemLiveView, BazaarItemHourSummary } from "@/types/bazaar"
+import type { BazaarItemLiveView, BazaarItemHourSummary, BazaarItemHourAverage } from "@/types/bazaar"
 import { fetchWithBackendUrl } from "@/lib/api"
 import HistoryChart from "../../../components/history-chart"
 
@@ -54,6 +54,17 @@ async function fetchBazaarItemHistory(productId: string, from?: string, to?: str
   const response = await fetchWithBackendUrl(`/api/bazaar/items/${productId}/history?${params}`)
   if (!response.ok) {
     const errorMessage = `Failed to fetch bazaar item history: ${response.status}`
+    const error = new Error(errorMessage)
+    ;(error as any).status = response.status
+    throw error
+  }
+  return response.json()
+}
+
+async function fetchBazaarItemAverage(productId: string): Promise<BazaarItemHourAverage> {
+  const response = await fetchWithBackendUrl(`/api/bazaar/items/${productId}/average`)
+  if (!response.ok) {
+    const errorMessage = `Failed to fetch bazaar item average: ${response.status}`
     const error = new Error(errorMessage)
     ;(error as any).status = response.status
     throw error
@@ -133,6 +144,29 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
     queryFn: () => fetchBazaarItemHistory(resolvedParams.productId, from, to),
     enabled: !!item,
     staleTime: 60000, // 1 minute
+    retry: (failureCount, error) => {
+      // Max 3 retries, but don't retry on 404s
+      if (failureCount >= 3) return false
+      if (error instanceof Error && (
+        error.message.includes('404') || 
+        (error as any).status === 404
+      )) return false
+      return true
+    },
+    retryDelay: 5000, // Wait 5 seconds before retry
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnReconnect: false, // Don't refetch on reconnect
+  })
+
+  const {
+    data: average,
+    isLoading: averageLoading,
+    error: averageError,
+  } = useQuery({
+    queryKey: ["bazaar-item-average", resolvedParams.productId],
+    queryFn: () => fetchBazaarItemAverage(resolvedParams.productId),
+    enabled: !!item,
+    staleTime: 300000, // 5 minutes - averages don't change as frequently
     retry: (failureCount, error) => {
       // Max 3 retries, but don't retry on 404s
       if (failureCount >= 3) return false
@@ -285,58 +319,127 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
 
       
 
-      {/* Hour Summary Stats (if available) */}
-      {hourSummary && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Activity className="h-5 w-5 text-muted-foreground" />
-              <CardTitle>Last Hour Summary</CardTitle>
-            </div>
-            <CardDescription>Activity during the last completed hour</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <TrendingDown className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">Price Range (Buy)</p>
-                </div>
-                <p className="text-2xl font-bold">{hourSummary.minInstantBuyPrice.toFixed(2)} - {hourSummary.maxInstantBuyPrice.toFixed(2)}</p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">Price Range (Sell)</p>
-                </div>
-                <p className="text-2xl font-bold">{hourSummary.minInstantSellPrice.toFixed(2)} - {hourSummary.maxInstantSellPrice.toFixed(2)}</p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">New Buy Orders</p>
-                </div>
-                <p className="text-2xl font-bold">{hourSummary.createdBuyOrders}</p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Activity className="h-3 w-3" />
-                  <span>Δ: {hourSummary.deltaBuyOrders}</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-1">
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium">New Sell Orders</p>
-                </div>
-                <p className="text-2xl font-bold">{hourSummary.createdSellOrders}</p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Activity className="h-3 w-3" />
-                  <span>Δ: {hourSummary.deltaSellOrders}</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                    {/* 48 Hour Average Stats */}
+       {average && (
+         <Card>
+           <CardHeader>
+             <div className="flex items-center gap-2">
+               <Target className="h-5 w-5 text-muted-foreground" />
+               <CardTitle>48 Hour Average</CardTitle>
+               {hourSummary && (
+                 <div className="group relative">
+                   <div className="flex items-center gap-1 px-2 py-1 rounded-md border bg-muted/50 hover:text-white cursor-help text-muted-foreground transition-colors duration-200 hover:shadow-sm">
+                     <Activity className="h-4 w-4" />
+                     <span className="text-sm ">Last Hour</span>
+                   </div>
+                   <div className="absolute bottom-full right-0 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-popover border rounded-lg px-4 py-3 shadow-lg z-10 min-w-[280px]">
+                     <div className="space-y-3">
+                       <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-2">
+                           <Activity className="h-4 w-4 text-muted-foreground" />
+                           <span className="font-medium">Last Hour Summary</span>
+                         </div>
+                         <span className="text-xs text-muted-foreground">{new Date(hourSummary.hourStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                           <div className="flex items-center gap-1">
+                             <TrendingDown className="h-3 w-3 text-muted-foreground" />
+                             <span className="text-xs text-muted-foreground">Buy Range</span>
+                           </div>
+                           <div className="font-mono text-sm font-bold">{hourSummary.minInstantBuyPrice.toFixed(2)} - {hourSummary.maxInstantBuyPrice.toFixed(2)}</div>
+                         </div>
+                         <div className="space-y-2">
+                           <div className="flex items-center gap-1">
+                             <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                             <span className="text-xs text-muted-foreground">Sell Range</span>
+                           </div>
+                           <div className="font-mono text-sm font-bold">{hourSummary.minInstantSellPrice.toFixed(2)} - {hourSummary.maxInstantSellPrice.toFixed(2)}</div>
+                         </div>
+                       </div>
+                       <div className="space-y-2">
+                         <div className="flex items-center gap-1">
+                           <BarChart3 className="h-3 w-3 text-muted-foreground" />
+                           <span className="text-xs text-muted-foreground">Orders</span>
+                         </div>
+                         <div className="grid grid-cols-2 gap-4 text-xs">
+                           <div>
+                             <span className="text-muted-foreground">Buy:</span> {hourSummary.createdBuyOrders} (Δ{hourSummary.deltaBuyOrders})
+                           </div>
+                           <div>
+                             <span className="text-muted-foreground">Sell:</span> {hourSummary.createdSellOrders} (Δ{hourSummary.deltaSellOrders})
+                           </div>
+                         </div>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+               )}
+             </div>
+             <CardDescription>Average values from the last 48 hour summaries (calculated at {new Date(average.calculatedAt).toLocaleString()})</CardDescription>
+           </CardHeader>
+           <CardContent>
+             <div className="grid gap-4 md:grid-cols-4">
+               <div className="space-y-2">
+                 <div className="flex items-center gap-1">
+                   <TrendingDown className="h-4 w-4 text-muted-foreground" />
+                   <p className="text-sm font-medium">Avg Buy Price Range</p>
+                 </div>
+                 <p className="text-2xl font-bold">{average.averageMinInstantBuyPrice.toFixed(2)} - {average.averageMaxInstantBuyPrice.toFixed(2)}</p>
+                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                   <Activity className="h-3 w-3" />
+                   <span>Open: {average.averageOpenInstantBuyPrice.toFixed(2)} • Close: {average.averageCloseInstantBuyPrice.toFixed(2)}</span>
+                 </div>
+               </div>
+               <div className="space-y-2">
+                 <div className="flex items-center gap-1">
+                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                   <p className="text-sm font-medium">Avg Sell Price Range</p>
+                 </div>
+                 <p className="text-2xl font-bold">{average.averageMinInstantSellPrice.toFixed(2)} - {average.averageMaxInstantSellPrice.toFixed(2)}</p>
+                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                   <Activity className="h-3 w-3" />
+                   <span>Open: {average.averageOpenInstantSellPrice.toFixed(2)} • Close: {average.averageCloseInstantSellPrice.toFixed(2)}</span>
+                 </div>
+               </div>
+               <div className="space-y-2">
+                 <div className="flex items-center gap-1">
+                   <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
+                   <p className="text-sm font-medium">Avg Buy Orders</p>
+                 </div>
+                 <p className="text-2xl font-bold">{average.averageCreatedBuyOrders.toFixed(1)}</p>
+                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                   <Activity className="h-3 w-3" />
+                   <span>Δ: {average.averageDeltaBuyOrders.toFixed(1)} • Items: {average.averageAddedItemsBuyOrders.toFixed(1)}</span>
+                 </div>
+               </div>
+               <div className="space-y-2">
+                 <div className="flex items-center gap-1">
+                   <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                   <p className="text-sm font-medium">Avg Sell Orders</p>
+                 </div>
+                 <p className="text-2xl font-bold">{average.averageCreatedSellOrders.toFixed(1)}</p>
+                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                   <Activity className="h-3 w-3" />
+                   <span>Δ: {average.averageDeltaSellOrders.toFixed(1)} • Items: {average.averageAddedItemsSellOrders.toFixed(1)}</span>
+                 </div>
+               </div>
+             </div>
+             {averageLoading && (
+               <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                 <RefreshCw className="h-4 w-4 animate-spin" />
+                 <span>Updating averages...</span>
+               </div>
+             )}
+             {averageError && (
+               <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                 <AlertCircle className="h-4 w-4" />
+                 <span>Failed to load average data</span>
+               </div>
+             )}
+           </CardContent>
+         </Card>
+       )}
 
       {/* Price History Chart */}
       <Card>

@@ -19,5 +19,8 @@ export async function GET() {
     })
   }
 
-  return NextResponse.json({ latency: latencyData, heap: heapData })
+  // Cache for 5 minutes (mock data doesn't change frequently)
+  const response = NextResponse.json({ latency: latencyData, heap: heapData })
+  response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60')
+  return response
 }

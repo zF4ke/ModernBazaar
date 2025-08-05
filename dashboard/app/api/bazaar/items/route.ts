@@ -11,7 +11,11 @@ export async function GET(request: NextRequest) {
 
   try {
     const response: BazaarItemsResponse = await fetchFromBackend(request, endpoint)
-    return NextResponse.json(response)
+    
+    // Cache for 45 seconds (slightly less than backend's 60 seconds)
+    const nextResponse = NextResponse.json(response)
+    nextResponse.headers.set('Cache-Control', 'public, s-maxage=45, stale-while-revalidate=30')
+    return nextResponse
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch items from backend" },

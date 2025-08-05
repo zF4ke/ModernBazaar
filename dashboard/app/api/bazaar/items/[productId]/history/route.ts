@@ -29,7 +29,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       fullEndpoint
     )
     
-    return NextResponse.json(history)
+    // Cache for 55 seconds (slightly less than backend's 60 seconds)
+    const response = NextResponse.json(history)
+    response.headers.set('Cache-Control', 'public, s-maxage=55, stale-while-revalidate=30')
+    return response
   } catch (error) {
     console.error('Error fetching item history:', error)
 

@@ -11,7 +11,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       request, 
       `/api/bazaar/items/${encodeURIComponent(productId)}`
     )
-    return NextResponse.json(item)
+    
+    // Cache for 45 seconds (slightly less than backend's 60 seconds)
+    const response = NextResponse.json(item)
+    response.headers.set('Cache-Control', 'public, s-maxage=45, stale-while-revalidate=30')
+    return response
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     
