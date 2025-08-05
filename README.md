@@ -35,6 +35,7 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Pagination, filtering, error handling
 - [x] Skyblock Items API + catalog refresh endpoints
 - [x] `GET /api/bazaar/items/{productId}/history?from=&to=&withPoints=` (hour summaries)
+- [x] `GET /api/bazaar/items/{productId}/average` (48-hour average calculations)
 - [x] HTTP Basic authentication on API and actuator endpoints (Spring Security)
 - [x] Service cache and rate limiting
 - [x] Flyway baseline and initial migration
@@ -55,6 +56,7 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Interactive time-range controls (1H, 6H, 24H, 7D, Total)
 - [x] Responsive layout, tooltips, zoom/pan, smooth animations
 - [x] Advanced filtering and search features
+- [x] 48-hour average card with frontend caching
 - [ ] Add more sorting options for every attribute
 - [ ] Replace prior bot interactions with API-powered UI
 - [ ] Trading strategies category and pages
