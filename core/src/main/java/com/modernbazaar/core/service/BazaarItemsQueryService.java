@@ -3,6 +3,7 @@ package com.modernbazaar.core.service;
 import com.modernbazaar.core.api.dto.*;
 import com.modernbazaar.core.domain.*;
 import com.modernbazaar.core.repository.*;
+import com.modernbazaar.core.repository.projection.PagedIdRow;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,27 +40,36 @@ public class BazaarItemsQueryService {
             int                limit,
             boolean            includeHour) {
 
-        /* 0️⃣ total count first */
-        long totalItems = snapRepo.countFilteredProducts(
-                filter.q(),
-                filter.minSell(), filter.maxSell(),
-                filter.minBuy(),  filter.maxBuy(),
-                filter.minSpread());
-
-        /* guard-rails */
-        int totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / limit);
-        if (page < 0)               page = 0;
-        else if (page >= totalPages) page = Math.max(0, totalPages - 1);
-
+        /* guard-rails for page */
+        if (page < 0) page = 0;
+        if (limit <= 0) limit = 25;
         int offset = page * limit;
 
-        /* 1️⃣ page of IDs */
-        List<String> pageIds = snapRepo.findLatestProductIdsPaged(
+        /* 1️⃣ single query: page of IDs + total */
+        List<PagedIdRow> idRows = snapRepo.findLatestProductIdsPagedWithTotal(
                 filter.q(),
                 filter.minSell(), filter.maxSell(),
                 filter.minBuy(),  filter.maxBuy(),
                 filter.minSpread(),
-                limit, offset);
+                limit, offset
+        );
+
+        long totalItems = idRows.isEmpty() ? 0L : idRows.get(0).getTotalCount();
+        int  totalPages = totalItems == 0 ? 1 : (int) Math.ceil((double) totalItems / limit);
+        if (page >= totalPages) {
+            page = Math.max(0, totalPages - 1);
+            offset = page * limit;
+            idRows = snapRepo.findLatestProductIdsPagedWithTotal(
+                    filter.q(),
+                    filter.minSell(), filter.maxSell(),
+                    filter.minBuy(),  filter.maxBuy(),
+                    filter.minSpread(),
+                    limit, offset
+            );
+            totalItems = idRows.isEmpty() ? 0L : idRows.get(0).getTotalCount();
+        }
+
+        List<String> pageIds = idRows.stream().map(PagedIdRow::getId).toList();
 
         if (pageIds.isEmpty()) {
             return new PagedResponseDTO<>(
@@ -107,10 +117,10 @@ public class BazaarItemsQueryService {
                     .orElse(meta);
         }
 
-        // latest summary (we still omit points here)
+        // latest summary — leve (sem pontos)
         BazaarItemHourSummary hs = hourRepo
-                .findLatestWithPoints(productId).stream()
-                .findFirst().orElse(null);
+                .findTopByProductIdOrderByHourStartDesc(productId)
+                .orElse(null);
 
         String displayName = itemRepo.findById(productId)
                 .map(BazaarItem::getSkyblockItem)
@@ -156,7 +166,7 @@ public class BazaarItemsQueryService {
             String                name  = names.get(id);
 
             BazaarItemSnapshotResponseDTO snapDto = snap != null
-                    ? mapSnapshot(snap, name)
+                    ? mapSnapshotLite(snap, name)   // ⚡ list view: no order collections to avoid N+1
                     : null;
 
             BazaarItemHourSummaryResponseDTO hourDto = hs != null
@@ -324,6 +334,30 @@ public class BazaarItemsQueryService {
                                 o.getOrderIndex(), o.getPricePerUnit(),
                                 o.getAmount(), o.getOrders()))
                         .toList()
+        );
+    }
+
+    // Lightweight snapshot mapping: avoids touching buy/sell order collections (prevents N+1 on list view)
+    private BazaarItemSnapshotResponseDTO mapSnapshotLite(
+            BazaarItemSnapshot s,
+            @Nullable String   displayName
+    ) {
+        return new BazaarItemSnapshotResponseDTO(
+                s.getProductId(),
+                displayName,
+                s.getLastUpdated(),
+                s.getFetchedAt(),
+                s.getWeightedTwoPercentBuyPrice(),
+                s.getWeightedTwoPercentSellPrice(),
+                s.getInstantBuyPrice(),
+                s.getInstantSellPrice(),
+                s.getInstantSellPrice() - s.getInstantBuyPrice(),
+                s.getBuyMovingWeek(),
+                s.getSellMovingWeek(),
+                s.getActiveBuyOrdersCount(),
+                s.getActiveSellOrdersCount(),
+                List.of(), // no buy orders in list view
+                List.of()  // no sell orders in list view
         );
     }
 

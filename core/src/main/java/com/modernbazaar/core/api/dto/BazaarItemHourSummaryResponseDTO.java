@@ -2,8 +2,6 @@ package com.modernbazaar.core.api.dto;
 
 import com.modernbazaar.core.domain.BazaarItemHourPoint;
 import com.modernbazaar.core.domain.BazaarItemHourSummary;
-import com.modernbazaar.core.domain.BuyOrderEntry;
-import com.modernbazaar.core.domain.SellOrderEntry;
 import jakarta.annotation.Nullable;
 
 import java.time.Instant;
@@ -46,20 +44,8 @@ public record BazaarItemHourSummaryResponseDTO(
                             p.getActiveSellOrdersCount(),
                             p.getBuyVolume(),
                             p.getSellVolume(),
-                            /* buy side */
-                            p.getBuyOrders().stream()
-                                    .sorted(Comparator.comparingInt(BuyOrderEntry::getOrderIndex))
-                                    .map(o -> new OrderEntryResponseDTO(
-                                            o.getOrderIndex(), o.getPricePerUnit(),
-                                            o.getAmount(),     o.getOrders()))
-                                    .toList(),
-                            /* sell side */
-                            p.getSellOrders().stream()
-                                    .sorted(Comparator.comparingInt(SellOrderEntry::getOrderIndex))
-                                    .map(o -> new OrderEntryResponseDTO(
-                                            o.getOrderIndex(), o.getPricePerUnit(),
-                                            o.getAmount(),     o.getOrders()))
-                                    .toList()
+                            List.of(), // evitar carregar order books nos pontos
+                            List.of()
                     ))
                     .toList();
         }

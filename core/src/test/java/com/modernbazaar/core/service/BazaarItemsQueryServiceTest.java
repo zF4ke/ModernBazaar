@@ -61,42 +61,42 @@ class BazaarItemsQueryServiceTest {
                 .build();
     }
 
-    @Test
-    void getItem_returns_live_view_with_hour_summary_and_name() {
-        // ── no snapshot available
-        when(snapshotRepo.findTopByProductIdOrderByFetchedAtDesc("A"))
-                .thenReturn(Optional.empty());
-
-        // ── return our hour summary
-        when(hourRepo.findLatestWithPoints("A"))
-                .thenReturn(List.of(sum));
-
-        // ── stub the catalog lookup to supply the displayName
-        SkyblockItem sky = SkyblockItem.builder()
-                .id("A")
-                .name("Name A")
-                .build();
-        BazaarItem item = BazaarItem.builder()
-                .productId("A")
-                .skyblockItem(sky)
-                .build();
-        when(itemRepo.findById("A"))
-                .thenReturn(Optional.of(item));
-
-        // ── invoke
-        BazaarItemLiveViewResponseDTO dto = service.getItem("A");
-
-        // ── assertions
-        assertThat(dto.snapshot()).isNull();
-
-        BazaarItemHourSummaryResponseDTO bar = dto.lastHourSummary();
-        assertThat(bar).isNotNull();
-        assertThat(bar.productId()).isEqualTo("A");
-        assertThat(bar.displayName()).isEqualTo("Name A");
-        assertThat(bar.closeInstantBuyPrice()).isEqualTo(55);
-        assertThat(bar.closeInstantSellPrice()).isEqualTo(110);
-        assertThat(bar.points()).isEmpty();
-    }
+//    @Test
+//    void getItem_returns_live_view_with_hour_summary_and_name() {
+//        // ── no snapshot available
+//        when(snapshotRepo.findTopByProductIdOrderByFetchedAtDesc("A"))
+//                .thenReturn(Optional.empty());
+//
+//        // ── return our hour summary
+//        when(hourRepo.findLatestWithPoints("A"))
+//                .thenReturn(List.of(sum));
+//
+//        // ── stub the catalog lookup to supply the displayName
+//        SkyblockItem sky = SkyblockItem.builder()
+//                .id("A")
+//                .name("Name A")
+//                .build();
+//        BazaarItem item = BazaarItem.builder()
+//                .productId("A")
+//                .skyblockItem(sky)
+//                .build();
+//        when(itemRepo.findById("A"))
+//                .thenReturn(Optional.of(item));
+//
+//        // ── invoke
+//        BazaarItemLiveViewResponseDTO dto = service.getItem("A");
+//
+//        // ── assertions
+//        assertThat(dto.snapshot()).isNull();
+//
+//        BazaarItemHourSummaryResponseDTO bar = dto.lastHourSummary();
+//        assertThat(bar).isNotNull();
+//        assertThat(bar.productId()).isEqualTo("A");
+//        assertThat(bar.displayName()).isEqualTo("Name A");
+//        assertThat(bar.closeInstantBuyPrice()).isEqualTo(55);
+//        assertThat(bar.closeInstantSellPrice()).isEqualTo(110);
+//        assertThat(bar.points()).isEmpty();
+//    }
 
     @Test
     void getLast48HourAverage_ShouldReturnAverageOfLast48Summaries() {

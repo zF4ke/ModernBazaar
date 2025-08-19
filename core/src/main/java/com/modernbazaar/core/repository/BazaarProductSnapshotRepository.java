@@ -1,6 +1,7 @@
 package com.modernbazaar.core.repository;
 
 import com.modernbazaar.core.domain.BazaarItemSnapshot;
+import com.modernbazaar.core.repository.projection.PagedIdRow;
 import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -127,6 +128,48 @@ public interface BazaarProductSnapshotRepository
         order  by s.product_id, s.fetched_at desc
         """, nativeQuery = true)
     List<BazaarItemSnapshot> findLatestByProductIds(@Param("ids") Collection<String> ids);
+
+    /**
+     * Count + page IDs in one go using CTEs. Returns rows with the product id
+     * and the same totalCount value on each row (size of the filtered set).
+     */
+    @Query(value = """
+        with filtered as (
+          select distinct on (s.product_id)
+                 s.product_id as id,
+                 s.fetched_at as latest_time
+          from   bazaar_product_snapshot s
+                 left join skyblock_item si on si.id = s.product_id
+          where  (:q is null
+                    or si.name ilike concat('%', :q, '%')
+                    or s.product_id ilike concat('%', :q, '%'))
+            and  (:minSell  is null or s.weighted_two_percent_sell_price >= :minSell)
+            and  (:maxSell  is null or s.weighted_two_percent_sell_price <= :maxSell)
+            and  (:minBuy   is null or s.weighted_two_percent_buy_price  >= :minBuy)
+            and  (:maxBuy   is null or s.weighted_two_percent_buy_price  <= :maxBuy)
+            and  (:minSpread is null or (s.weighted_two_percent_sell_price - s.weighted_two_percent_buy_price) >= :minSpread)
+          order by s.product_id, s.fetched_at desc
+        ), paged as (
+          select id, latest_time
+          from   filtered
+          order  by latest_time desc
+          limit  :limit
+          offset :offset
+        )
+        select p.id as id,
+               p.latest_time as latest_time,
+               (select count(*) from filtered) as totalCount
+        from   paged p
+        order  by p.latest_time desc
+        """, nativeQuery = true)
+    List<PagedIdRow> findLatestProductIdsPagedWithTotal(@Param("q")        String q,
+                                                        @Param("minSell")  Double minSell,
+                                                        @Param("maxSell")  Double maxSell,
+                                                        @Param("minBuy")   Double minBuy,
+                                                        @Param("maxBuy")   Double maxBuy,
+                                                        @Param("minSpread") Double minSpread,
+                                                        @Param("limit")    int limit,
+                                                        @Param("offset")   int offset);
 
     /** **NEW** — count of distinct product IDs that satisfy the same filters. */
     @Query(value = """
