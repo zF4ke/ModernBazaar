@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.awt.print.Pageable;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -14,6 +13,9 @@ import java.util.Optional;
 
 public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarItemHourSummary, Long> {
     Optional<BazaarItemHourSummary> findByProductIdAndHourStart(String productId, Instant hourStart);
+
+    // Novo: última hora sem pontos (consulta leve)
+    Optional<BazaarItemHourSummary> findTopByProductIdOrderByHourStartDesc(String productId);
 
     /* latest per product, optional filters */
     @Query(value = """
@@ -49,14 +51,12 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
             @Param("from")      Instant from,
             @Param("to")        Instant to);
 
-    /** fetch-minutes + orders with distinct root to avoid join duplication */
-    @EntityGraph(attributePaths = {"item","points","points.buyOrders","points.sellOrders"})
+    /** fetch-minutes without order books */
+    @EntityGraph(attributePaths = {"item","points"})
     @Query("""
         select distinct hs
         from   BazaarItemHourSummary hs
                left join fetch hs.points p
-               left join fetch p.buyOrders
-               left join fetch p.sellOrders
         where  hs.productId = :pid
           and  hs.hourStart >= :from
           and  hs.hourStart <  :to
@@ -66,13 +66,11 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
                                                     @Param("from") Instant from,
                                                     @Param("to")   Instant to);
 
-    @EntityGraph(attributePaths = {"item","points","points.buyOrders","points.sellOrders"})
+    @EntityGraph(attributePaths = {"item","points"})
     @Query("""
         select distinct hs
         from   BazaarItemHourSummary hs
                left join fetch hs.points p
-               left join fetch p.buyOrders
-               left join fetch p.sellOrders
         where  hs.productId = :pid
         order  by hs.hourStart desc
         """)
