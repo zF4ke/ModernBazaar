@@ -65,8 +65,8 @@ skyblock:
       hourly:
         enabled: true
     retention:
-      enabled: false
-      interval-hours: 24 # 1 day
+      enabled: true
+      interval-days: 45 # 45 days
   catalog:
     enabled: true
     refresh-days: 7

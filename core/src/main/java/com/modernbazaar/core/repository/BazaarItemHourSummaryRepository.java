@@ -96,4 +96,7 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
     List<BazaarItemHourSummary> findLastNByProductId(
             @Param("productId") String productId,
             @Param("limit") int limit);
+
+    /** Retention: delete hour summaries older than cutoff */
+    void deleteByHourStartBefore(Instant cutoff);
 }

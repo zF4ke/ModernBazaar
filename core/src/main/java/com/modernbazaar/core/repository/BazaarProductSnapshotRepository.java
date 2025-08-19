@@ -267,4 +267,19 @@ public interface BazaarProductSnapshotRepository
         """, nativeQuery = true)
     void cascadeDeleteHour(@Param("from") Instant from,
                            @Param("to")   Instant to);
+
+    @Modifying
+    @Transactional
+    @Query(value = """
+        /* first delete order entries referencing old snapshots */
+        delete from bazaar_order_entry
+         where snapshot_id in (
+           select id from bazaar_product_snapshot
+            where fetched_at < :cutoff
+         );
+        /* then delete the snapshots */
+        delete from bazaar_product_snapshot
+         where fetched_at < :cutoff;
+        """, nativeQuery = true)
+    void cascadeDeleteByFetchedAtBefore(@Param("cutoff") Instant cutoff);
 }

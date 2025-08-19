@@ -1,7 +1,8 @@
 .idea
 infra/.env
 images/*.tar
-upload_images.ps1
+scripts/upload_images.ps1
+scripts/connect_vm.ps1
 
 .gradle
 build/
