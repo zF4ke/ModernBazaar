@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Home, Package, Settings } from "lucide-react"
+import { BarChart3, Home, Package, Settings, Shuffle, Layers, LineChart, Compass } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -17,36 +17,49 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-const navigation = [
+// Estrutura por secções (estilo Discord: categorias com canais)
+const sections = [
   {
-    title: "Dashboard",
-    url: "/",
-    icon: Home,
+    label: "Overview",
+    items: [
+      { title: "Home", url: "/", icon: Home },
+    ],
   },
   {
-    title: "Bazaar Items",
-    url: "/bazaar-items",
-    icon: Package,
+    label: "Market",
+    items: [
+      { title: "Bazaar Items", url: "/bazaar-items", icon: Package },
+      { title: "Skyblock Items", url: "/skyblock-items", icon: Layers },
+    ],
   },
   {
-    title: "Skyblock Items",
-    url: "/skyblock-items",
-    icon: Package,
+    label: "Strategies",
+    items: [
+      { title: "Strategies", url: "/strategies", icon: Compass },
+      { title: "Flipping", url: "/strategies/flipping", icon: Shuffle },
+    ],
   },
   {
-    title: "Charts",
-    url: "/charts",
-    icon: BarChart3,
+    label: "Analytics",
+    items: [
+      { title: "Charts", url: "/charts", icon: LineChart },
+    ],
   },
   {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
+    label: "System",
+    items: [
+      { title: "Settings", url: "/settings", icon: Settings },
+    ],
   },
 ]
 
 export function AppSidebar() {
   const pathname = usePathname()
+
+  const isActive = (itemUrl: string) => {
+    if (itemUrl === "/") return pathname === "/"
+    return pathname === itemUrl || pathname.startsWith(itemUrl + "/")
+  }
 
   return (
     <Sidebar>
@@ -62,23 +75,25 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigation.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url}>
-                    <Link href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {sections.map((section) => (
+          <SidebarGroup key={section.label}>
+            <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {section.items.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <Link href={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
