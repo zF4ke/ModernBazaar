@@ -39,10 +39,10 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] HTTP Basic authentication on API and actuator endpoints (Spring Security)
 - [x] Service cache and rate limiting
 - [x] Flyway baseline and initial migration
-- [ ] Nightly job: thin/archive old HourPoints (e.g., keep 7 days, then downsample)
+- [x] **Optimize DB queries** (30-60x performance improvement achieved)
+- [x] Retention: Remove snapshots, summaries, and points older than 45 days
 - [ ] Optional S3 export for long-term history
 - [ ] Cold-snapshot archive to reduce DB footprint
-- [x] **Optimize DB queries** (30-60x performance improvement achieved)
 - [ ] `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]`
 - [ ] Trading strategies Services and endpoints
 - [ ] (Optional) Trade journal tracking and storage
