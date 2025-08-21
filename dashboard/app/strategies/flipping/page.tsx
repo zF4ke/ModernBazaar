@@ -440,16 +440,16 @@ export default function FlippingPage() {
                           })
                         }
                       })
-                    }, 200)
+                    }, 0)
                   }
                 }
 
                 return (
-                                     <Card 
+                  <Card 
                      key={o.productId}
-                     className={`group overflow-hidden transition-all duration-200 ease-out bg-background/80 border-border/50 cursor-pointer hover:shadow-lg hover:border-border ${isExpanded ? 'shadow-xl border-blue-400/30' : 'hover:border-muted-foreground/30'}`}
+                     className={`group overflow-hidden transition-all ease-out bg-background/80 border-border/50 cursor-pointer hover:shadow-lg hover:border-border ${isExpanded ? 'shadow-xl border-blue-400/30' : 'hover:border-muted-foreground/30'}`}
                      onClick={handleCardClick}
-                   >
+                  >
                      <CardHeader className="pb-3 pt-6">
                         <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
@@ -474,7 +474,7 @@ export default function FlippingPage() {
                          <div className="text-right">
                            <div className="text-xs text-muted-foreground">Score</div>
                            <div className="text-sm font-semibold">{format(o.score, 2)}</div>
-                           <div className={`text-xs text-muted-foreground/50 transition-all duration-200 mt-1 ${isExpanded ? 'text-muted-foreground/70' : 'group-hover:text-muted-foreground'}`}>
+                           <div className={`text-xs text-muted-foreground/50 transition-all mt-1 ${isExpanded ? 'text-muted-foreground/70' : 'group-hover:text-muted-foreground'}`}>
                              ⋯
                            </div>
                           </div>
@@ -563,7 +563,7 @@ export default function FlippingPage() {
                        </div>
 
                        {/* Expanded Tutorial Content */}
-                       <div className={`overflow-hidden transition-all duration-200 ease-out ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                       <div className={`overflow-hidden transition-all duration-100 ease-out ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
                          <div className="mt-4 pt-4 border-t border-border/50">
                            <div className="flex items-center gap-2 mb-3">
                              <Info className="h-4 w-4 text-blue-400" />
