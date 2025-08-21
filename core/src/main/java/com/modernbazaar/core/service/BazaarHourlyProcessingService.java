@@ -21,7 +21,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
 @Service
@@ -98,6 +97,8 @@ public class BazaarHourlyProcessingService {
 
         int prevActiveBuy = 0, prevActiveSell = 0;
         long prevBuyVol = 0, prevSellVol = 0;
+        long prevBuyWeek = 0, prevSellWeek = 0; // para calcular insta‑flows (deltas positivos)
+        long instaBoughtItems = 0, instaSoldItems = 0; // totais na hora
 
         long processed = 0;
 
@@ -117,6 +118,8 @@ public class BazaarHourlyProcessingService {
                     prevActiveSell = s.getActiveSellOrdersCount();
                     prevBuyVol = s.getBuyVolume();
                     prevSellVol = s.getSellVolume();
+                    prevBuyWeek = s.getBuyMovingWeek();
+                    prevSellWeek = s.getSellMovingWeek();
 
                     kept.add(s);
                 } else {
@@ -141,10 +144,18 @@ public class BazaarHourlyProcessingService {
                         createdSellOrders += Math.abs(s.getActiveSellOrdersCount() - prevActiveSell);
                         addedItemsSellOrders += Math.abs(s.getSellVolume() - prevSellVol);
                     }
+                    // insta‑flows via deltas positivos nos movingWeek (rolling 7d)
+                    long dBuyWeek = s.getBuyMovingWeek() - prevBuyWeek;
+                    long dSellWeek = s.getSellMovingWeek() - prevSellWeek;
+                    if (dBuyWeek > 0) instaSoldItems += dBuyWeek;     // bazaar comprou → players insta‑venderam
+                    if (dSellWeek > 0) instaBoughtItems += dSellWeek; // bazaar vendeu → players insta‑compraram
+
                     prevActiveBuy = s.getActiveBuyOrdersCount();
                     prevActiveSell = s.getActiveSellOrdersCount();
                     prevBuyVol = s.getBuyVolume();
                     prevSellVol = s.getSellVolume();
+                    prevBuyWeek = s.getBuyMovingWeek();
+                    prevSellWeek = s.getSellMovingWeek();
 
                     // decide if we should keep this snapshot
                     if (shouldKeep(prevKept, s)) {
@@ -183,13 +194,13 @@ public class BazaarHourlyProcessingService {
             sum.setAddedItemsSellOrders(addedItemsSellOrders);
             sum.setAddedItemsBuyOrders(addedItemsBuyOrders);
 
-            sum.setDeltaBuyOrders(
-                    last.getBuyVolume() - first.getBuyVolume());
-            sum.setDeltaSellOrders(
-                    last.getSellVolume() - first.getSellVolume());
+            // manter compatibilidade com lógica original: deltas por volume
+            sum.setDeltaBuyOrders(last.getBuyVolume() - first.getBuyVolume());
+            sum.setDeltaSellOrders(last.getSellVolume() - first.getSellVolume());
 
-//            sum.setListedItemsBuyOrders(last.getBuyVolume());
-//            sum.setListedItemsSellOrders(last.getSellVolume());
+            // totais de insta‑trades na hora (aprox. via movingWeek)
+            sum.setInstaBoughtItems(instaBoughtItems);
+            sum.setInstaSoldItems(instaSoldItems);
 
             summaryRepo.save(sum);
         }

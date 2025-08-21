@@ -56,9 +56,28 @@ public class CacheConfig {
                         .maximumSize(10_000)
                         .build());
 
+        CaffeineCache financeAveragesCache = new CaffeineCache("financeAverages",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(1, TimeUnit.HOURS) // 24 hours for financial averages
+                        .maximumSize(10_000)
+                        .build());
+
+        CaffeineCache flipOpportunitiesCache = new CaffeineCache("flipOpportunities",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(2, TimeUnit.MINUTES) // 5 minutes for flip opportunities
+                        .maximumSize(10_000)
+                        .build());
+
         // Use SimpleCacheManager to manage multiple caches
         SimpleCacheManager cacheManager = new SimpleCacheManager();
-        cacheManager.setCaches(Arrays.asList(liveViewListCache, liveViewItemCache, liveViewHistoryCache, liveViewHourAverageCache));
+        cacheManager.setCaches(Arrays.asList(
+                liveViewListCache,
+                liveViewItemCache,
+                liveViewHistoryCache,
+                liveViewHourAverageCache,
+                financeAveragesCache,
+                flipOpportunitiesCache
+        ));
 
         return cacheManager;
     }

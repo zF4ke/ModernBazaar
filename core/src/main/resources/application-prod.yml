@@ -44,6 +44,10 @@ spring:
 #      name: ${ADMIN_USER:admin}
 #      password: ${ADMIN_PASSWORD:?required}  # fail fast if not set
 
+logging:
+  level:
+    org.hibernate.persister.entity.AbstractEntityPersister: ERROR
+
 # only expose exactly what you need
 management:
   endpoints:

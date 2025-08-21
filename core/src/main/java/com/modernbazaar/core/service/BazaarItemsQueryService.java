@@ -4,6 +4,8 @@ import com.modernbazaar.core.api.dto.*;
 import com.modernbazaar.core.domain.*;
 import com.modernbazaar.core.repository.*;
 import com.modernbazaar.core.repository.projection.PagedIdRow;
+import com.modernbazaar.core.strategy.metrics.FinanceAverages;
+import com.modernbazaar.core.strategy.metrics.FinanceMetricsService;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ public class BazaarItemsQueryService {
     private final BazaarItemHourSummaryRepository hourRepo;
     private final BazaarProductSnapshotRepository snapRepo;
     private final BazaarItemRepository            itemRepo;
+    private final FinanceMetricsService           finance;
 
     /* ───────────────────── LIST ───────────────────── */
 
@@ -256,43 +259,23 @@ public class BazaarItemsQueryService {
     @Transactional(readOnly = true)
     @Cacheable(value = "liveViewHourAverage", key = "'hourAverage-'+#productId")
     public BazaarItemHourAverageResponseDTO getLast48HourAverage(String productId) {
-        List<BazaarItemHourSummary> summaries = hourRepo.findLastNByProductId(productId, 48);
-        
-        if (summaries.isEmpty()) {
+        Optional<FinanceAverages> opt = finance.getAverages(productId, 48);
+        if (opt.isEmpty()) {
             throw new NoSuchElementException("No hour summaries found for product " + productId);
         }
+        FinanceAverages a = opt.get();
 
-        // Get display name
         String displayName = itemRepo.findById(productId)
                 .flatMap(item -> Optional.ofNullable(item.getSkyblockItem()))
                 .map(skyblockItem -> skyblockItem.getName())
                 .orElse(null);
 
-        // Calculate averages
-        double avgOpenBuy = summaries.stream().mapToDouble(BazaarItemHourSummary::getOpenInstantBuyPrice).average().orElse(0.0);
-        double avgCloseBuy = summaries.stream().mapToDouble(BazaarItemHourSummary::getCloseInstantBuyPrice).average().orElse(0.0);
-        double avgMinBuy = summaries.stream().mapToDouble(BazaarItemHourSummary::getMinInstantBuyPrice).average().orElse(0.0);
-        double avgMaxBuy = summaries.stream().mapToDouble(BazaarItemHourSummary::getMaxInstantBuyPrice).average().orElse(0.0);
-        
-        double avgOpenSell = summaries.stream().mapToDouble(BazaarItemHourSummary::getOpenInstantSellPrice).average().orElse(0.0);
-        double avgCloseSell = summaries.stream().mapToDouble(BazaarItemHourSummary::getCloseInstantSellPrice).average().orElse(0.0);
-        double avgMinSell = summaries.stream().mapToDouble(BazaarItemHourSummary::getMinInstantSellPrice).average().orElse(0.0);
-        double avgMaxSell = summaries.stream().mapToDouble(BazaarItemHourSummary::getMaxInstantSellPrice).average().orElse(0.0);
-        
-        double avgCreatedBuy = summaries.stream().mapToDouble(s -> s.getCreatedBuyOrders()).average().orElse(0.0);
-        double avgDeltaBuy = summaries.stream().mapToDouble(s -> s.getDeltaBuyOrders()).average().orElse(0.0);
-        double avgCreatedSell = summaries.stream().mapToDouble(s -> s.getCreatedSellOrders()).average().orElse(0.0);
-        double avgDeltaSell = summaries.stream().mapToDouble(s -> s.getDeltaSellOrders()).average().orElse(0.0);
-        
-        double avgAddedBuy = summaries.stream().mapToDouble(s -> s.getAddedItemsBuyOrders()).average().orElse(0.0);
-        double avgAddedSell = summaries.stream().mapToDouble(s -> s.getAddedItemsSellOrders()).average().orElse(0.0);
-
         return BazaarItemHourAverageResponseDTO.of(
-                productId, displayName, Instant.now(), summaries.size(),
-                avgOpenBuy, avgCloseBuy, avgMinBuy, avgMaxBuy,
-                avgOpenSell, avgCloseSell, avgMinSell, avgMaxSell,
-                avgCreatedBuy, avgDeltaBuy, avgCreatedSell, avgDeltaSell,
-                avgAddedBuy, avgAddedSell);
+                productId, displayName, Instant.now(), a.windowHours(),
+                a.avgOpenInstantBuy(), a.avgCloseInstantBuy(), a.avgMinInstantBuy(), a.avgMaxInstantBuy(),
+                a.avgOpenInstantSell(), a.avgCloseInstantSell(), a.avgMinInstantSell(), a.avgMaxInstantSell(),
+                a.avgCreatedBuyOrders(), a.avgDeltaBuyOrders(), a.avgCreatedSellOrders(), a.avgDeltaSellOrders(),
+                a.avgAddedItemsBuyOrders(), a.avgAddedItemsSellOrders());
     }
 
     /* ───────────────────── helpers ────────────────── */

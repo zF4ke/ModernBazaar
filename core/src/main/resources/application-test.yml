@@ -23,6 +23,10 @@ spring:
 server:
   port: 0   # 0 = pick a random free port
 
+logging:
+  level:
+    org.hibernate.persister.entity.AbstractEntityPersister: ERROR
+
 management:
   endpoints:
     web:

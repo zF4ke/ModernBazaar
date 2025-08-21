@@ -1,6 +1,7 @@
 package com.modernbazaar.core.repository;
 
 import com.modernbazaar.core.domain.BazaarItemHourSummary;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -14,29 +15,7 @@ import java.util.Optional;
 public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarItemHourSummary, Long> {
     Optional<BazaarItemHourSummary> findByProductIdAndHourStart(String productId, Instant hourStart);
 
-    // Novo: última hora sem pontos (consulta leve)
     Optional<BazaarItemHourSummary> findTopByProductIdOrderByHourStartDesc(String productId);
-
-    /* latest per product, optional filters */
-    @Query(value = """
-        select distinct on (hs.product_id) hs.*
-        from   bazaar_hour_summary hs
-               join bazaar_item bi on bi.product_id = hs.product_id
-        where  (:q is null or bi.product_id ilike concat('%', :q, '%')
-                          or hs.product_id ilike concat('%', :q, '%'))
-          and  (:minSell is null or hs.close_instant_sell_price >= :minSell)
-          and  (:maxSell is null or hs.close_instant_sell_price <= :maxSell)
-          and  (:minBuy  is null or hs.close_instant_buy_price  >= :minBuy)
-          and  (:maxBuy  is null or hs.close_instant_buy_price  <= :maxBuy)
-          and  (:minSpread is null or (hs.close_instant_sell_price - hs.close_instant_buy_price) >= :minSpread)
-        order by hs.product_id, hs.hour_start desc
-        """, nativeQuery = true)
-    List<BazaarItemHourSummary> searchLatest(@Param("q")         String q,
-                                             @Param("minSell")   Double minSell,
-                                             @Param("maxSell")   Double maxSell,
-                                             @Param("minBuy")    Double minBuy,
-                                             @Param("maxBuy")    Double maxBuy,
-                                             @Param("minSpread") Double minSpread);
 
     @Query("""
         select s
@@ -66,17 +45,6 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
                                                     @Param("from") Instant from,
                                                     @Param("to")   Instant to);
 
-    @EntityGraph(attributePaths = {"item","points"})
-    @Query("""
-        select distinct hs
-        from   BazaarItemHourSummary hs
-               left join fetch hs.points p
-        where  hs.productId = :pid
-        order  by hs.hourStart desc
-        """)
-    List<BazaarItemHourSummary> findLatestWithPoints(@Param("pid") String pid);
-
-    /** Lightweight helper for 2‑query pagination on the Live‑View list. */
     @Query(value = """
         select distinct on (hs.product_id) hs.*
         from   bazaar_hour_summary hs
@@ -85,17 +53,13 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
         """, nativeQuery = true)
     List<BazaarItemHourSummary> findLatestByProductIds(@Param("ids") Collection<String> ids);
 
-    /** Get the last N hour summaries for a product, ordered by hour start descending */
     @Query("""
         select s
         from   BazaarItemHourSummary s
         where  s.productId = :productId
         order  by s.hourStart desc
-        limit  :limit
         """)
-    List<BazaarItemHourSummary> findLastNByProductId(
-            @Param("productId") String productId,
-            @Param("limit") int limit);
+    List<BazaarItemHourSummary> findLastByProductId(@Param("productId") String productId, Pageable pageable);
 
     /** Retention: delete hour summaries older than cutoff */
     void deleteByHourStartBefore(Instant cutoff);

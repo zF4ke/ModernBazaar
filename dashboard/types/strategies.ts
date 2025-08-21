@@ -3,15 +3,25 @@ export interface FlipOpportunity {
   displayName?: string
   instantBuyPrice: number
   instantSellPrice: number
+  buyOrderPrice?: number
+  sellOrderPrice?: number
   spread: number
   spreadPct: number
   demandPerHour?: number
   supplyPerHour?: number
   competitionPerHour?: number
+  throughputPerHour?: number
+  plannedUnitsPerHour?: number
+  suggestedUnitsPerHour?: number
+  profitPerItem?: number
+  profitPerHour?: number
+  reasonableProfitPerHour?: number
   riskScore?: number
   risky?: boolean
-  scoreBalanced: number
-  scoreDelta: number
+  score: number
+  suggestedBuyFillHours?: number
+  suggestedSellFillHours?: number
+  suggestedTotalFillHours?: number
 }
 
 export interface FlippingQuery {
@@ -22,7 +32,8 @@ export interface FlippingQuery {
   maxBuy?: number
   minSpread?: number
   sort?: string
-  mode?: "balanced" | "delta"
+  budget?: number
+  horizonHours?: number
   page?: number
   limit?: number
 }
@@ -36,4 +47,3 @@ export interface PagedResponse<T> {
   hasNext: boolean
   hasPrevious: boolean
 }
-

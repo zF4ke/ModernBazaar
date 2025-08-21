@@ -21,14 +21,6 @@ public interface BazaarItemRepository extends JpaRepository<BazaarItem, String> 
     """, nativeQuery = true)
     void insertIgnore(String id);
 
-    @Query("""
-           select bi
-           from BazaarItem bi
-           left join fetch bi.skyblockItem si
-           where bi.productId in :ids
-           """)
-    List<BazaarItem> findAllWithSkyblockByIdIn(@Param("ids") Set<String> ids);
-
     @EntityGraph(attributePaths = "skyblockItem")
     List<BazaarItem> findAllByProductIdIn(Set<String> ids);
 }
