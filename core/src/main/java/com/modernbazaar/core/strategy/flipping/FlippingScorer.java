@@ -156,10 +156,10 @@ public class FlippingScorer {
     ) {}
 
     public Score score(Inputs in) {
-        return scoreWithToggles(in, false, false);
+        return scoreWithToggles(in, Boolean.FALSE, Boolean.FALSE);
     }
 
-    public Score scoreWithToggles(Inputs in, boolean disableRiskPenalties, boolean disableCompetitionPenalties) {
+    public Score scoreWithToggles(Inputs in, Boolean disableRiskPenalties, Boolean disableCompetitionPenalties) {
         // Guard-rails básicos
         double ib = in.instantBuyPrice;
         double is = in.instantSellPrice;
@@ -247,10 +247,10 @@ public class FlippingScorer {
         double spreadBonus = Math.min(0.8, spreadPct * 12.0); // Cap at 0.8 for ~6.7% spread
 
         // 3. Risk penalty: can be disabled entirely
-        double riskPenalty = disableRiskPenalties ? 0.0 : (riskScore * 0.1); // Max 10% reduction, or 0 if disabled
+        double riskPenalty = Boolean.TRUE.equals(disableRiskPenalties) ? 0.0 : (riskScore * 0.1); // Max 10% reduction, or 0 if disabled
 
         // 4. Competition penalty: can be disabled entirely
-        double competitionPenalty = disableCompetitionPenalties ? 0.0 : Math.min(0.05, churn * 0.0005); // Very light penalty, or 0 if disabled
+        double competitionPenalty = Boolean.TRUE.equals(disableCompetitionPenalties) ? 0.0 : Math.min(0.05, churn * 0.0005); // Very light penalty, or 0 if disabled
 
         // 5. Liquidity factor: simple minimum requirement
         double liquidityFactor = Math.min(1.0, throughputPerHour / 8.0); // Need 8 units/hour minimum

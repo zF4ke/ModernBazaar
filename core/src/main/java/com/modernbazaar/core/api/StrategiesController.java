@@ -49,6 +49,7 @@ public class StrategiesController {
                                            maxTime, minUnitsPerHour, maxUnitsPerHour);
         return flipping.listWithAdvancedFilters(filter, Optional.ofNullable(sort), page, limit, budget, horizonHours,
                                                maxTime, minUnitsPerHour, maxUnitsPerHour,
-                                               disableCompetitionPenalties, disableRiskPenalties);
+                                               Boolean.TRUE.equals(disableCompetitionPenalties),
+                                               Boolean.TRUE.equals(disableRiskPenalties));
     }
 }
