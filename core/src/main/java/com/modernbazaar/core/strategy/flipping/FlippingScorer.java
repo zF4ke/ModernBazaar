@@ -301,11 +301,12 @@ public class FlippingScorer {
         // Competição: já afeta suggestedUnitsPerHour; aplicar ajuste suave extra para desempates
         double compAdjSoft = Math.pow(1.0 / Math.max(1e-6, compPenalty), 0.5); // raiz para não dupla-penalizar forte
 
-        // Score prioriza o lucro/h razoável, ponderado por ETA, competição e penalizado por risco
+        // Score prioriza o lucro/h razoável (dominante), com ajustes suaves por PPI e capacidade
         double logRph = safeLog10(reasonableProfitPerHour + 1.0);
         double logPpi = safeLog10(profitPerItem + 1.0);
         double denomAdj = safeLog10(D + 1.0);
-        double baseScore = (logRph * logPpi * denomAdj);
+        // RPH domina; PPI e capacidade entram como reforços fracos
+        double baseScore = logRph * (1.0 + 0.2 * logPpi) * (1.0 + 0.1 * denomAdj);
         // aplicar multiplicadores e divisores finais
         double score = (baseScore * etaAdj * compAdjSoft * wLiqu) / Math.max(1e-6, riskAdj);
         if (!Double.isFinite(score) || score < 0) score = 0.0;
@@ -342,30 +343,38 @@ public class FlippingScorer {
         List<String> ids = snaps.stream().map(BazaarItemSnapshot::getProductId).toList();
         Map<String, String> names = preloadNames(new HashSet<>(ids));
 
-        // 3) Médias financeiras (48h)
-        Map<String, FinanceAverages> avgs = finance.getAveragesFor(ids, 48);
+        // 3) Médias financeiras em múltiplas janelas (conservador: usar mínimo)
+        Map<String, FinanceAverages> avgs48 = finance.getAveragesFor(ids, 48);
+        Map<String, FinanceAverages> avgs06 = finance.getAveragesFor(ids, 6);
+        Map<String, FinanceAverages> avgs01 = finance.getAveragesFor(ids, 1);
 
         // 4) Score item a item e construir resposta
         List<FlipOpportunityResponseDTO> out = new ArrayList<>(snaps.size());
         for (BazaarItemSnapshot s : snaps) {
             String id = s.getProductId();
-            FinanceAverages avg = avgs.get(id);
+            FinanceAverages a48 = avgs48.get(id);
+            FinanceAverages a06 = avgs06.get(id);
+            FinanceAverages a01 = avgs01.get(id);
 
             double ib = s.getInstantBuyPrice();
             double is = s.getInstantSellPrice();
 
-            // Preferir insta metrics; fallback para |delta| por hora
-            Double instaBought = (avg != null) ? avg.avgInstaBoughtItems() : null;
-            Double instaSold   = (avg != null) ? avg.avgInstaSoldItems()   : null;
-            Double deltaBuyAbs = (avg != null) ? Math.abs(avg.avgDeltaBuyOrders()) : null;
-            Double deltaSellAbs= (avg != null) ? Math.abs(avg.avgDeltaSellOrders()) : null;
+            // Preferir insta metrics por janela; fallback para |delta| por hora
+            Double d48 = a48 != null && a48.avgInstaBoughtItems() > 0 ? a48.avgInstaBoughtItems() : (a48 != null ? Math.abs(a48.avgDeltaBuyOrders()) : null);
+            Double s48 = a48 != null && a48.avgInstaSoldItems()   > 0 ? a48.avgInstaSoldItems()   : (a48 != null ? Math.abs(a48.avgDeltaSellOrders()) : null);
+            Double d06 = a06 != null && a06.avgInstaBoughtItems() > 0 ? a06.avgInstaBoughtItems() : (a06 != null ? Math.abs(a06.avgDeltaBuyOrders()) : null);
+            Double s06 = a06 != null && a06.avgInstaSoldItems()   > 0 ? a06.avgInstaSoldItems()   : (a06 != null ? Math.abs(a06.avgDeltaSellOrders()) : null);
+            Double d01 = a01 != null && a01.avgInstaBoughtItems() > 0 ? a01.avgInstaBoughtItems() : (a01 != null ? Math.abs(a01.avgDeltaBuyOrders()) : null);
+            Double s01 = a01 != null && a01.avgInstaSoldItems()   > 0 ? a01.avgInstaSoldItems()   : (a01 != null ? Math.abs(a01.avgDeltaSellOrders()) : null);
 
-            Double demand = (instaBought != null && instaBought > 0) ? instaBought : deltaBuyAbs;
-            Double supply = (instaSold   != null && instaSold   > 0) ? instaSold   : deltaSellAbs;
+            // Conservador: usar o mínimo entre janelas disponíveis (>0), privilegiando throughput recente
+            Double demand = minPos(d48, d06, d01);
+            Double supply = minPos(s48, s06, s01);
 
             double flowProxy = ((demand != null ? demand : 0.0) + (supply != null ? supply : 0.0));
-            double churnBuy = avg != null ? avg.avgCreatedBuyOrders() : 0.0;
-            double churnSell = avg != null ? avg.avgCreatedSellOrders() : 0.0;
+            // Competição: manter 48h se disponível (mais estável)
+            double churnBuy = a48 != null ? a48.avgCreatedBuyOrders() : 0.0;
+            double churnSell = a48 != null ? a48.avgCreatedSellOrders() : 0.0;
 
             Inputs in = new Inputs(
                     ib,
@@ -375,8 +384,8 @@ public class FlippingScorer {
                     churnSell,
                     s.getWeightedTwoPercentBuyPrice(),
                     s.getWeightedTwoPercentSellPrice(),
-                    avg != null ? avg.avgCloseInstantBuy() : null,
-                    avg != null ? avg.avgCloseInstantSell() : null,
+                    a48 != null ? a48.avgCloseInstantBuy() : null,
+                    a48 != null ? a48.avgCloseInstantSell() : null,
                     demand,
                     supply,
                     budget,
@@ -387,7 +396,7 @@ public class FlippingScorer {
 
             double spread = sc.spread();
             double spreadPct = sc.spreadPct();
-            Double compPerHour = avg != null ? (avg.avgCreatedBuyOrders() + avg.avgCreatedSellOrders()) : null;
+            Double compPerHour = a48 != null ? (a48.avgCreatedBuyOrders() + a48.avgCreatedSellOrders()) : null;
 
             // construir resposta com todos os campos
             out.add(new FlipOpportunityResponseDTO(
@@ -396,8 +405,8 @@ public class FlippingScorer {
                     ib,
                     is,
                     // order-book claros para BO→SO
-                    is, // buyOrderPrice = topo dos compradores (instantSell)
-                    ib, // sellOrderPrice = topo dos vendedores (instantBuy)
+                    is,
+                    ib,
                     spread,
                     spreadPct,
                     demand,
@@ -437,4 +446,13 @@ public class FlippingScorer {
     private static double clamp(double x, double lo, double hi) { return Math.max(lo, Math.min(hi, x)); }
     private static double clamp01(double x) { return clamp(x, 0.0, 1.0); }
     private static double safeLog10(double x) { return Math.log10(Math.max(1e-9, x)); }
+    private static Double minPos(Double... vals) {
+        Double out = null;
+        for (Double v : vals) {
+            if (v != null && Double.isFinite(v) && v > 0) {
+                out = (out == null) ? v : Math.min(out, v);
+            }
+        }
+        return out;
+    }
 }

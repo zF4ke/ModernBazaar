@@ -81,10 +81,24 @@ export default function FlippingPage() {
   const [searchText, setSearchText] = useState("")
   const debouncedSearch = useDebounce(searchText, 300)
 
+  // debounced budget
+  const [budgetInput, setBudgetInput] = useState("")
+  const debouncedBudget = useDebounce(budgetInput, 500)
+
+  // Sync budget input with query
+  useEffect(() => {
+    if (query.budget) {
+      setBudgetInput(new Intl.NumberFormat().format(query.budget))
+    } else {
+      setBudgetInput("")
+    }
+  }, [query.budget])
+
   const finalQuery: FlippingQuery = useMemo(() => ({
     ...query,
     q: debouncedSearch || undefined,
-  }), [query, debouncedSearch])
+    budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, '')) : undefined,
+  }), [query, debouncedSearch, debouncedBudget])
 
   const { data: response, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["strategies-flipping", finalQuery],
@@ -117,6 +131,7 @@ export default function FlippingPage() {
   const resetAll = () => {
     setQuery({ sort: "score", limit: query.limit ?? 50, page: 0 })
     setSearchText("")
+    setBudgetInput("")
     setPinFavoritesToTop(false)
   }
 
@@ -198,10 +213,10 @@ export default function FlippingPage() {
                   inputMode="numeric" 
                   type="text" 
                   placeholder="Enter your budget (e.g. 1,000,000)" 
-                  value={query.budget ? new Intl.NumberFormat().format(query.budget) : ""} 
+                  value={budgetInput} 
                   onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9]/g, '');
-                    updateQuery({ budget: value ? parseFloat(value) : undefined });
+                    const value = e.target.value;
+                    setBudgetInput(value);
                   }}
                   className="h-12 text-base"
                 />
