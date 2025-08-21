@@ -44,9 +44,20 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [ ] Optional S3 export for long-term history
 - [ ] Cold-snapshot archive to reduce DB footprint
 - [ ] `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]`
-- [ ] Trading strategies Services and endpoints
 - [ ] (Optional) Trade journal tracking and storage
 
+**Trading strategies, services and endpoints**
+- [x] Bazaar Flipping
+  - [x] Flipping Service and Flipping Scorer
+  - [x] Risk Assessment
+  - [x] Finance Averages
+  - [x] `GET /api/strategies/flipping` endpoint
+  - [x] Flipping route with budget input, sorting options, and pagination
+  - [x] QoL features: flipping tutorial, favorite items, etc.
+- [ ] NPC Flipping
+- [ ] Craft Flipping
+- [ ] Bazaar Manipulation
+  
 **Web Dashboard (Next.js + TypeScript)**
 - [x] Basic dashboard structure with navigation
 - [x] Bazaar Items page with pagination, filtering, composite live view
