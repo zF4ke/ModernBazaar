@@ -74,7 +74,7 @@ async function fetchBazaarItemAverage(productId: string): Promise<BazaarItemHour
 
 export default function BazaarItemDetailPage({ params }: { params: Promise<{ productId: string }> }) {
   const resolvedParams = use(params)
-  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | '7d' | 'total'>('24h')
+  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | '7d' | 'total'>('7d')
   const [buyOrdersCollapsed, setBuyOrdersCollapsed] = useState(false)
   const [sellOrdersCollapsed, setSellOrdersCollapsed] = useState(false)
   

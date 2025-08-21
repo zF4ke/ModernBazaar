@@ -445,11 +445,11 @@ export default function FlippingPage() {
                 }
 
                 return (
-                  <Card 
+                                     <Card 
                      key={o.productId}
-                     className={`group overflow-hidden transition-all ease-out bg-background/80 border-border/50 cursor-pointer hover:shadow-lg hover:border-border ${isExpanded ? 'shadow-xl border-blue-400/30' : 'hover:border-muted-foreground/30'}`}
+                     className={`group overflow-hidden transition-all ease-out bg-background/80 border-border/50 cursor-pointer hover:shadow-lg hover:border-border ${isExpanded ? 'shadow-xl' : 'hover:border-muted-foreground/30'}`}
                      onClick={handleCardClick}
-                  >
+                   >
                      <CardHeader className="pb-3 pt-6">
                         <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
