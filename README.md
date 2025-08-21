@@ -43,20 +43,7 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Retention: Remove snapshots, summaries, and points older than 45 days
 - [ ] Optional S3 export for long-term history
 - [ ] Cold-snapshot archive to reduce DB footprint
-- [ ] `GET /api/rankings/top-[spread|volume|volatility|profit|custom-score]`
 - [ ] (Optional) Trade journal tracking and storage
-
-**Trading strategies, services and endpoints**
-- [x] Bazaar Flipping
-  - [x] Flipping Service and Flipping Scorer
-  - [x] Risk Assessment
-  - [x] Finance Averages
-  - [x] `GET /api/strategies/flipping` endpoint
-  - [x] Flipping route with budget input, sorting options, and pagination
-  - [x] QoL features: flipping tutorial, favorite items, etc.
-- [ ] NPC Flipping
-- [ ] Craft Flipping
-- [ ] Bazaar Manipulation
   
 **Web Dashboard (Next.js + TypeScript)**
 - [x] Basic dashboard structure with navigation
@@ -68,10 +55,21 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Responsive layout, tooltips, zoom/pan, smooth animations
 - [x] Advanced filtering and search features
 - [x] 48-hour average card with frontend caching
-- [ ] Add more sorting options for every attribute
 - [ ] Replace prior bot interactions with API-powered UI
 - [ ] Trading strategies category and pages
 - [ ] (Optional) Auth + subscription support
+
+**Trading strategies, services and endpoints**
+- [x] Bazaar Flipping
+    - [x] Flipping Service and Flipping Scorer
+    - [x] Risk Assessment
+    - [x] Finance Averages
+    - [x] `GET /api/strategies/flipping` endpoint
+    - [x] Flipping route with budget input, sorting options, and pagination
+    - [x] QoL features: flipping tutorial, favorite items, etc.
+- [ ] NPC Flipping
+- [ ] Craft Flipping
+- [ ] Bazaar Manipulation
 
 **Other**
 - [ ] ML modules (prediction, anomaly detection) tied into Core
