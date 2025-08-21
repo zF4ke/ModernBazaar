@@ -31,6 +31,11 @@ export interface FlippingQuery {
   minBuy?: number
   maxBuy?: number
   minSpread?: number
+  maxTime?: number
+  minUnitsPerHour?: number
+  maxUnitsPerHour?: number
+  disableCompetitionPenalties?: boolean
+  disableRiskPenalties?: boolean
   sort?: string
   budget?: number
   horizonHours?: number

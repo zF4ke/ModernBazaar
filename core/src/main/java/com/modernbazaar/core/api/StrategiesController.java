@@ -34,13 +34,21 @@ public class StrategiesController {
             @RequestParam(required = false) Double minBuy,
             @RequestParam(required = false) Double maxBuy,
             @RequestParam(required = false) Double minSpread,
+            @RequestParam(required = false) Double maxTime,
+            @RequestParam(required = false) Double minUnitsPerHour,
+            @RequestParam(required = false) Double maxUnitsPerHour,
+            @RequestParam(required = false) Boolean disableCompetitionPenalties,
+            @RequestParam(required = false) Boolean disableRiskPenalties,
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) Double budget,
             @RequestParam(required = false) Double horizonHours,
             @RequestParam(defaultValue = "0")  Integer page,
             @RequestParam(defaultValue = "50") Integer limit
     ) {
-        var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread);
-        return flipping.list(filter, Optional.ofNullable(sort), page, limit, budget, horizonHours);
+        var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread,
+                                           maxTime, minUnitsPerHour, maxUnitsPerHour);
+        return flipping.listWithAdvancedFilters(filter, Optional.ofNullable(sort), page, limit, budget, horizonHours,
+                                               maxTime, minUnitsPerHour, maxUnitsPerHour,
+                                               disableCompetitionPenalties, disableRiskPenalties);
     }
 }

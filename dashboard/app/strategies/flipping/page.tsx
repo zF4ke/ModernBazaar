@@ -95,11 +95,15 @@ export default function FlippingPage() {
     }
   }, [query.budget])
 
-  const finalQuery: FlippingQuery = useMemo(() => ({
-    ...query,
-    q: debouncedSearch || undefined,
-    budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, '')) : undefined,
-  }), [query, debouncedSearch, debouncedBudget])
+  const finalQuery: FlippingQuery = useMemo(() => {
+    const result = {
+      ...query,
+      q: debouncedSearch || undefined,
+      budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, '')) : undefined,
+    }
+    console.log('Final query computed:', result)
+    return result
+  }, [query, debouncedSearch, debouncedBudget])
 
   const { data: response, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["strategies-flipping", finalQuery],
@@ -331,6 +335,99 @@ export default function FlippingPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* New Advanced Filters */}
+                <Separator />
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Max Total Time (hours)
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 1.5"
+                      value={query.maxTime || ""}
+                      onChange={(e) => updateQuery({ maxTime: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      className="h-10"
+                      min="0"
+                      step="0.25"
+                    />
+                    <p className="text-xs text-muted-foreground">Hide items that take longer than this to complete</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Min Units/Hour
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 10"
+                      value={query.minUnitsPerHour || ""}
+                      onChange={(e) => updateQuery({ minUnitsPerHour: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      className="h-10"
+                      min="0"
+                    />
+                    <p className="text-xs text-muted-foreground">Show only items with at least this trading volume</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Max Units/Hour
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 1000"
+                      value={query.maxUnitsPerHour || ""}
+                      onChange={(e) => updateQuery({ maxUnitsPerHour: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      className="h-10"
+                      min="0"
+                    />
+                    <p className="text-xs text-muted-foreground">Hide items with higher trading volume than this</p>
+                  </div>
+                </div>
+
+
+
+                {/* Scoring Penalty Toggles */}
+                <Separator />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <Calculator className="h-4 w-4" />
+                        Disable Competition Penalties
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ignore competition when calculating scores (see raw profit potential)
+                      </p>
+                    </div>
+                    <Switch
+                      checked={query.disableCompetitionPenalties || false}
+                      onCheckedChange={(checked) => updateQuery({ disableCompetitionPenalties: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Disable Risk Penalties
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ignore risk scores when calculating scores (see raw profit potential)
+                      </p>
+                    </div>
+                    <Switch
+                      checked={query.disableRiskPenalties || false}
+                      onCheckedChange={(checked) => updateQuery({ disableRiskPenalties: checked })}
+                    />
+                  </div>
+                </div>
+
               </div>
             </>
           )}

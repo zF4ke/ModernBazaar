@@ -68,6 +68,12 @@ public class CacheConfig {
                         .maximumSize(10_000)
                         .build());
 
+        CaffeineCache flipOpportunitiesAdvancedCache = new CaffeineCache("flipOpportunitiesAdvanced",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(2, TimeUnit.MINUTES) // 5 minutes for flip opportunities
+                        .maximumSize(10_000)
+                        .build());
+
         // Use SimpleCacheManager to manage multiple caches
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         cacheManager.setCaches(Arrays.asList(
@@ -76,7 +82,8 @@ public class CacheConfig {
                 liveViewHistoryCache,
                 liveViewHourAverageCache,
                 financeAveragesCache,
-                flipOpportunitiesCache
+                flipOpportunitiesCache,
+                flipOpportunitiesAdvancedCache
         ));
 
         return cacheManager;
