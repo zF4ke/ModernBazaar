@@ -151,7 +151,7 @@ export default function FlippingPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Flipping</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
         <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
           {isFetching ? 'Refreshing…' : 'Refresh'}
