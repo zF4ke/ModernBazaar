@@ -26,7 +26,8 @@ import {
   Info,
   Target,
   Calculator,
-  AlertCircle
+  AlertCircle,
+  Users
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -215,8 +216,13 @@ export default function FlippingPage() {
                   placeholder="Enter your budget (e.g. 1,000,000)" 
                   value={budgetInput} 
                   onChange={(e) => {
-                    const value = e.target.value;
-                    setBudgetInput(value);
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    if (value) {
+                      const numValue = parseInt(value);
+                      setBudgetInput(new Intl.NumberFormat().format(numValue));
+                    } else {
+                      setBudgetInput("");
+                    }
                   }}
                   className="h-12 text-base"
                 />
@@ -424,9 +430,13 @@ export default function FlippingPage() {
                 const strongAmber = 'bg-amber-500/10 text-amber-300'
                 const strongRed = 'bg-red-500/10 text-red-300'
                 const neutral = 'bg-zinc-800/60 text-zinc-300'
-                const spreadBadge = spreadPctVal >= 20 ? strongGreen : spreadPctVal >= 10 ? strongAmber : neutral
-                const riskBadge = riskPct !== undefined && riskPct >= 50 ? strongRed : neutral
-                const ratioBadge = ratio >= 0.8 ? strongGreen : ratio >= 0.5 ? strongAmber : strongRed
+                                 const spreadBadge = spreadPctVal >= 20 ? strongGreen : spreadPctVal >= 10 ? strongAmber : neutral
+                 const riskBadge = riskPct !== undefined && riskPct >= 50 ? strongRed : neutral
+                 const ratioBadge = ratio >= 0.8 ? strongGreen : ratio >= 0.5 ? strongAmber : strongRed
+                 
+                 // Competition score badge
+                 const competitionScore = o.competitionPerHour ?? 0
+                 const competitionBadge = competitionScore >= 1000 ? strongRed : competitionScore >= 500 ? strongAmber : strongGreen
 
                 const profitColor = (o.reasonableProfitPerHour ?? 0) >= 900000 
                   ? 'text-emerald-400' 
@@ -570,6 +580,10 @@ export default function FlippingPage() {
                                {riskPct}% risk
                              </Badge>
                            )}
+                           <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${competitionScore >= 1000 ? 'border-red-500/50 text-red-400' : competitionScore >= 500 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
+                             <Users className="h-3 w-3 mr-1" />
+                             {format(competitionScore, 0)} comp
+                           </Badge>
                            <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                              <BarChart3 className="h-3 w-3" />
                              <span>Demand {format(d,0)} · Supply {format(s,0)}</span>
