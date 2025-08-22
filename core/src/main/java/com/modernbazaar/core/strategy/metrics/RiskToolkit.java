@@ -17,8 +17,18 @@ public class RiskToolkit {
     ) {}
 
     /**
-     * Avalia quão afastados estão os preços instantâneos das referências (weighted 2% e médias de fecho).
-     * Usa o maior desvio relativo observado e mapeia para um score [0,1].
+     * Avalia quão afastados estão os preços instantâneos das referências (weighted 2% e médias de fecho)
+     * e detecta choques (saltos súbitos) entre a referência "weighted" e a média histórica.
+     * Estratégia revisada:
+     * 1. Calcula desvios relativos de instantBuy/instantSell contra cada referência disponível separadamente (não mistura).
+     * 2. Se existirem weighted e avg, mede também o "shock" = |weighted - avg| / avg (proxy de salto súbito recente).
+     * 3. Score base: max(desvioInstantVsAvg, desvioInstantVsWeighted).
+     * 4. Score choque: shock / 0.25 (≥25% => risco máximo) — enfatiza saltos abruptos mesmo se instant == weighted.
+     * 5. Risk final = clamp(max(score base mapeado ( /0.20 ), score choque)).
+     * 6. Flag manipulatedLikely se:
+     *    - qualquer desvio instant vs referência ≥ 15%, ou
+     *    - shock ≥ 12%, ou
+     *    - risk final ≥ 0.85.
      */
     public RiskAssessment assessPriceDeviation(
             double instantBuy,
@@ -28,35 +38,55 @@ public class RiskToolkit {
             Double refBuyAvg,
             Double refSellAvg
     ) {
-        double refBuy  = bestRef(refBuyWeighted, refBuyAvg);
-        double refSell = bestRef(refSellWeighted, refSellAvg);
+        // Desvios instantâneos vs cada ref (quando disponível)
+        double devBuyVsWeighted  = relativeDeviation(instantBuy, refBuyWeighted);
+        double devBuyVsAvg       = relativeDeviation(instantBuy, refBuyAvg);
+        double devSellVsWeighted = relativeDeviation(instantSell, refSellWeighted);
+        double devSellVsAvg      = relativeDeviation(instantSell, refSellAvg);
 
-        double devBuy  = relativeDeviation(instantBuy, refBuy);
-        double devSell = relativeDeviation(instantSell, refSell);
+        // Melhor desvio "representativo" por lado (instant vs ref mais estável disponível)
+        double devBuy = max(devBuyVsWeighted, devBuyVsAvg);   // usar max para ser conservador (pior caso)
+        double devSell = max(devSellVsWeighted, devSellVsAvg);
 
-        double devMax = Math.max(devBuy, devSell);
-        // Mapear desvio para risco: 0%->0, 5%->0.2, 10%->0.5, 20%->1 (clamp)
-        double risk = clamp01(devMax / 0.20);
-        boolean flag = devMax >= 0.12; // ≥12% de desvio sugere regime atípico/manipulação
-        String note = flag ? "Desvio elevado vs referências; possível manipulação/regime atípico." : "Desvio dentro do normal.";
+        // Choques entre weighted e avg (quando ambos existem)
+        double shockBuy  = relativeDeviation(refBuyWeighted, refBuyAvg);
+        double shockSell = relativeDeviation(refSellWeighted, refSellAvg);
+        double shockMax = max(shockBuy, shockSell);
 
-        return new RiskAssessment(devBuy, devSell, risk, flag, note);
+        // Score base (desvio instantâneo vs refs) mapeado para 0..1 em 20% (>=20% => 1)
+        double baseDevMax = max(devBuy, devSell);
+        double baseRisk = clamp01(baseDevMax / 0.20);
+
+        // Score de choque (saltos onde weighted já reflete price spike): 25% ⇒ 1
+        double shockRisk = clamp01(shockMax / 0.25);
+
+        // Risk final enfatiza o maior sinal
+        double risk = clamp01(max(baseRisk, shockRisk));
+
+        boolean manipulatedLikely =
+                baseDevMax >= 0.15 ||
+                shockMax >= 0.12 ||
+                risk >= 0.85;
+
+        StringBuilder note = new StringBuilder();
+        if (manipulatedLikely) {
+            note.append("Possible manipulation / atypical regime: ");
+            if (shockMax >= 0.12) note.append("ref shock≥12% ");
+            if (baseDevMax >= 0.15) note.append("instant deviation≥15% ");
+            if (risk >= 0.85) note.append("risk≥0.85 ");
+        } else {
+            note.append("Deviations within normal range.");
+        }
+
+        return new RiskAssessment(devBuy, devSell, risk, manipulatedLikely, note.toString().trim());
     }
 
-    private static double bestRef(Double weighted, Double avg) {
-        double w = (weighted != null && weighted > 0) ? weighted : Double.NaN;
-        double a = (avg != null && avg > 0) ? avg : Double.NaN;
-        if (Double.isFinite(w) && Double.isFinite(a)) return 0.7*w + 0.3*a; // ponderar mais o weighted atual
-        if (Double.isFinite(w)) return w;
-        if (Double.isFinite(a)) return a;
-        return Double.NaN;
-    }
-
-    private static double relativeDeviation(double v, double ref) {
+    private static double relativeDeviation(Double v, Double ref) {
+        if (v == null || ref == null) return 0.0;
         if (!Double.isFinite(v) || !Double.isFinite(ref) || ref <= 0) return 0.0;
         return Math.abs(v - ref) / ref;
     }
 
     private static double clamp01(double x) { return Math.max(0.0, Math.min(1.0, x)); }
+    private static double max(double a, double b) { return a >= b ? a : b; }
 }
-

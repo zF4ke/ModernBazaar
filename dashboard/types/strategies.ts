@@ -18,6 +18,7 @@ export interface FlipOpportunity {
   reasonableProfitPerHour?: number
   riskScore?: number
   risky?: boolean
+  riskNote?: string // nota textual de risco para tooltip
   score: number
   suggestedBuyFillHours?: number
   suggestedSellFillHours?: number

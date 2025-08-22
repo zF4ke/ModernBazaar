@@ -140,6 +140,7 @@ public class FlippingScorer {
             double spreadPct,
             double riskScore,
             boolean risky,
+            String riskNote,
             // execução e lucro
             double throughputPerHour,
             double plannedUnitsPerHour,
@@ -164,13 +165,13 @@ public class FlippingScorer {
         double ib = in.instantBuyPrice;
         double is = in.instantSellPrice;
         if (!Double.isFinite(ib) || !Double.isFinite(is) || ib <= 0 || is <= 0) {
-            return new Score(0.0, 0.0, 0.0, false, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
+            return new Score(0.0, 0.0, 0.0, false, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
         }
 
         // Buy Order → Sell Order: spread = ask - bid = instantBuy - instantSell
         double spread = Math.max(0.0, ib - is);
         if (spread <= 0.0) {
-            return new Score(0.0, 0.0, 0.0, false, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
+            return new Score(0.0, 0.0, 0.0, false, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
         }
         // % sobre o preço de entrada (buy order ≈ instantSell)
         double spreadPct = is > 0 ? (spread / is) : 0.0;
@@ -191,10 +192,11 @@ public class FlippingScorer {
         );
         double riskScore = clamp01(ra.riskScore());
         boolean risky = ra.manipulatedLikely();
+        String riskNote = ra.note();
 
         // Gating de liquidez/mercado: precisa de throughput mínimo
         if (throughputPerHour < 1.0) {
-            return new Score(spread, spreadPct, riskScore, risky, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
+            return new Score(spread, spreadPct, riskScore, risky, riskNote, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
         }
 
         // Capacidade via budget/horizonte
@@ -267,6 +269,7 @@ public class FlippingScorer {
                 spreadPct,
                 riskScore,
                 risky,
+                riskNote,
                 throughputPerHour,
                 plannedUnitsPerHour,
                 suggestedUnitsPerHour,
@@ -387,6 +390,7 @@ public class FlippingScorer {
                     sc.suggestedTotalFillHours(),
                     sc.riskScore(),
                     sc.risky(),
+                    sc.riskNote(),
                     sc.score()
             ));
         }

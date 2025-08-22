@@ -33,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -169,9 +170,10 @@ export default function FlippingPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
         <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
           {isFetching ? 'Refreshing…' : 'Refresh'}
@@ -677,10 +679,24 @@ export default function FlippingPage() {
                              {format(spreadPctVal, 0)}% spread
                            </Badge>
                            {riskPct !== undefined && (
-                             <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
-                               <ShieldAlert className="h-3 w-3 mr-1" />
-                               {riskPct}% risk
-                             </Badge>
+                             o.riskNote ? (
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Badge variant="outline" className={`text-[10px] px-2 py-0.5 cursor-help ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
+                                     <ShieldAlert className="h-3 w-3 mr-1" />
+                                     {riskPct}% risk
+                                   </Badge>
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                   <p className="max-w-xs text-sm">{o.riskNote}</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             ) : (
+                               <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
+                                 <ShieldAlert className="h-3 w-3 mr-1" />
+                                 {riskPct}% risk
+                               </Badge>
+                             )
                            )}
                            <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${competitionScore >= 1000 ? 'border-red-500/50 text-red-400' : competitionScore >= 500 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
                              <Users className="h-3 w-3 mr-1" />
@@ -793,5 +809,6 @@ export default function FlippingPage() {
         </CardContent>
       </Card>
     </div>
+    </TooltipProvider>
   )
 }
