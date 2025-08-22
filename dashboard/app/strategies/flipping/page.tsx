@@ -546,9 +546,8 @@ export default function FlippingPage() {
                   
                   const cardElement = e.currentTarget as HTMLElement
                   
-                  if (isExpanded) {
-                    setExpandedCard(null)
-                  } else {
+                  // Only expand, don't collapse on card click
+                  if (!isExpanded) {
                     setExpandedCard(o.productId)
                     // Scroll to center the card after animation completes
                     setTimeout(() => {
@@ -564,6 +563,12 @@ export default function FlippingPage() {
                       })
                     }, 0)
                   }
+                }
+
+                const handleCollapse = (e: React.MouseEvent) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setExpandedCard(null)
                 }
 
                 return (
@@ -717,7 +722,7 @@ export default function FlippingPage() {
                                  <div className="flex items-center justify-between border-t border-blue-500/20 pt-1">
                                    <span>Total investment needed:</span>
                                    <span className="font-mono text-blue-300">
-                                     {format((query.horizonHours || 1) * (o.suggestedUnitsPerHour || 0) * buy, 0)} coins
+                                     {format((query.horizonHours || 1) * Math.floor(o.suggestedUnitsPerHour || 0) * buy, 0)} coins
                                    </span>
                                  </div>
                                </div>
@@ -763,7 +768,14 @@ export default function FlippingPage() {
                              )}
 
                              <div className="text-center pt-2">
-                               <span className="text-xs text-muted-foreground">Click anywhere on the card to collapse</span>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={handleCollapse}
+                                 className="h-8 w-8 p-0 hover:bg-muted hover:text-foreground transition-colors"
+                               >
+                                 <ChevronUp className="h-4 w-4" />
+                               </Button>
                              </div>
                           </div>
                         </div>

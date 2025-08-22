@@ -256,6 +256,67 @@ public class BazaarItemsQueryService {
                 .toList();
     }
 
+    /* ───────────────────── LATEST SNAPSHOTS ────────────────── */
+
+    @Transactional(readOnly = true)
+    @Cacheable(value = "liveViewSnapshots", key = "'snapshots-'+#productId+'-'+#limit")
+    public List<BazaarItemHourSummaryResponseDTO> getLatestSnapshots(
+            String productId,
+            int limit
+    ) {
+        // Get snapshots from the last hour (not yet processed into hourly summaries)
+        Instant oneHourAgo = Instant.now().minusSeconds(3600);
+        
+        List<BazaarItemSnapshot> snapshots = snapRepo
+                .findLatestSnapshotsByProductId(productId, oneHourAgo, limit);
+
+        if (snapshots.isEmpty()) {
+            return List.of();
+        }
+
+        String displayName = itemRepo.findById(productId)
+                .map(BazaarItem::getSkyblockItem)
+                .map(SkyblockItem::getName)
+                .orElse(null);
+
+        // Convert snapshots to hour summary format (lightweight, no order details)
+        return snapshots.stream()
+                .map(snap -> {
+                    // Create a simple hour summary from snapshot data
+                    return new BazaarItemHourSummaryResponseDTO(
+                            snap.getProductId(),
+                            displayName,
+                            snap.getFetchedAt(), // Use fetchedAt as hourStart
+                            snap.getInstantBuyPrice(),  // open = close = min = max for snapshots
+                            snap.getInstantBuyPrice(),
+                            snap.getInstantBuyPrice(),
+                            snap.getInstantBuyPrice(),
+                            snap.getInstantSellPrice(), // open = close = min = max for snapshots
+                            snap.getInstantSellPrice(),
+                            snap.getInstantSellPrice(),
+                            snap.getInstantSellPrice(),
+                            0, // createdBuyOrders - not available in snapshots
+                            0, // deltaBuyOrders - not available in snapshots
+                            0, // createdSellOrders - not available in snapshots
+                            0, // deltaSellOrders - not available in snapshots
+                            0, // addedItemsBuyOrders - not available in snapshots
+                            0, // addedItemsSellOrders - not available in snapshots
+                            List.of(new BazaarItemHourPointDTO(
+                                    snap.getFetchedAt(),
+                                    snap.getInstantBuyPrice(),
+                                    snap.getInstantSellPrice(),
+                                    snap.getActiveBuyOrdersCount(),
+                                    snap.getActiveSellOrdersCount(),
+                                    0L, // buyVolume - not available in snapshots
+                                    0L, // sellVolume - not available in snapshots
+                                    List.of(), // buyOrders - empty for lightweight snapshots
+                                    List.of()  // sellOrders - empty for lightweight snapshots
+                            ))
+                    );
+                })
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     @Cacheable(value = "liveViewHourAverage", key = "'hourAverage-'+#productId")
     public BazaarItemHourAverageResponseDTO getLast48HourAverage(String productId) {

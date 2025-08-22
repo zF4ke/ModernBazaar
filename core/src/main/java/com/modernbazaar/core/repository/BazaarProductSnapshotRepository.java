@@ -12,6 +12,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 
 public interface BazaarProductSnapshotRepository
         extends JpaRepository<BazaarItemSnapshot, Long> {
@@ -32,6 +34,22 @@ public interface BazaarProductSnapshotRepository
 
     @Query("select min(s.fetchedAt) from BazaarItemSnapshot s")
     Instant findOldestFetchedAt();
+
+    @Query("""
+        select s from BazaarItemSnapshot s
+        where s.productId = :productId
+        and s.fetchedAt >= :fromTime
+        order by s.fetchedAt desc
+        """)
+    List<BazaarItemSnapshot> findLatestSnapshotsByProductId(
+            @Param("productId") String productId,
+            @Param("fromTime") Instant fromTime,
+            Pageable pageable
+    );
+
+    default List<BazaarItemSnapshot> findLatestSnapshotsByProductId(String productId, Instant fromTime, int limit) {
+        return findLatestSnapshotsByProductId(productId, fromTime, PageRequest.of(0, limit));
+    }
 
     @Query(value = """
 
