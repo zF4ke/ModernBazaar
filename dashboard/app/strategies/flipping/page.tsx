@@ -33,6 +33,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -95,11 +96,15 @@ export default function FlippingPage() {
     }
   }, [query.budget])
 
-  const finalQuery: FlippingQuery = useMemo(() => ({
-    ...query,
-    q: debouncedSearch || undefined,
-    budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, '')) : undefined,
-  }), [query, debouncedSearch, debouncedBudget])
+  const finalQuery: FlippingQuery = useMemo(() => {
+    const result = {
+      ...query,
+      q: debouncedSearch || undefined,
+      budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, '')) : undefined,
+    }
+    console.log('Final query computed:', result)
+    return result
+  }, [query, debouncedSearch, debouncedBudget])
 
   const { data: response, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["strategies-flipping", finalQuery],
@@ -165,9 +170,10 @@ export default function FlippingPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
         <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
           {isFetching ? 'Refreshing…' : 'Refresh'}
@@ -331,6 +337,99 @@ export default function FlippingPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* New Advanced Filters */}
+                <Separator />
+
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Max Total Time (hours)
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 1.5"
+                      value={query.maxTime || ""}
+                      onChange={(e) => updateQuery({ maxTime: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      className="h-10"
+                      min="0"
+                      step="0.25"
+                    />
+                    <p className="text-xs text-muted-foreground">Hide items that take longer than this to complete</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Min Units/Hour
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 10"
+                      value={query.minUnitsPerHour || ""}
+                      onChange={(e) => updateQuery({ minUnitsPerHour: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      className="h-10"
+                      min="0"
+                    />
+                    <p className="text-xs text-muted-foreground">Show only items with at least this trading volume</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Max Units/Hour
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 1000"
+                      value={query.maxUnitsPerHour || ""}
+                      onChange={(e) => updateQuery({ maxUnitsPerHour: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      className="h-10"
+                      min="0"
+                    />
+                    <p className="text-xs text-muted-foreground">Hide items with higher trading volume than this</p>
+                  </div>
+                </div>
+
+
+
+                {/* Scoring Penalty Toggles */}
+                <Separator />
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <Calculator className="h-4 w-4" />
+                        Disable Competition Penalties
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ignore competition when calculating scores (see raw profit potential)
+                      </p>
+                    </div>
+                    <Switch
+                      checked={query.disableCompetitionPenalties || false}
+                      onCheckedChange={(checked) => updateQuery({ disableCompetitionPenalties: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4" />
+                        Disable Risk Penalties
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ignore risk scores when calculating scores (see raw profit potential)
+                      </p>
+                    </div>
+                    <Switch
+                      checked={query.disableRiskPenalties || false}
+                      onCheckedChange={(checked) => updateQuery({ disableRiskPenalties: checked })}
+                    />
+                  </div>
+                </div>
+
               </div>
             </>
           )}
@@ -449,9 +548,8 @@ export default function FlippingPage() {
                   
                   const cardElement = e.currentTarget as HTMLElement
                   
-                  if (isExpanded) {
-                    setExpandedCard(null)
-                  } else {
+                  // Only expand, don't collapse on card click
+                  if (!isExpanded) {
                     setExpandedCard(o.productId)
                     // Scroll to center the card after animation completes
                     setTimeout(() => {
@@ -467,6 +565,12 @@ export default function FlippingPage() {
                       })
                     }, 0)
                   }
+                }
+
+                const handleCollapse = (e: React.MouseEvent) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setExpandedCard(null)
                 }
 
                 return (
@@ -575,10 +679,24 @@ export default function FlippingPage() {
                              {format(spreadPctVal, 0)}% spread
                            </Badge>
                            {riskPct !== undefined && (
-                             <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
-                               <ShieldAlert className="h-3 w-3 mr-1" />
-                               {riskPct}% risk
-                             </Badge>
+                             o.riskNote ? (
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Badge variant="outline" className={`text-[10px] px-2 py-0.5 cursor-help ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
+                                     <ShieldAlert className="h-3 w-3 mr-1" />
+                                     {riskPct}% risk
+                                   </Badge>
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                   <p className="max-w-xs text-sm">{o.riskNote}</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             ) : (
+                               <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
+                                 <ShieldAlert className="h-3 w-3 mr-1" />
+                                 {riskPct}% risk
+                               </Badge>
+                             )
                            )}
                            <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${competitionScore >= 1000 ? 'border-red-500/50 text-red-400' : competitionScore >= 500 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
                              <Users className="h-3 w-3 mr-1" />
@@ -620,7 +738,7 @@ export default function FlippingPage() {
                                  <div className="flex items-center justify-between border-t border-blue-500/20 pt-1">
                                    <span>Total investment needed:</span>
                                    <span className="font-mono text-blue-300">
-                                     {format((query.horizonHours || 1) * (o.suggestedUnitsPerHour || 0) * buy, 0)} coins
+                                     {format((query.horizonHours || 1) * Math.round(o.suggestedUnitsPerHour || 0) * buy, 0)} coins
                                    </span>
                                  </div>
                                </div>
@@ -652,6 +770,30 @@ export default function FlippingPage() {
                                </div>
                              </div>
 
+                             {/* Step 4: Profit Setup */}
+                             <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                               <div className="flex items-center gap-2 mb-2">
+                                 <Calculator className="h-4 w-4 text-purple-400" />
+                                 <span className="font-medium text-purple-300">Step 4: Profit Setup</span>
+                               </div>
+                               <div className="text-xs text-muted-foreground space-y-1">
+                                 <div className="flex items-center justify-between">
+                                   <span>Per unit profit:</span>
+                                   <span className="font-mono text-purple-300">{format(sell - buy, 2)} coins</span>
+                                 </div>
+                                 <div className="flex items-center justify-between">
+                                   <span>Per hour profit:</span>
+                                   <span className="font-mono text-purple-300">{format(o.reasonableProfitPerHour, 0)} coins</span>
+                                 </div>
+                                 {query.horizonHours && (
+                                   <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
+                                     <span>Timeframe profit:</span>
+                                     <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours, 0)} coins</span>
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+
                              {/* Risk Warning */}
                              {riskPct !== undefined && riskPct >= 30 && (
                                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
@@ -666,7 +808,14 @@ export default function FlippingPage() {
                              )}
 
                              <div className="text-center pt-2">
-                               <span className="text-xs text-muted-foreground">Click anywhere on the card to collapse</span>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={handleCollapse}
+                                 className="h-8 w-8 p-0 hover:bg-muted hover:text-foreground transition-colors"
+                               >
+                                 <ChevronUp className="h-4 w-4" />
+                               </Button>
                              </div>
                           </div>
                         </div>
@@ -684,5 +833,6 @@ export default function FlippingPage() {
         </CardContent>
       </Card>
     </div>
+    </TooltipProvider>
   )
 }

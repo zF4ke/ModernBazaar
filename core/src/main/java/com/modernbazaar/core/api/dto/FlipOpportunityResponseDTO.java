@@ -33,6 +33,7 @@ public record FlipOpportunityResponseDTO(
         // risco
         Double  riskScore,              // 0..1
         Boolean risky,
+        String  riskNote,               // nota explicativa do risco
         // score único (eficiência)
         double  score
 ) {}

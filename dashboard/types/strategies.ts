@@ -18,6 +18,7 @@ export interface FlipOpportunity {
   reasonableProfitPerHour?: number
   riskScore?: number
   risky?: boolean
+  riskNote?: string // nota textual de risco para tooltip
   score: number
   suggestedBuyFillHours?: number
   suggestedSellFillHours?: number
@@ -31,6 +32,11 @@ export interface FlippingQuery {
   minBuy?: number
   maxBuy?: number
   minSpread?: number
+  maxTime?: number
+  minUnitsPerHour?: number
+  maxUnitsPerHour?: number
+  disableCompetitionPenalties?: boolean
+  disableRiskPenalties?: boolean
   sort?: string
   budget?: number
   horizonHours?: number

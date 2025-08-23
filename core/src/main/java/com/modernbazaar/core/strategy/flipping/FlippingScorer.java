@@ -18,82 +18,46 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * FlippingScorer — score único de eficiência para Bazaar Flipping.
+ * FlippingScorer — score simplificado de eficiência para Bazaar Flipping.
  *
  * Objetivo
- * - Rankear oportunidades que maximizam lucro executável por unidade de tempo e capital,
- *   com penalização explícita por competição e risco (desvio vs referências),
- *   respeitando limitações de budget e escoamento (horizonte).
+ * - Rankear oportunidades que maximizam lucro por hora, com ajustes leves por risco e competição.
+ * - Priorizar itens com alto lucro por hora, penalizando levemente itens arriscados ou competitivos.
  *
  * Contrato (alto nível)
- * - Entrada: preços instantâneos, médias de fluxo (instaBought/instaSold), churn (created orders),
- *   referências de preço (weighted 2% e médias de fecho), budget e horizonte (opcionais).
- * - Saída: score escalar (double >= 0), além de métricas explicativas (spread, spreadPct, risco).
+ * - Entrada: preços instantâneos, médias de fluxo, referências de preço, budget e horizonte (opcionais).
+ * - Saída: score escalar (double >= 0) baseado principalmente no lucro por hora.
  * - Monotonia desejada (ceteris paribus):
- *   • ↑ spread  ⇒ ↑ score
- *   • ↑ demanda/supply (flow) ⇒ ↑ score
- *   • ↑ churn (competição) ⇒ ↓ score
- *   • ↑ risco (desvio) ⇒ ↓ score
- *   • ↑ budget (até saturar escoamento) ⇒ ↑ score (sublinear via logs)
- *   • ↑ horizonte ⇒ ↑ score (até saturar pela procura)
+ *   • ↑ lucro/hora ⇒ ↑ score (principalmente via log scaling)
+ *   • ↑ spread % ⇒ ↑ score (bônus secundário)
+ *   • ↑ risco ⇒ ↓ score (penalização moderada)
+ *   • ↑ competição ⇒ ↓ score (penalização leve)
+ *   • ↓ liquidez ⇒ ↓ score (fator multiplicativo)
  *
- * Definições dos termos (unidades entre parêntesis)
- * - instantBuyPrice (coins/u): menor sell order (custo de entrada via instabuy)
- * - instantSellPrice (coins/u): maior buy order (receita de saída via instasell)
- * - Para Buy Order → Sell Order: entrada ≈ instantSellPrice; saída ≈ instantBuyPrice
- * - spread = max(0, instantBuyPrice - instantSellPrice) (coins/u)
- * - spreadPct = spread / instantSellPrice (adimensional)
- * - avgInstaBought (u/h) ~ procura/h; avgInstaSold (u/h) ~ oferta/h
- * - flowAvg = avgInstaBought + avgInstaSold (u/h)
- * - throughputPerHour = min(avgInstaBought, avgInstaSold) (u/h)
- * - churnBuyAvg, churnSellAvg (ordens/h): ordens criadas; proxy de guerra/undercuts
- * - churn = churnBuyAvg + churnSellAvg (ordens/h)
- * - compPenalty = 1 + k_c * churn (adimensional; k_c pequeno p/ penalização suave)
- * - riskScore ∈ [0,1] (RiskToolkit): desvio relativo dos preços instantâneos vs referências
- * - riskAdj = 1 + k_r * riskScore (adimensional; k_r controla severidade)
- * - budget (coins): capital disponível; horizonHours (h): janela temporal considerada
- * - maxAffordable (u) = floor(budget / instantBuyPrice)
- * - maxThroughput (u) = floor(avgInstaBought * horizonHours)
- * - qty (u) = min(maxAffordable, maxThroughput) se budget>0; caso contrário ~ floor(min(demanda, supply))
- * - profitPerItem (coins/u) = spread * (1 - riskScore)
- * - totalProfit (coins) = profitPerItem * qty
- * - instasellRatio = (avgInstaBought + 1) / (avgInstaSold + 1) (cap 3.0) — evita divisão por zero e exageros
- * - beta base = log10(totalProfit + 1) * log10(profitPerItem + 1) * min(instasellRatio, 3)
- *             * (1 / log10(D + 1)), onde D = maxAffordable se budget>0, senão qty (suaviza escala)
- * - velocityBoost = ln(1 + avgInstaBought + avgInstaSold)
- * - compAdj = 1 / compPenalty
- * - score final = (beta * velocityBoost * compAdj) / riskAdj
+ * Fórmula simplificada - BACK TO BASICS
+ * 1. profitScore = log10(profitPerHour + 1) - DOMINANT FACTOR
+ * 2. spreadBonus = min(0.8, spreadPct * 12) - moderate bonus (cap ~6.7% spread)
+ * 3. baseScore = profitScore * (1 + spreadBonus)
+ * 4. riskPenalty = riskScore * 0.1 (or 0 if disabled) - very light penalty (max 10% reduction)
+ * 5. competitionPenalty = min(0.05, churn * 0.0005) (or 0 if disabled) - very light penalty
+ * 6. liquidityFactor = min(1.0, throughputPerHour / 8.0) - need 8 units/hour minimum
+ * 7. finalScore = baseScore * (1 - riskPenalty) * (1 - competitionPenalty) * liquidityFactor
  *
- * Passos do cálculo (score)
- * 1) Guard-rails: se instantBuyPrice <= 0, score=0; NaN/Inf são normalizados para 0.
- * 2) spread, spreadPct.
- * 3) flowAvg (velocidade) e churn (competição) ⇒ compPenalty.
- * 4) RiskToolkit.assessPriceDeviation ⇒ riskScore e riskAdj.
- * 5) Gating: se demanda ~0 e flow ~0, score=0 (evita outliers sem mercado).
- * 6) Capacidade: qty via budget/horizonte vs procura; sem budget, qty≈min(demanda, supply).
- * 7) profitPerItem e totalProfit ajustados a risco.
- * 8) instasellRatio capped.
- * 9) beta base com logs (sublinear; evita dominação por números gigantes).
- * 10) Ajustes: velocityBoost (mais fluxo ⇒ mais score), compAdj (mais competição ⇒ menos score).
- * 11) Penalização final por risco: dividir por riskAdj.
- * 12) Clamp final se não finito ou < 0 ⇒ 0.
+ * Scoring Toggles:
+ * - disableRiskPenalties: Completely removes risk penalty from calculation
+ * - disableCompetitionPenalties: Completely removes competition penalty from calculation
+ * - These allow seeing raw profit potential without risk/competition considerations
  *
  * Razões de design
- * - churn (created*): mede dinamismo competitivo (undercuts) melhor que "active*" (estoque parado).
- * - logs: estabilizam valores extremos e promovem comparabilidade cross-item.
- * - ratio capado: evita favorecer artificialmente mercados unilaterais muito rasos.
- * - riskScore: protege contra regimes/manipulação (desvios grandes reduzem score).
+ * - Simplicidade: foco no que realmente importa - lucro por hora
+ * - Log scaling: distribui scores de forma mais equilibrada
+ * - Penalizações leves: não mata oportunidades boas com competição ou risco moderado
+ * - Liquidez mínima: evita itens com volume muito baixo
  *
  * Edge cases tratados
- * - Preço inválido/zero ⇒ score=0.
- * - Demanda ~0 e flow ~0 ⇒ score=0 (mesmo com spread alto).
- * - Sem médias 48h: chamar atenção para fallback no serviço (buy/sellMovingWeek/168) para preencher demanda/supply.
- * - Budget ausente: qty proporcional ao ritmo (min(demanda, supply)) para priorizar eficiência por hora.
- * - Horizons muito grandes: ganha até saturar procura; logs evitam inflação exagerada.
- *
- * Calibração
- * - competitionCoeff (k_c) default 0.005; riskPenaltyCoeff (k_r) default 1.5.
- * - Ajuste-os por dados reais; objetivos: estabilidade de ranking e aderência a lucro/h executável.
+ * - Preço inválido/zero ⇒ score=0
+ * - Throughput < 1 u/h ⇒ score=0
+ * - Valores não finitos ⇒ score=0
  */
 @Component
 public class FlippingScorer {
@@ -161,7 +125,7 @@ public class FlippingScorer {
     ) {}
 
     /**
-     * Implementação do score (ver especificação acima).
+     * Implementação do score simplificado.
      * Retorna:
      * - spread (coins/u)
      * - spreadPct (adimensional)
@@ -176,6 +140,7 @@ public class FlippingScorer {
             double spreadPct,
             double riskScore,
             boolean risky,
+            String riskNote,
             // execução e lucro
             double throughputPerHour,
             double plannedUnitsPerHour,
@@ -192,30 +157,38 @@ public class FlippingScorer {
     ) {}
 
     public Score score(Inputs in) {
+        return scoreWithToggles(in, Boolean.FALSE, Boolean.FALSE);
+    }
+
+    public Score scoreWithToggles(Inputs in, Boolean disableRiskPenalties, Boolean disableCompetitionPenalties) {
         // Guard-rails básicos
         double ib = in.instantBuyPrice;
         double is = in.instantSellPrice;
         if (!Double.isFinite(ib) || !Double.isFinite(is) || ib <= 0 || is <= 0) {
-            return new Score(0.0, 0.0, 0.0, false, 0.0,0.0,0.0,0.0,0.0,0.0, null,null,null, 0.0);
+            return new Score(0.0, 0.0, 0.0, false, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
         }
 
         // Buy Order → Sell Order: spread = ask - bid = instantBuy - instantSell
         double spread = Math.max(0.0, ib - is);
         if (spread <= 0.0) {
-            return new Score(0.0, 0.0, 0.0, false, 0.0,0.0,0.0,0.0,0.0,0.0, null,null,null, 0.0);
+            return new Score(0.0, 0.0, 0.0, false, null, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
         }
         // % sobre o preço de entrada (buy order ≈ instantSell)
         double spreadPct = is > 0 ? (spread / is) : 0.0;
 
         double demandPerHour = nonNeg(in.avgInstaBought);
         double supplyPerHour = nonNeg(in.avgInstaSold);
-        // double flowAvg = Double.isFinite(in.flowAvg) ? Math.max(0.0, in.flowAvg) : (demandPerHour + supplyPerHour); // não usado diretamente no score
         double throughputPerHour = Math.min(demandPerHour, supplyPerHour);
 
         double churnBuy = Math.max(0.0, in.churnBuyAvg);
         double churnSell = Math.max(0.0, in.churnSellAvg);
-        double churn = churnBuy + churnSell;
-        double compPenalty = 1.0 + (competitionCoeff * churn);
+        double churn = churnBuy + churnSell; // mantido se precisar diagnosticar
+        // Novo: considerar lado dominante e desequilíbrio
+        double churnMax = Math.max(churnBuy, churnSell);
+        double churnMin = Math.min(churnBuy, churnSell);
+        double imbalance = churnMax - churnMin;
+        double imbalanceFactor = churnMax > 0 ? (imbalance / (churnMax + 1.0)) : 0.0; // ∈ [0, ~1)
+        double effectiveChurn = churnMax * (1.0 + 0.5 * imbalanceFactor); // amplifica se forte desequilíbrio
 
         // Risco vs referências
         RiskAssessment ra = riskToolkit.assessPriceDeviation(
@@ -225,44 +198,39 @@ public class FlippingScorer {
         );
         double riskScore = clamp01(ra.riskScore());
         boolean risky = ra.manipulatedLikely();
-        double riskAdj = 1.0 + (riskPenaltyCoeff * riskScore);
+        String riskNote = ra.note();
 
-        // Gating de liquidez/mercado: precisa de throughput > 0
-        if (throughputPerHour <= 0.0) {
-            return new Score(spread, spreadPct, riskScore, risky, 0.0,0.0,0.0,0.0,0.0,0.0, null,null,null, 0.0);
+        // Gating de liquidez/mercado: precisa de throughput mínimo
+        if (throughputPerHour < 1.0) {
+            return new Score(spread, spreadPct, riskScore, risky, riskNote, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, null, null, null, 0.0);
         }
 
-        // Capacidade via budget/horizonte (horizonHours como double; aceitar frações de hora)
+        // Capacidade via budget/horizonte
         double budget = in.budget != null && Double.isFinite(in.budget) ? Math.max(0.0, in.budget) : 0.0;
         double horizon = in.horizonHours != null && Double.isFinite(in.horizonHours) && in.horizonHours > 0.0 ? in.horizonHours : 1.0;
 
         double qty;
-        double D; // escala para logs
         if (budget > 0.0) {
-            double maxAffordable = Math.floor(budget / is); // entrada real ≈ instantSell
+            double maxAffordable = Math.floor(budget / is);
             double maxThroughput = Math.floor(throughputPerHour * horizon);
             if (!Double.isFinite(maxThroughput)) maxThroughput = 0.0;
             qty = Math.max(0.0, Math.min(maxAffordable, maxThroughput));
-            D = Math.max(1.0, maxAffordable);
         } else {
-            // double base = throughputPerHour; // redundante
             qty = Math.max(0.0, Math.floor(throughputPerHour));
-            D = Math.max(1.0, qty);
         }
 
         double plannedUnitsPerHour = qty / Math.max(1.0, horizon);
-
-        // Lucro ajustado a risco
         double profitPerItem = Math.max(0.0, spread * (1.0 - riskScore));
         double profitPerHour = Math.max(0.0, profitPerItem * plannedUnitsPerHour);
 
-        // Penalização por desequilíbrio: preferir supply >= demand para BO→SO
+        // Balance adjustment: prefer supply >= demand
         double balanceAdj;
-        if (demandPerHour <= 0.0 && supplyPerHour > 0.0) balanceAdj = 0.5; // saída incerta
+        if (demandPerHour <= 0.0 && supplyPerHour > 0.0) balanceAdj = 0.5;
         else if (supplyPerHour <= 0.0) balanceAdj = 0.0;
-        else balanceAdj = Math.min(1.0, supplyPerHour / (demandPerHour + 1.0)); // ∈(0,1]
+        else balanceAdj = Math.min(1.0, supplyPerHour / (demandPerHour + 1.0));
 
-        // Suggested units: quota realizável considerando competição e equilíbrio
+        // Suggested units considering competition and balance
+        double compPenalty = 1.0 + (competitionCoeff * effectiveChurn);
         double baseQuota = Math.min(plannedUnitsPerHour, throughputPerHour * balanceAdj);
         double suggestedUnitsPerHour = Math.max(0.0, baseQuota / Math.max(1e-6, compPenalty));
         double reasonableProfitPerHour = Math.max(0.0, profitPerItem * suggestedUnitsPerHour);
@@ -279,43 +247,35 @@ public class FlippingScorer {
             }
         }
 
-        // Liquidity weight: 0..1 suavizado, penaliza throughput baixo (ex.: 1/h)
-        double wLiqu = 0.0;
-        if (throughputPerHour > 0.0) {
-            double num = throughputPerHour - minThroughputFloor;
-            double den = Math.max(1e-9, goodThroughputRef - minThroughputFloor);
-            wLiqu = clamp01(num / den);
-            // acentua penalização para valores perto do piso
-            wLiqu = wLiqu * wLiqu;
-        }
+        // SIMPLIFIED SCORING FORMULA - BACK TO BASICS
+        // 1. Primary factor: profit per hour (log scaled for better distribution)
+        double profitScore = safeLog10(reasonableProfitPerHour + 1.0);
 
-        // Ajustes adicionais para balancear RPH com ETA total, competição e risco
-        // ETA: quanto menor o total (comprar+vender), maior o multiplicador (tau define meia-vida)
-        double etaAdj;
-        if (suggestedTotalFillHours == null) {
-            etaAdj = 1.0; // sem info, neutro
-        } else {
-            double tau = 2.0; // ~2h → 0.5x
-            etaAdj = 1.0 / (1.0 + Math.max(0.0, suggestedTotalFillHours) / tau);
-        }
-        // Competição: já afeta suggestedUnitsPerHour; aplicar ajuste suave extra para desempates
-        double compAdjSoft = Math.pow(1.0 / Math.max(1e-6, compPenalty), 0.5); // raiz para não dupla-penalizar forte
+        // 2. Secondary factor: spread percentage (moderate bonus)
+        double spreadBonus = Math.min(0.8, spreadPct * 12.0); // Cap at 0.8 for ~6.7% spread
 
-        // Score prioriza o lucro/h razoável (dominante), com ajustes suaves por PPI e capacidade
-        double logRph = safeLog10(reasonableProfitPerHour + 1.0);
-        double logPpi = safeLog10(profitPerItem + 1.0);
-        double denomAdj = safeLog10(D + 1.0);
-        // RPH domina; PPI e capacidade entram como reforços fracos
-        double baseScore = logRph * (1.0 + 0.2 * logPpi) * (1.0 + 0.1 * denomAdj);
-        // aplicar multiplicadores e divisores finais
-        double score = (baseScore * etaAdj * compAdjSoft * wLiqu) / Math.max(1e-6, riskAdj);
-        if (!Double.isFinite(score) || score < 0) score = 0.0;
+        // 3. Risk penalty: can be disabled entirely
+        double riskPenalty = Boolean.TRUE.equals(disableRiskPenalties) ? 0.0 : (riskScore * 0.1); // Max 10% reduction, or 0 if disabled
+
+        // 4. Competition penalty: can be disabled entirely
+        double competitionPenalty = Boolean.TRUE.equals(disableCompetitionPenalties) ? 0.0 : Math.min(0.10, effectiveChurn * 0.0007); // mais sensível ao lado dominante
+
+        // 5. Liquidity factor: simple minimum requirement
+        double liquidityFactor = Math.min(1.0, throughputPerHour / 8.0); // Need 8 units/hour minimum
+
+        // Calculate final score - profit dominates, others are minor adjustments
+        double baseScore = profitScore * (1.0 + spreadBonus);
+        double adjustedScore = baseScore * (1.0 - riskPenalty) * (1.0 - competitionPenalty) * liquidityFactor;
+
+        // Ensure score is finite and non-negative
+        double finalScore = Double.isFinite(adjustedScore) && adjustedScore > 0 ? adjustedScore : 0.0;
 
         return new Score(
                 spread,
                 spreadPct,
                 riskScore,
                 risky,
+                riskNote,
                 throughputPerHour,
                 plannedUnitsPerHour,
                 suggestedUnitsPerHour,
@@ -325,7 +285,7 @@ public class FlippingScorer {
                 suggestedBuyFillHours,
                 suggestedSellFillHours,
                 suggestedTotalFillHours,
-                score
+                finalScore
         );
     }
 
@@ -333,6 +293,18 @@ public class FlippingScorer {
     public List<FlipOpportunityResponseDTO> list(BazaarItemFilterDTO filter,
                                                  Double budget,
                                                  Double horizonHours) {
+        return listWithAdvancedFilters(filter, budget, horizonHours, null, null, null, false, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FlipOpportunityResponseDTO> listWithAdvancedFilters(BazaarItemFilterDTO filter,
+                                                                     Double budget,
+                                                                     Double horizonHours,
+                                                                     Double maxTime,
+                                                                     Double minUnitsPerHour,
+                                                                     Double maxUnitsPerHour,
+                                                                     Boolean disableCompetitionPenalties,
+                                                                     Boolean disableRiskPenalties) {
         // 1) Snapshots mais recentes conforme filtro
         List<BazaarItemSnapshot> snaps = snapRepo.searchLatest(
                 filter.q(), filter.minSell(), filter.maxSell(),
@@ -392,7 +364,7 @@ public class FlippingScorer {
                     horizonHours
             );
 
-            Score sc = score(in);
+            Score sc = scoreWithToggles(in, disableRiskPenalties, disableCompetitionPenalties);
 
             double spread = sc.spread();
             double spreadPct = sc.spreadPct();
@@ -424,13 +396,47 @@ public class FlippingScorer {
                     sc.suggestedTotalFillHours(),
                     sc.riskScore(),
                     sc.risky(),
+                    sc.riskNote(),
                     sc.score()
             ));
         }
 
-        // 5) Ordenar por score desc
+        // 5) Aplicar filtros avançados (post-scoring)
+        out = applyAdvancedFilters(out, maxTime, minUnitsPerHour, maxUnitsPerHour);
+
+        // 6) Ordenar por score desc
         out.sort(Comparator.comparingDouble(FlipOpportunityResponseDTO::score).reversed());
         return out;
+    }
+
+    private List<FlipOpportunityResponseDTO> applyAdvancedFilters(
+            List<FlipOpportunityResponseDTO> opportunities,
+            Double maxTime,
+            Double minUnitsPerHour,
+            Double maxUnitsPerHour) {
+
+        return opportunities.stream()
+                .filter(opp -> {
+                    // Filter by maximum total time
+                    if (maxTime != null && opp.suggestedTotalFillHours() != null) {
+                        if (opp.suggestedTotalFillHours() > maxTime) return false;
+                    }
+
+                    // Filter by minimum units per hour
+                    if (minUnitsPerHour != null && opp.suggestedUnitsPerHour() != null) {
+                        if (opp.suggestedUnitsPerHour() < minUnitsPerHour) return false;
+                    }
+
+                    // Filter by maximum units per hour
+                    if (maxUnitsPerHour != null && opp.suggestedUnitsPerHour() != null) {
+                        if (opp.suggestedUnitsPerHour() > maxUnitsPerHour) return false;
+                    }
+
+
+
+                    return true;
+                })
+                .collect(Collectors.toList());
     }
 
     private Map<String, String> preloadNames(Set<String> ids) {

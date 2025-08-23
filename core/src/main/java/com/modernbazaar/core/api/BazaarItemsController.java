@@ -92,4 +92,18 @@ public class BazaarItemsController {
 
         return service.getLast48HourAverage(productId);
     }
+
+    /* ---------- LATEST SNAPSHOTS ---------- */
+
+    @GetMapping("/{productId}/snapshots")
+    @Operation(summary = "Latest snapshots",
+            description = "Get the latest snapshots from the last hour that haven't been processed into hourly summaries yet.")
+    @RateLimiter(name = "bazaarEndpoint")
+    public List<BazaarItemHourSummaryResponseDTO> getLatestSnapshots(
+            @Parameter(in = ParameterIn.PATH, required = true)
+            @PathVariable String productId,
+            @RequestParam(defaultValue = "5") int limit) {
+
+        return service.getLatestSnapshots(productId, limit);
+    }
 }

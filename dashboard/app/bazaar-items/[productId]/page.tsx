@@ -29,7 +29,7 @@ import {
   Scale,
   Timer
 } from "lucide-react"
-import type { BazaarItemLiveView, BazaarItemHourSummary, BazaarItemHourAverage } from "@/types/bazaar"
+import type { BazaarItemLiveView, BazaarItemHourSummary, BazaarItemHourAverage, BazaarItemSnapshot } from "@/types/bazaar"
 import { fetchWithBackendUrl } from "@/lib/api"
 import HistoryChart from "../../../components/history-chart"
 
@@ -65,6 +65,17 @@ async function fetchBazaarItemAverage(productId: string): Promise<BazaarItemHour
   const response = await fetchWithBackendUrl(`/api/bazaar/items/${productId}/average`)
   if (!response.ok) {
     const errorMessage = `Failed to fetch bazaar item average: ${response.status}`
+    const error = new Error(errorMessage)
+    ;(error as any).status = response.status
+    throw error
+  }
+  return response.json()
+}
+
+async function fetchBazaarItemSnapshots(productId: string, limit: number = 5): Promise<BazaarItemHourSummary[]> {
+  const response = await fetchWithBackendUrl(`/api/bazaar/items/${productId}/snapshots?limit=${limit}`)
+  if (!response.ok) {
+    const errorMessage = `Failed to fetch bazaar item snapshots: ${response.status}`
     const error = new Error(errorMessage)
     ;(error as any).status = response.status
     throw error
@@ -180,6 +191,40 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
     refetchOnWindowFocus: false, // Don't refetch when window gains focus
     refetchOnReconnect: false, // Don't refetch on reconnect
   })
+
+  const {
+    data: snapshots,
+    isLoading: snapshotsLoading,
+    error: snapshotsError,
+  } = useQuery({
+    queryKey: ["bazaar-item-snapshots", resolvedParams.productId],
+    queryFn: () => fetchBazaarItemSnapshots(resolvedParams.productId, 5),
+    enabled: !!item,
+    staleTime: 30000, // 30 seconds - snapshots change frequently
+    retry: (failureCount, error) => {
+      // Max 3 retries, but don't retry on 404s
+      if (failureCount >= 3) return false
+      if (error instanceof Error && (
+        error.message.includes('404') || 
+        (error as any).status === 404
+      )) return false
+      return true
+    },
+    retryDelay: 3000, // Wait 3 seconds before retry
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnReconnect: false, // Don't refetch on reconnect
+  })
+
+  // Combine history with latest snapshots for real-time data
+  const combinedHistory = useMemo(() => {
+    if (!history || !snapshots) return history || []
+    
+    // Snapshots are now returned as hour summaries, so we can combine them directly
+    // Combine and sort by time (newest first)
+    return [...snapshots, ...history].sort((a, b) => 
+      new Date(b.hourStart).getTime() - new Date(a.hourStart).getTime()
+    )
+  }, [history, snapshots])
 
   if (isLoading) {
     return (
@@ -450,7 +495,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                 <BarChart3 className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Price History</CardTitle>
               </div>
-              <CardDescription>Instant buy and sell prices over time</CardDescription>
+                             <CardDescription>Instant buy and sell prices over time (includes real-time snapshots from the last hour)</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -492,7 +537,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
           </div>
         </CardHeader>
         <CardContent>
-          {historyLoading ? (
+                     {historyLoading || snapshotsLoading ? (
             <div className="h-[400px] flex items-center justify-center">
               <div className="text-center">
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
@@ -507,8 +552,8 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                 <p className="text-xs text-muted-foreground mt-1">Try a different time range</p>
               </div>
             </div>
-          ) : history && history.length > 0 ? (
-            <HistoryChart data={history} />
+          ) : combinedHistory && combinedHistory.length > 0 ? (
+            <HistoryChart data={combinedHistory} />
           ) : (
             <div className="h-[400px] flex items-center justify-center">
               <div className="text-center">

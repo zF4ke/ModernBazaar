@@ -6,11 +6,21 @@ public record BazaarItemFilterDTO(
         Double maxSell,
         Double minBuy,
         Double maxBuy,
-        Double minSpread
+        Double minSpread,
+        Double maxTime,
+        Double minUnitsPerHour,
+        Double maxUnitsPerHour
 ) {
     public static BazaarItemFilterDTO of(String q, Double minSell, Double maxSell,
                                          Double minBuy, Double maxBuy, Double minSpread) {
-        return new BazaarItemFilterDTO(emptyToNull(q), minSell, maxSell, minBuy, maxBuy, minSpread);
+        return new BazaarItemFilterDTO(emptyToNull(q), minSell, maxSell, minBuy, maxBuy, minSpread, null, null, null);
+    }
+
+    public static BazaarItemFilterDTO of(String q, Double minSell, Double maxSell,
+                                         Double minBuy, Double maxBuy, Double minSpread,
+                                         Double maxTime, Double minUnitsPerHour, Double maxUnitsPerHour) {
+        return new BazaarItemFilterDTO(emptyToNull(q), minSell, maxSell, minBuy, maxBuy, minSpread,
+                                      maxTime, minUnitsPerHour, maxUnitsPerHour);
     }
 
     /**
