@@ -738,7 +738,7 @@ export default function FlippingPage() {
                                  <div className="flex items-center justify-between border-t border-blue-500/20 pt-1">
                                    <span>Total investment needed:</span>
                                    <span className="font-mono text-blue-300">
-                                     {format((query.horizonHours || 1) * Math.floor(o.suggestedUnitsPerHour || 0) * buy, 0)} coins
+                                     {format((query.horizonHours || 1) * Math.round(o.suggestedUnitsPerHour || 0) * buy, 0)} coins
                                    </span>
                                  </div>
                                </div>
@@ -767,6 +767,30 @@ export default function FlippingPage() {
                                  <div>• Once items are bought, place sell orders at <span className="font-mono text-emerald-300">{format(sell, 2)} coins</span> each</div>
                                  <div>• Expected fill time: <span className="text-emerald-300">{(o as any).suggestedSellFillHours ? formatTime((o as any).suggestedSellFillHours) : 'Unknown'}</span></div>
                                  <div>• Total expected time: <span className="text-emerald-300">{(o as any).suggestedTotalFillHours ? formatTime((o as any).suggestedTotalFillHours) : 'Unknown'}</span></div>
+                               </div>
+                             </div>
+
+                             {/* Step 4: Profit Setup */}
+                             <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                               <div className="flex items-center gap-2 mb-2">
+                                 <Calculator className="h-4 w-4 text-purple-400" />
+                                 <span className="font-medium text-purple-300">Step 4: Profit Setup</span>
+                               </div>
+                               <div className="text-xs text-muted-foreground space-y-1">
+                                 <div className="flex items-center justify-between">
+                                   <span>Per unit profit:</span>
+                                   <span className="font-mono text-purple-300">{format(sell - buy, 2)} coins</span>
+                                 </div>
+                                 <div className="flex items-center justify-between">
+                                   <span>Per hour profit:</span>
+                                   <span className="font-mono text-purple-300">{format(o.reasonableProfitPerHour, 0)} coins</span>
+                                 </div>
+                                 {query.horizonHours && (
+                                   <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
+                                     <span>Timeframe profit:</span>
+                                     <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours, 0)} coins</span>
+                                   </div>
+                                 )}
                                </div>
                              </div>
 

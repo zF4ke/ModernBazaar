@@ -182,7 +182,13 @@ public class FlippingScorer {
 
         double churnBuy = Math.max(0.0, in.churnBuyAvg);
         double churnSell = Math.max(0.0, in.churnSellAvg);
-        double churn = churnBuy + churnSell;
+        double churn = churnBuy + churnSell; // mantido se precisar diagnosticar
+        // Novo: considerar lado dominante e desequilíbrio
+        double churnMax = Math.max(churnBuy, churnSell);
+        double churnMin = Math.min(churnBuy, churnSell);
+        double imbalance = churnMax - churnMin;
+        double imbalanceFactor = churnMax > 0 ? (imbalance / (churnMax + 1.0)) : 0.0; // ∈ [0, ~1)
+        double effectiveChurn = churnMax * (1.0 + 0.5 * imbalanceFactor); // amplifica se forte desequilíbrio
 
         // Risco vs referências
         RiskAssessment ra = riskToolkit.assessPriceDeviation(
@@ -224,7 +230,7 @@ public class FlippingScorer {
         else balanceAdj = Math.min(1.0, supplyPerHour / (demandPerHour + 1.0));
 
         // Suggested units considering competition and balance
-        double compPenalty = 1.0 + (competitionCoeff * churn);
+        double compPenalty = 1.0 + (competitionCoeff * effectiveChurn);
         double baseQuota = Math.min(plannedUnitsPerHour, throughputPerHour * balanceAdj);
         double suggestedUnitsPerHour = Math.max(0.0, baseQuota / Math.max(1e-6, compPenalty));
         double reasonableProfitPerHour = Math.max(0.0, profitPerItem * suggestedUnitsPerHour);
@@ -252,7 +258,7 @@ public class FlippingScorer {
         double riskPenalty = Boolean.TRUE.equals(disableRiskPenalties) ? 0.0 : (riskScore * 0.1); // Max 10% reduction, or 0 if disabled
 
         // 4. Competition penalty: can be disabled entirely
-        double competitionPenalty = Boolean.TRUE.equals(disableCompetitionPenalties) ? 0.0 : Math.min(0.05, churn * 0.0005); // Very light penalty, or 0 if disabled
+        double competitionPenalty = Boolean.TRUE.equals(disableCompetitionPenalties) ? 0.0 : Math.min(0.10, effectiveChurn * 0.0007); // mais sensível ao lado dominante
 
         // 5. Liquidity factor: simple minimum requirement
         double liquidityFactor = Math.min(1.0, throughputPerHour / 8.0); // Need 8 units/hour minimum
