@@ -238,9 +238,12 @@ export default function FlippingPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium flex items-center gap-2">
                 <Timer className="h-4 w-4" />
-                Time Horizon
+                Time Horizon & Max Time
               </Label>
-                              <Select value={query.horizonHours?.toString() ?? "1"} onValueChange={(value) => updateQuery({ horizonHours: parseFloat(value) })}>
+                              <Select value={query.horizonHours?.toString() ?? "1"} onValueChange={(value) => {
+                                const hours = parseFloat(value);
+                                updateQuery({ horizonHours: hours, maxTime: hours });
+                              }}>
                   <SelectTrigger className="h-12 text-sm">
                     <SelectValue placeholder="Select timeframe" />
                 </SelectTrigger>
@@ -254,7 +257,7 @@ export default function FlippingPage() {
                     <SelectItem value="168">1 week</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">How long you plan to hold items</p>
+              <p className="text-xs text-muted-foreground">How long you plan to hold items (also sets max completion time)</p>
                   </div>
           </div>
 
@@ -341,23 +344,7 @@ export default function FlippingPage() {
                 {/* New Advanced Filters */}
                 <Separator />
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Max Total Time (hours)
-                    </Label>
-                    <Input
-                      type="number"
-                      placeholder="e.g. 1.5"
-                      value={query.maxTime || ""}
-                      onChange={(e) => updateQuery({ maxTime: e.target.value ? parseFloat(e.target.value) : undefined })}
-                      className="h-10"
-                      min="0"
-                      step="0.25"
-                    />
-                    <p className="text-xs text-muted-foreground">Hide items that take longer than this to complete</p>
-                  </div>
+                <div className="grid gap-4 md:grid-cols-2">
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium flex items-center gap-2">
@@ -537,8 +524,8 @@ export default function FlippingPage() {
                  const competitionScore = o.competitionPerHour ?? 0
                  const competitionBadge = competitionScore >= 1000 ? strongRed : competitionScore >= 500 ? strongAmber : strongGreen
 
-                const profitColor = (o.reasonableProfitPerHour ?? 0) >= 900000 
-                  ? 'text-emerald-400' 
+                const profitColor = (o.reasonableProfitPerHour ?? 0) * (query.horizonHours || 1) >= 900000
+                  ? 'text-emerald-400'
                   : 'text-foreground'
                 
                 const isExpanded = expandedCard === o.productId
@@ -583,11 +570,9 @@ export default function FlippingPage() {
                         <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <Link href={href}>
-                              <div className="font-semibold truncate hover:underline hover:decoration-2 transition-all text-base cursor-pointer">
-                                {o.displayName || o.productId}
+                            <div className="font-semibold truncate text-base">
+                              {o.displayName || o.productId}
                             </div>
-                            </Link>
                             <button
                               aria-label={fav ? 'Unfavorite' : 'Favorite'}
                               aria-pressed={fav}
@@ -597,7 +582,11 @@ export default function FlippingPage() {
                               <Star className={`h-4 w-4 ${fav ? 'fill-amber-400' : ''}`} />
                             </button>
                            </div>
-                           <div className="text-xs text-muted-foreground truncate">{o.productId}</div>
+                           <Link href={href}>
+                             <div className="text-xs text-muted-foreground truncate hover:underline hover:decoration-2 transition-all cursor-pointer">
+                               {o.productId}
+                             </div>
+                           </Link>
                          </div>
                                                   {/* Move score to corner with subtle expand indicator */}
                          <div className="text-right">
@@ -615,7 +604,12 @@ export default function FlippingPage() {
                          <div className="flex items-center justify-between mb-2">
                            <div className="flex items-center gap-1">
                              <Activity className="h-4 w-4 text-muted-foreground" />
-                             <span className="text-sm font-medium">Expected Profit</span>
+                             <span className="text-sm font-medium">
+                               Expected Profit
+                               {query.horizonHours && query.horizonHours !== 1 && (
+                                 <span className="text-muted-foreground"> ({format(query.horizonHours, 1)}h)</span>
+                               )}
+                             </span>
                            </div>
                            <div className="flex items-center gap-1">
                              <Package className="h-4 w-4 text-muted-foreground" />
@@ -625,7 +619,12 @@ export default function FlippingPage() {
                            </div>
                          </div>
                          <div className={`text-2xl font-bold mb-1 ${profitColor}`}>
-                           {format(o.reasonableProfitPerHour, 0)} coins/hr
+                           {format((o.reasonableProfitPerHour || 0) * (query.horizonHours || 1), 0)} coins
+                           {query.horizonHours && query.horizonHours !== 1 && (
+                             <span className="text-sm text-muted-foreground ml-1">
+                               ({format(query.horizonHours, 1)}h)
+                             </span>
+                           )}
                          </div>
                          
                          {/* ETA Information */}
