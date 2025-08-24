@@ -59,6 +59,7 @@ export default function FlippingPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [pinFavoritesToTop, setPinFavoritesToTop] = useState(false)
+  const [bazaarTaxRate, setBazaarTaxRate] = useState(0.0125) // Default 1.25%
 
   // persisted favorites
   const [favs, setFavs] = useState<Set<string>>(new Set())
@@ -79,6 +80,78 @@ export default function FlippingPage() {
     return next
   })
 
+  // Flag to prevent budget sync during loading
+  const [isLoadingSetup, setIsLoadingSetup] = useState(true)
+
+  // persisted trading setup
+  useEffect(() => {
+    try {
+      const savedSetup = localStorage.getItem("tradingSetup")
+      if (savedSetup) {
+        const parsed = JSON.parse(savedSetup)
+
+        // Set all query state at once
+        setQuery(prev => ({
+          ...prev,
+          sort: parsed.sort,
+          limit: parsed.limit,
+          budget: parsed.budget,
+          horizonHours: parsed.horizonHours,
+          disableCompetitionPenalties: parsed.disableCompetitionPenalties,
+          disableRiskPenalties: parsed.disableRiskPenalties,
+          maxTime: parsed.maxTime,
+          minUnitsPerHour: parsed.minUnitsPerHour,
+          maxUnitsPerHour: parsed.maxUnitsPerHour,
+        }))
+
+        // Set budget input to match the saved budget
+        if (parsed.budget) {
+          setBudgetInput(new Intl.NumberFormat().format(parsed.budget))
+        } else {
+          setBudgetInput("")
+        }
+
+        // Set other states
+        if (parsed.pinFavoritesToTop !== undefined) {
+          setPinFavoritesToTop(parsed.pinFavoritesToTop)
+        }
+        if (parsed.bazaarTaxRate !== undefined) {
+          setBazaarTaxRate(parsed.bazaarTaxRate)
+        }
+      }
+    } catch {} finally {
+      // Allow budget sync after loading is complete
+      setTimeout(() => setIsLoadingSetup(false), 100)
+    }
+  }, [])
+
+  // Save budget directly to localStorage when it changes
+  useEffect(() => {
+    try {
+      const currentSetup = JSON.parse(localStorage.getItem("tradingSetup") || "{}")
+      currentSetup.budget = query.budget
+      localStorage.setItem("tradingSetup", JSON.stringify(currentSetup))
+    } catch {}
+  }, [query.budget])
+
+  // Save other settings to localStorage (preserving budget)
+  useEffect(() => {
+    try {
+      const currentSetup = JSON.parse(localStorage.getItem("tradingSetup") || "{}")
+      currentSetup.sort = query.sort
+      currentSetup.limit = query.limit
+      currentSetup.horizonHours = query.horizonHours
+      currentSetup.bazaarTaxRate = bazaarTaxRate
+      currentSetup.disableCompetitionPenalties = query.disableCompetitionPenalties
+      currentSetup.disableRiskPenalties = query.disableRiskPenalties
+      currentSetup.maxTime = query.maxTime
+      currentSetup.minUnitsPerHour = query.minUnitsPerHour
+      currentSetup.maxUnitsPerHour = query.maxUnitsPerHour
+      currentSetup.pinFavoritesToTop = pinFavoritesToTop
+      localStorage.setItem("tradingSetup", JSON.stringify(currentSetup))
+    } catch {}
+  }, [query.sort, query.limit, query.horizonHours, bazaarTaxRate, query.disableCompetitionPenalties, query.disableRiskPenalties, query.maxTime, query.minUnitsPerHour, query.maxUnitsPerHour, pinFavoritesToTop])
+
   // debounced search
   const [searchText, setSearchText] = useState("")
   const debouncedSearch = useDebounce(searchText, 300)
@@ -87,14 +160,16 @@ export default function FlippingPage() {
   const [budgetInput, setBudgetInput] = useState("")
   const debouncedBudget = useDebounce(budgetInput, 500)
 
-  // Sync budget input with query
+  // Sync budget input with query (only after loading is complete)
   useEffect(() => {
-    if (query.budget) {
-      setBudgetInput(new Intl.NumberFormat().format(query.budget))
-    } else {
-      setBudgetInput("")
+    if (!isLoadingSetup) {
+      if (query.budget) {
+        setBudgetInput(new Intl.NumberFormat().format(query.budget))
+      } else {
+        setBudgetInput("")
+      }
     }
-  }, [query.budget])
+  }, [query.budget, isLoadingSetup])
 
   const finalQuery: FlippingQuery = useMemo(() => {
     const result = {
@@ -169,6 +244,15 @@ export default function FlippingPage() {
     return `${Math.round(hours / 24)}d`
   }
 
+  const getTaxRateValue = (rate: number): string => {
+    const percentage = rate * 100
+    if (percentage === 1.25) return "1.25"
+    if (percentage === 1.1) return "1.1"
+    if (percentage === 1.0) return "1"
+    // Default to 1.25% if current rate doesn't match any option
+    return "1.25"
+  }
+
   return (
     <TooltipProvider>
       <div className="space-y-4">
@@ -210,7 +294,7 @@ export default function FlippingPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Budget & Horizon - Primary */}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
                           <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Coins className="h-4 w-4" />
@@ -226,8 +310,11 @@ export default function FlippingPage() {
                     if (value) {
                       const numValue = parseInt(value);
                       setBudgetInput(new Intl.NumberFormat().format(numValue));
+                      // Update query state which will trigger localStorage save
+                      setQuery(prev => ({ ...prev, budget: numValue }));
                     } else {
                       setBudgetInput("");
+                      setQuery(prev => ({ ...prev, budget: undefined }));
                     }
                   }}
                   className="h-12 text-base"
@@ -259,6 +346,30 @@ export default function FlippingPage() {
               </Select>
               <p className="text-xs text-muted-foreground">How long you plan to hold items (also sets max completion time)</p>
                   </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                Bazaar Tax Rate
+              </Label>
+              <Select
+                value={getTaxRateValue(bazaarTaxRate)}
+                onValueChange={(value) => {
+                  const rate = parseFloat(value) / 100
+                  setBazaarTaxRate(rate)
+                }}
+              >
+                <SelectTrigger className="h-12 text-sm">
+                  <SelectValue placeholder="Select tax rate" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1.25" className="cursor-pointer">1.25%</SelectItem>
+                  <SelectItem value="1.1" className="cursor-pointer">1.1%</SelectItem>
+                  <SelectItem value="1" className="cursor-pointer">1.0%</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Tax applied when selling items</p>
+            </div>
           </div>
 
           {filtersOpen && (
@@ -619,7 +730,7 @@ export default function FlippingPage() {
                            </div>
                          </div>
                          <div className={`text-2xl font-bold mb-1 ${profitColor}`}>
-                           {format((o.reasonableProfitPerHour || 0) * (query.horizonHours || 1), 0)} coins
+                           {format((o.reasonableProfitPerHour || 0) * (query.horizonHours || 1) * (1 - bazaarTaxRate), 0)} coins
                            {query.horizonHours && query.horizonHours !== 1 && (
                              <span className="text-sm text-muted-foreground ml-1">
                                ({format(query.horizonHours, 1)}h)
@@ -764,6 +875,7 @@ export default function FlippingPage() {
                                </div>
                                <div className="text-xs text-muted-foreground space-y-1">
                                  <div>• Once items are bought, place sell orders at <span className="font-mono text-emerald-300">{format(sell, 2)} coins</span> each</div>
+                                 <div>• After {(bazaarTaxRate * 100).toFixed(2)}% tax, you'll receive <span className="font-mono text-emerald-300">{format(sell * (1 - bazaarTaxRate), 2)} coins</span> net</div>
                                  <div>• Expected fill time: <span className="text-emerald-300">{(o as any).suggestedSellFillHours ? formatTime((o as any).suggestedSellFillHours) : 'Unknown'}</span></div>
                                  <div>• Total expected time: <span className="text-emerald-300">{(o as any).suggestedTotalFillHours ? formatTime((o as any).suggestedTotalFillHours) : 'Unknown'}</span></div>
                                </div>
@@ -777,17 +889,25 @@ export default function FlippingPage() {
                                </div>
                                <div className="text-xs text-muted-foreground space-y-1">
                                  <div className="flex items-center justify-between">
-                                   <span>Per unit profit:</span>
+                                   <span>Gross profit:</span>
                                    <span className="font-mono text-purple-300">{format(sell - buy, 2)} coins</span>
                                  </div>
                                  <div className="flex items-center justify-between">
+                                   <span>Tax deduction ({(bazaarTaxRate * 100).toFixed(2)}%):</span>
+                                   <span className="font-mono text-red-300">-{format(sell * bazaarTaxRate, 2)} coins</span>
+                                 </div>
+                                 <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
+                                   <span>Net profit:</span>
+                                   <span className="font-mono text-purple-300">{format((sell * (1 - bazaarTaxRate)) - buy, 2)} coins</span>
+                                 </div>
+                                 <div className="flex items-center justify-between">
                                    <span>Per hour profit:</span>
-                                   <span className="font-mono text-purple-300">{format(o.reasonableProfitPerHour, 0)} coins</span>
+                                   <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * (1 - bazaarTaxRate), 0)} coins</span>
                                  </div>
                                  {query.horizonHours && (
                                    <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
                                      <span>Timeframe profit:</span>
-                                     <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours, 0)} coins</span>
+                                     <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours * (1 - bazaarTaxRate), 0)} coins</span>
                                    </div>
                                  )}
                                </div>
