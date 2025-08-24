@@ -10,11 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
-/**
- * Toolkit reutilizável de métricas financeiras/operacionais agregadas sobre janelas de horas.
- * Fornece médias simples que podem alimentar modelos/estratégias (ex.: competição via churn de ordens).
- */
 @Service
 @RequiredArgsConstructor
 public class FinanceMetricsService {
@@ -35,16 +32,71 @@ public class FinanceMetricsService {
     /** Versão bulk simples (loop) com cache por produto; devolve apenas os presentes. */
     @Transactional(readOnly = true)
     public Map<String, FinanceAverages> getAveragesFor(Collection<String> productIds, int windowHours) {
+        if (productIds == null || productIds.isEmpty()) return Collections.emptyMap();
         if (windowHours <= 0) windowHours = 48;
-        Pageable pg = PageRequest.of(0, windowHours);
-        Map<String, FinanceAverages> out = new HashMap<>();
-        for (String id : productIds) {
+
+        // Se poucos produtos, mantém fallback simples (evita carregar muitas linhas à toa)
+        if (productIds.size() == 1) {
+            String id = productIds.iterator().next();
+            Pageable pg = PageRequest.of(0, windowHours);
             List<BazaarItemHourSummary> last = hourRepo.findLastByProductId(id, pg);
-            if (last != null && !last.isEmpty()) {
-                out.put(id, compute(id, last));
-            }
+            if (last == null || last.isEmpty()) return Collections.emptyMap();
+            return Map.of(id, compute(id, last));
         }
+
+        // Bulk query única para todas as productIds (janela limitada via windowHours)
+        List<BazaarItemHourSummary> rows = hourRepo.findLastWindowByProductIds(productIds, windowHours);
+        if (rows.isEmpty()) return Collections.emptyMap();
+
+        // Agrupar por productId e computar médias
+        Map<String, List<BazaarItemHourSummary>> byId = rows.stream()
+                .collect(Collectors.groupingBy(BazaarItemHourSummary::getProductId));
+
+        Map<String, FinanceAverages> out = new HashMap<>(byId.size());
+        byId.forEach((id, list) -> {
+            if (!list.isEmpty()) out.put(id, compute(id, list));
+        });
         return out;
+    }
+
+    /**
+     * Multi-window bulk: retorna médias para várias janelas (ex: 48,6,1) usando apenas 1 query por request.
+     * Evita 2x consultas adicionais repetindo o mesmo dataset. Complexidade O(P * maxWindow).
+     */
+    @Transactional(readOnly = true)
+    public Map<Integer, Map<String, FinanceAverages>> getMultiWindowAverages(Collection<String> productIds, int... windows) {
+        if (productIds == null || productIds.isEmpty() || windows == null || windows.length == 0) {
+            return Collections.emptyMap();
+        }
+        // Normalizar e remover duplicados/invalidos
+        Set<Integer> winSet = Arrays.stream(windows)
+                .filter(w -> w > 0)
+                .boxed()
+                .collect(Collectors.toCollection(TreeSet::new)); // ordenado asc
+        if (winSet.isEmpty()) return Collections.emptyMap();
+        int maxWindow = winSet.stream().max(Integer::compareTo).orElse(48);
+
+        // Query única até maxWindow
+        List<BazaarItemHourSummary> rows = hourRepo.findLastWindowByProductIds(productIds, maxWindow);
+        if (rows.isEmpty()) return Collections.emptyMap();
+
+        // Agrupar e ordenar por hora (desc) para "take first w"
+        Map<String, List<BazaarItemHourSummary>> grouped = rows.stream()
+                .collect(Collectors.groupingBy(BazaarItemHourSummary::getProductId));
+        grouped.values().forEach(list -> list.sort(Comparator.comparing(BazaarItemHourSummary::getHourStart).reversed()));
+
+        Map<Integer, Map<String, FinanceAverages>> result = new HashMap<>();
+        for (Integer w : winSet) {
+            Map<String, FinanceAverages> byId = new HashMap<>();
+            for (var e : grouped.entrySet()) {
+                List<BazaarItemHourSummary> sub = e.getValue().size() > w ? e.getValue().subList(0, w) : e.getValue();
+                if (!sub.isEmpty()) {
+                    byId.put(e.getKey(), compute(e.getKey(), sub));
+                }
+            }
+            result.put(w, byId);
+        }
+        return result;
     }
 
     private FinanceAverages compute(String productId, List<BazaarItemHourSummary> last) {

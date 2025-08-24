@@ -119,6 +119,9 @@ Write-Host "Warmup: $Warmup, Repeat: $Repeat, TimeoutSec: $TimeoutSec, HistoryHo
 # 1) List endpoint
 $all += Measure-Endpoint -Name 'list' -Url "$BaseUrl/api/bazaar/items?limit=50&page=0" -Repeat $Repeat -Warmup $Warmup -TimeoutSec $TimeoutSec
 
+# 1b) Flipping strategy endpoint (básico)
+$all += Measure-Endpoint -Name 'flipping' -Url "$BaseUrl/api/strategies/flipping?limit=50&page=0" -Repeat $Repeat -Warmup $Warmup -TimeoutSec $TimeoutSec
+
 # 2) Discover some product IDs automatically
 $ids = @()
 if ($MaxIds -gt 0) {

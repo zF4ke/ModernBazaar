@@ -315,10 +315,11 @@ public class FlippingScorer {
         List<String> ids = snaps.stream().map(BazaarItemSnapshot::getProductId).toList();
         Map<String, String> names = preloadNames(new HashSet<>(ids));
 
-        // 3) Médias financeiras em múltiplas janelas (conservador: usar mínimo)
-        Map<String, FinanceAverages> avgs48 = finance.getAveragesFor(ids, 48);
-        Map<String, FinanceAverages> avgs06 = finance.getAveragesFor(ids, 6);
-        Map<String, FinanceAverages> avgs01 = finance.getAveragesFor(ids, 1);
+        // 3) Médias multi-janelas em UMA única query bulk
+        Map<Integer, Map<String, FinanceAverages>> multi = finance.getMultiWindowAverages(ids, 48, 6, 1);
+        Map<String, FinanceAverages> avgs48 = multi.getOrDefault(48, Map.of());
+        Map<String, FinanceAverages> avgs06 = multi.getOrDefault(6, Map.of());
+        Map<String, FinanceAverages> avgs01 = multi.getOrDefault(1, Map.of());
 
         // 4) Score item a item e construir resposta
         List<FlipOpportunityResponseDTO> out = new ArrayList<>(snaps.size());

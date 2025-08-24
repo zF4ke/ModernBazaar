@@ -63,4 +63,54 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
 
     /** Retention: delete hour summaries older than cutoff */
     void deleteByHourStartBefore(Instant cutoff);
+
+    @Query(value = """
+        with ranked as (
+          select hs.id,
+                 hs.product_id,
+                 hs.hour_start,
+                 hs.open_instant_buy_price,
+                 hs.close_instant_buy_price,
+                 hs.min_instant_buy_price,
+                 hs.max_instant_buy_price,
+                 hs.open_instant_sell_price,
+                 hs.close_instant_sell_price,
+                 hs.min_instant_sell_price,
+                 hs.max_instant_sell_price,
+                 hs.created_buy_orders,
+                 hs.delta_buy_orders,
+                 hs.created_sell_orders,
+                 hs.delta_sell_orders,
+                 hs.added_items_buy_orders,
+                 hs.added_items_sell_orders,
+                 hs.insta_sold_items,
+                 hs.insta_bought_items,
+                 row_number() over (partition by hs.product_id order by hs.hour_start desc) as rn
+          from bazaar_hour_summary hs
+          where hs.product_id in (:ids)
+        )
+        select id,
+               product_id,
+               hour_start,
+               open_instant_buy_price,
+               close_instant_buy_price,
+               min_instant_buy_price,
+               max_instant_buy_price,
+               open_instant_sell_price,
+               close_instant_sell_price,
+               min_instant_sell_price,
+               max_instant_sell_price,
+               created_buy_orders,
+               delta_buy_orders,
+               created_sell_orders,
+               delta_sell_orders,
+               added_items_buy_orders,
+               added_items_sell_orders,
+               insta_sold_items,
+               insta_bought_items
+        from ranked
+        where rn <= :window
+        """, nativeQuery = true)
+    List<BazaarItemHourSummary> findLastWindowByProductIds(@Param("ids") Collection<String> ids,
+                                                           @Param("window") int windowHours);
 }
