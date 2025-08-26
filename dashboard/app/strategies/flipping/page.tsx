@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Star,
   TrendingUp,
+  TrendingDown,
   Package,
   ShieldAlert,
   BarChart3,
@@ -113,28 +114,26 @@ export default function FlippingPage() {
       horizonHours: 0.5,
       maxTime: 0.5,
       sort: "profitPerHour",
-      disableCompetitionPenalties: true,
-      disableRiskPenalties: false,
+      disableCompetitionPenalties: false,
+      disableRiskPenalties: true,
     },
     stable: {
       name: "Stable",
-      description: "Long-term orders, Low competition",
+      description: "Stable prices, Long-term orders",
       icon: Mountain,
       iconColor: "text-amber-600",
       bgColor: "bg-muted/50",
       borderColor: "border-border",
       activeBorderColor: "border-amber-500",
       activeBgColor: "bg-amber-50/50 dark:bg-amber-950/10",
-      horizonHours: 6,
+      horizonHours: 6, // Longer horizon for stable trading
       maxTime: 6,
       sort: "score",
       disableCompetitionPenalties: false,
       disableRiskPenalties: false,
-      // Stable trading filters
-      minUnitsPerHour: 50, // Ensure decent volume for stability
-      maxUnitsPerHour: 500, // Avoid hyper-volatile high-volume items
-      maxCompetitionPerHour: 10, // Very low competition for stable fills
-      maxRiskScore: 0.1, // Only very low-risk items (10% max risk)
+      // Stable trading filters - more permissive for better profits
+      maxCompetitionPerHour: 30, // Allow moderate competition
+      maxRiskScore: 0.2, // Allow slightly higher risk for better returns
     },
   }
 
@@ -154,16 +153,12 @@ export default function FlippingPage() {
       disableRiskPenalties: preset.disableRiskPenalties,
     }
 
-    // Apply stable-specific filters
+    // Apply preset-specific filters
     if (presetKey === 'stable') {
-      updates.minUnitsPerHour = preset.minUnitsPerHour
-      updates.maxUnitsPerHour = preset.maxUnitsPerHour
       updates.maxCompetitionPerHour = preset.maxCompetitionPerHour
       updates.maxRiskScore = preset.maxRiskScore
     } else {
-      // Clear stable filters for other presets
-      updates.minUnitsPerHour = undefined
-      updates.maxUnitsPerHour = undefined
+      // Clear preset-specific filters for other presets
       updates.maxCompetitionPerHour = undefined
       updates.maxRiskScore = undefined
     }
@@ -212,6 +207,8 @@ export default function FlippingPage() {
           maxTime: parsed.maxTime,
           minUnitsPerHour: parsed.minUnitsPerHour,
           maxUnitsPerHour: parsed.maxUnitsPerHour,
+          maxCompetitionPerHour: parsed.maxCompetitionPerHour,
+          maxRiskScore: parsed.maxRiskScore,
         }))
 
         // Set preset if saved
@@ -279,11 +276,13 @@ export default function FlippingPage() {
       currentSetup.maxTime = query.maxTime
       currentSetup.minUnitsPerHour = query.minUnitsPerHour
       currentSetup.maxUnitsPerHour = query.maxUnitsPerHour
+      currentSetup.maxCompetitionPerHour = query.maxCompetitionPerHour
+      currentSetup.maxRiskScore = query.maxRiskScore
       currentSetup.pinFavoritesToTop = pinFavoritesToTop
       currentSetup.currentPreset = currentPreset
       localStorage.setItem("tradingSetup", JSON.stringify(currentSetup))
     } catch {}
-  }, [query.sort, query.limit, query.horizonHours, bazaarTaxRate, query.disableCompetitionPenalties, query.disableRiskPenalties, query.maxTime, query.minUnitsPerHour, query.maxUnitsPerHour, pinFavoritesToTop, currentPreset])
+  }, [query.sort, query.limit, query.horizonHours, bazaarTaxRate, query.disableCompetitionPenalties, query.disableRiskPenalties, query.maxTime, query.minUnitsPerHour, query.maxUnitsPerHour, query.maxCompetitionPerHour, query.maxRiskScore, pinFavoritesToTop, currentPreset])
 
   // debounced search
   const [searchText, setSearchText] = useState("")
@@ -311,6 +310,10 @@ export default function FlippingPage() {
       budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, '')) : undefined,
     }
     console.log('Final query computed:', result)
+    console.log('Stable filters:', {
+      maxCompetitionPerHour: result.maxCompetitionPerHour,
+      maxRiskScore: result.maxRiskScore
+    })
     return result
   }, [query, debouncedSearch, debouncedBudget])
 
@@ -359,6 +362,8 @@ export default function FlippingPage() {
       disableRiskPenalties: false,
       minUnitsPerHour: undefined,
       maxUnitsPerHour: undefined,
+      maxCompetitionPerHour: undefined,
+      maxRiskScore: undefined,
     }))
     setBazaarTaxRate(0.011)
     setCurrentPreset("default")
@@ -653,7 +658,7 @@ export default function FlippingPage() {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium flex items-center gap-2">
-                      <Activity className="h-4 w-4" />
+                      <TrendingUp className="h-4 w-4" />
                       Min Units/Hour
                     </Label>
                     <Input
@@ -669,7 +674,7 @@ export default function FlippingPage() {
 
                   <div className="space-y-2">
                     <Label className="text-sm font-medium flex items-center gap-2">
-                      <Target className="h-4 w-4" />
+                      <TrendingDown className="h-4 w-4" />
                       Max Units/Hour
                     </Label>
                     <Input
@@ -684,7 +689,42 @@ export default function FlippingPage() {
                   </div>
                 </div>
 
+                {/* Advanced Competition & Risk Filters */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Max Competition/Hour
+                    </Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 30"
+                      value={query.maxCompetitionPerHour || ""}
+                      onChange={(e) => updateQuery({ maxCompetitionPerHour: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      className="h-10"
+                      min="0"
+                    />
+                    <p className="text-xs text-muted-foreground">Hide items with competition higher than this</p>
+                  </div>
 
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <ShieldAlert className="h-4 w-4" />
+                      Max Risk Score
+                    </Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="e.g. 0.2"
+                      value={query.maxRiskScore || ""}
+                      onChange={(e) => updateQuery({ maxRiskScore: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      className="h-10"
+                      min="0"
+                      max="1"
+                    />
+                    <p className="text-xs text-muted-foreground">Hide items with risk score higher than this (0-1)</p>
+                  </div>
+                </div>
 
                 {/* Scoring Penalty Toggles */}
                 <Separator />
