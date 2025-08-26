@@ -591,23 +591,6 @@ export default function FlippingPage() {
 
               {/* Advanced options */}
               <div className="space-y-4">
-                {/* Favorites priority */}
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label className="text-sm font-medium flex items-center gap-2">
-                      <Star className="h-4 w-4" />
-                      Pin Favorites to Top
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Show your starred opportunities first ({favs.size} items)
-                    </p>
-                  </div>
-                  <Switch
-                    checked={pinFavoritesToTop}
-                    onCheckedChange={setPinFavoritesToTop}
-                  />
-                </div>
-
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2">
                     <Search className="h-4 w-4" />
@@ -666,8 +649,6 @@ export default function FlippingPage() {
                 </div>
 
                 {/* New Advanced Filters */}
-                <Separator />
-
                 <div className="grid gap-4 md:grid-cols-2">
 
                   <div className="space-y-2">
@@ -708,6 +689,23 @@ export default function FlippingPage() {
                 {/* Scoring Penalty Toggles */}
                 <Separator />
                 <div className="space-y-3">
+                  {/* Favorites priority */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium flex items-center gap-2">
+                        <Star className="h-4 w-4" />
+                        Pin Favorites to Top
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Show your starred opportunities first ({favs.size} items)
+                      </p>
+                    </div>
+                    <Switch
+                      checked={pinFavoritesToTop}
+                      onCheckedChange={setPinFavoritesToTop}
+                    />
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <Label className="text-sm font-medium flex items-center gap-2">
