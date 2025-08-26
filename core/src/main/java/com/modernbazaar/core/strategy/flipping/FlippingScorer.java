@@ -293,7 +293,7 @@ public class FlippingScorer {
     public List<FlipOpportunityResponseDTO> list(BazaarItemFilterDTO filter,
                                                  Double budget,
                                                  Double horizonHours) {
-        return listWithAdvancedFilters(filter, budget, horizonHours, null, null, null, false, false);
+        return listWithAdvancedFilters(filter, budget, horizonHours, null, null, null, null, null, false, false);
     }
 
     @Transactional(readOnly = true)
