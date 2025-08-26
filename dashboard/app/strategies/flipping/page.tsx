@@ -27,7 +27,11 @@ import {
   Target,
   Calculator,
   AlertCircle,
-  Users
+  Users,
+  Zap,
+  Mountain,
+  Clock4,
+  Eraser
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -59,7 +63,113 @@ export default function FlippingPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [pinFavoritesToTop, setPinFavoritesToTop] = useState(false)
-  const [bazaarTaxRate, setBazaarTaxRate] = useState(0.0125) // Default 1.25%
+  const [bazaarTaxRate, setBazaarTaxRate] = useState(0.011) // Default 1.1%
+  const [currentPreset, setCurrentPreset] = useState<string>("default")
+
+  // Trading presets configuration
+  const tradingPresets: Record<string, {
+    name: string
+    description: string
+    icon: any
+    iconColor: string
+    bgColor: string
+    borderColor: string
+    activeBorderColor: string
+    activeBgColor: string
+    horizonHours: number
+    maxTime: number
+    sort: string
+    disableCompetitionPenalties: boolean
+    disableRiskPenalties: boolean
+    minUnitsPerHour?: number
+    maxUnitsPerHour?: number
+    maxCompetitionPerHour?: number
+    maxRiskScore?: number
+  }> = {
+    default: {
+      name: "Default",
+      description: "1h items, Recommended Score",
+      icon: Trophy,
+      iconColor: "text-blue-600",
+      bgColor: "bg-muted/50",
+      borderColor: "border-border",
+      activeBorderColor: "border-blue-500",
+      activeBgColor: "bg-blue-50/50 dark:bg-blue-950/10",
+      horizonHours: 1,
+      maxTime: 1,
+      sort: "score",
+      disableCompetitionPenalties: false,
+      disableRiskPenalties: false,
+    },
+    fast: {
+      name: "Fast",
+      description: "30min items, Max Profit per Hour",
+      icon: Zap,
+      iconColor: "text-emerald-600",
+      bgColor: "bg-muted/50",
+      borderColor: "border-border",
+      activeBorderColor: "border-emerald-500",
+      activeBgColor: "bg-emerald-50/50 dark:bg-emerald-950/10",
+      horizonHours: 0.5,
+      maxTime: 0.5,
+      sort: "profitPerHour",
+      disableCompetitionPenalties: true,
+      disableRiskPenalties: false,
+    },
+    stable: {
+      name: "Stable",
+      description: "Long-term orders, Low competition",
+      icon: Mountain,
+      iconColor: "text-amber-600",
+      bgColor: "bg-muted/50",
+      borderColor: "border-border",
+      activeBorderColor: "border-amber-500",
+      activeBgColor: "bg-amber-50/50 dark:bg-amber-950/10",
+      horizonHours: 6,
+      maxTime: 6,
+      sort: "score",
+      disableCompetitionPenalties: false,
+      disableRiskPenalties: false,
+      // Stable trading filters
+      minUnitsPerHour: 50, // Ensure decent volume for stability
+      maxUnitsPerHour: 500, // Avoid hyper-volatile high-volume items
+      maxCompetitionPerHour: 10, // Very low competition for stable fills
+      maxRiskScore: 0.1, // Only very low-risk items (10% max risk)
+    },
+  }
+
+  // Handle preset change
+  const applyPreset = (presetKey: string) => {
+    const preset = tradingPresets[presetKey as keyof typeof tradingPresets]
+    if (!preset) return
+
+    setCurrentPreset(presetKey)
+    
+    // Apply basic preset settings
+    const updates: Partial<FlippingQuery> = {
+      horizonHours: preset.horizonHours,
+      maxTime: preset.maxTime,
+      sort: preset.sort,
+      disableCompetitionPenalties: preset.disableCompetitionPenalties,
+      disableRiskPenalties: preset.disableRiskPenalties,
+    }
+
+    // Apply stable-specific filters
+    if (presetKey === 'stable') {
+      updates.minUnitsPerHour = preset.minUnitsPerHour
+      updates.maxUnitsPerHour = preset.maxUnitsPerHour
+      updates.maxCompetitionPerHour = preset.maxCompetitionPerHour
+      updates.maxRiskScore = preset.maxRiskScore
+    } else {
+      // Clear stable filters for other presets
+      updates.minUnitsPerHour = undefined
+      updates.maxUnitsPerHour = undefined
+      updates.maxCompetitionPerHour = undefined
+      updates.maxRiskScore = undefined
+    }
+
+    updateQuery(updates)
+  }
 
   // persisted favorites
   const [favs, setFavs] = useState<Set<string>>(new Set())
@@ -103,6 +213,28 @@ export default function FlippingPage() {
           minUnitsPerHour: parsed.minUnitsPerHour,
           maxUnitsPerHour: parsed.maxUnitsPerHour,
         }))
+
+        // Set preset if saved
+        if (parsed.currentPreset) {
+          setCurrentPreset(parsed.currentPreset)
+        } else {
+          // Auto-detect preset based on current settings
+          const detectPreset = () => {
+            for (const [key, preset] of Object.entries(tradingPresets)) {
+              if (
+                parsed.horizonHours === preset.horizonHours &&
+                parsed.maxTime === preset.maxTime &&
+                parsed.sort === preset.sort &&
+                parsed.disableCompetitionPenalties === preset.disableCompetitionPenalties &&
+                parsed.disableRiskPenalties === preset.disableRiskPenalties
+              ) {
+                return key
+              }
+            }
+            return "default" // fallback to default if no match
+          }
+          setCurrentPreset(detectPreset())
+        }
 
         // Set budget input to match the saved budget
         if (parsed.budget) {
@@ -148,9 +280,10 @@ export default function FlippingPage() {
       currentSetup.minUnitsPerHour = query.minUnitsPerHour
       currentSetup.maxUnitsPerHour = query.maxUnitsPerHour
       currentSetup.pinFavoritesToTop = pinFavoritesToTop
+      currentSetup.currentPreset = currentPreset
       localStorage.setItem("tradingSetup", JSON.stringify(currentSetup))
     } catch {}
-  }, [query.sort, query.limit, query.horizonHours, bazaarTaxRate, query.disableCompetitionPenalties, query.disableRiskPenalties, query.maxTime, query.minUnitsPerHour, query.maxUnitsPerHour, pinFavoritesToTop])
+  }, [query.sort, query.limit, query.horizonHours, bazaarTaxRate, query.disableCompetitionPenalties, query.disableRiskPenalties, query.maxTime, query.minUnitsPerHour, query.maxUnitsPerHour, pinFavoritesToTop, currentPreset])
 
   // debounced search
   const [searchText, setSearchText] = useState("")
@@ -216,6 +349,21 @@ export default function FlippingPage() {
     setPinFavoritesToTop(false)
   }
 
+  const resetTradingSetup = () => {
+    setQuery(prev => ({
+      ...prev,
+      sort: "score",
+      horizonHours: 1,
+      maxTime: 1,
+      disableCompetitionPenalties: false,
+      disableRiskPenalties: false,
+      minUnitsPerHour: undefined,
+      maxUnitsPerHour: undefined,
+    }))
+    setBazaarTaxRate(0.011)
+    setCurrentPreset("default")
+  }
+
   const PaginationControls = () => (
     <div className="flex items-center justify-between">
       <div className="text-sm text-muted-foreground">
@@ -246,11 +394,11 @@ export default function FlippingPage() {
 
   const getTaxRateValue = (rate: number): string => {
     const percentage = rate * 100
-    if (percentage === 1.25) return "1.25"
     if (percentage === 1.1) return "1.1"
+    if (percentage === 1.25) return "1.25"
     if (percentage === 1.0) return "1"
-    // Default to 1.25% if current rate doesn't match any option
-    return "1.25"
+    // Default to 1.1% if current rate doesn't match any option
+    return "1.1"
   }
 
   return (
@@ -272,27 +420,92 @@ export default function FlippingPage() {
               <CardTitle>Trading Setup</CardTitle>
               <CardDescription>Configure your budget and time horizon</CardDescription>
             </div>
-            <Button
-              onClick={() => setFiltersOpen(!filtersOpen)}
-              variant="ghost" 
-              size="sm"
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
-              {filtersOpen ? (
-                <>
-                  <ChevronUp className="h-4 w-4" />
-                  <span>Collapse</span>
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4" />
-                  <span>Expand</span>
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={resetTradingSetup}
+                variant="ghost"
+                size="sm"
+                className="text-sm text-muted-foreground/60 hover:text-muted-foreground/80"
+              >
+                <Eraser className="h-4 w-4 mr-0" />
+                Reset
+              </Button>
+              <Button
+                onClick={() => setFiltersOpen(!filtersOpen)}
+                variant="ghost"
+                size="sm"
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                {filtersOpen ? (
+                  <>
+                    <ChevronUp className="h-4 w-4" />
+                    <span>Collapse</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4" />
+                    <span>Expand</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Trading Preset Selector */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Trading Strategy
+            </Label>
+
+            <Select value={currentPreset} onValueChange={applyPreset}>
+              <SelectTrigger className="h-10">
+                <SelectValue>
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const current = tradingPresets[currentPreset as keyof typeof tradingPresets]
+                      const IconComponent = current.icon
+                      return (
+                        <>
+                          <div className={`p-1 rounded ${current.iconColor} bg-primary/10`}>
+                            <IconComponent className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="font-medium">{current.name}</span>
+                          <span className="text-xs text-muted-foreground">• {current.description}</span>
+                        </>
+                      )
+                    })()}
+                  </div>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(tradingPresets).map(([key, preset]) => {
+                  const IconComponent = preset.icon
+                  return (
+                    <SelectItem key={key} value={key} className="cursor-pointer">
+                      <div className="flex items-center gap-3 py-1">
+                        <div className={`p-1.5 rounded ${preset.iconColor} bg-primary/10`}>
+                          <IconComponent className="h-4 w-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{preset.name}</span>
+                          <span className="text-xs text-muted-foreground">{preset.description}</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+
+            <p className="text-xs text-muted-foreground">
+              Select a preset to automatically configure your trading settings
+            </p>
+          </div>
+
+          <Separator />
+
           {/* Budget & Horizon - Primary */}
           <div className="grid gap-4 md:grid-cols-3">
                           <div className="space-y-2">
@@ -301,10 +514,10 @@ export default function FlippingPage() {
                   Your Budget
                 </Label>
               <Input
-                  inputMode="numeric" 
-                  type="text" 
-                  placeholder="Enter your budget (e.g. 1,000,000)" 
-                  value={budgetInput} 
+                  inputMode="numeric"
+                  type="text"
+                  placeholder="Enter your budget (e.g. 1,000,000)"
+                  value={budgetInput}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^0-9]/g, '');
                     if (value) {
@@ -375,7 +588,7 @@ export default function FlippingPage() {
           {filtersOpen && (
             <>
               <Separator />
-              
+
               {/* Advanced options */}
               <div className="space-y-4">
                 {/* Favorites priority */}
@@ -564,7 +777,7 @@ export default function FlippingPage() {
                            <div className="h-4 w-4 bg-neutral-700 rounded"></div>
                          </div>
                          <div className="h-3 bg-neutral-700 rounded w-24 mb-3"></div>
-                         
+
                          {/* Key metric highlight skeleton */}
                          <div className="flex items-center gap-3 mb-3">
                            <div className="flex items-center gap-1">
@@ -630,7 +843,7 @@ export default function FlippingPage() {
                                  const spreadBadge = spreadPctVal >= 20 ? strongGreen : spreadPctVal >= 10 ? strongAmber : neutral
                  const riskBadge = riskPct !== undefined && riskPct >= 50 ? strongRed : neutral
                  const ratioBadge = ratio >= 0.8 ? strongGreen : ratio >= 0.5 ? strongAmber : strongRed
-                 
+
                  // Competition score badge
                  const competitionScore = o.competitionPerHour ?? 0
                  const competitionBadge = competitionScore >= 1000 ? strongRed : competitionScore >= 500 ? strongAmber : strongGreen
@@ -638,14 +851,14 @@ export default function FlippingPage() {
                 const profitColor = (o.reasonableProfitPerHour ?? 0) * (query.horizonHours || 1) >= 900000
                   ? 'text-emerald-400'
                   : 'text-foreground'
-                
+
                 const isExpanded = expandedCard === o.productId
                 const handleCardClick = (e: React.MouseEvent) => {
                   // Don't expand if clicking on links or buttons
                   if ((e.target as HTMLElement).closest('a, button')) return
-                  
+
                   const cardElement = e.currentTarget as HTMLElement
-                  
+
                   // Only expand, don't collapse on card click
                   if (!isExpanded) {
                     setExpandedCard(o.productId)
@@ -672,7 +885,7 @@ export default function FlippingPage() {
                 }
 
                 return (
-                                     <Card 
+                                     <Card
                      key={o.productId}
                      className={`group overflow-hidden transition-all ease-out bg-background/80 border-border/50 cursor-pointer hover:shadow-lg hover:border-border ${isExpanded ? 'shadow-xl' : 'hover:border-muted-foreground/30'}`}
                      onClick={handleCardClick}
@@ -737,7 +950,7 @@ export default function FlippingPage() {
                              </span>
                            )}
                          </div>
-                         
+
                          {/* ETA Information */}
                          {((o as any).suggestedTotalFillHours || (o as any).suggestedBuyFillHours || (o as any).suggestedSellFillHours) && (
                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
@@ -762,7 +975,7 @@ export default function FlippingPage() {
                            </div>
                          )}
                        </div>
- 
+
                        {/* Buy/Sell prices - Compact */}
                        <div className="grid grid-cols-2 gap-2">
                          <div className="bg-red-500/10 border border-red-500/20 rounded p-2">
@@ -826,7 +1039,7 @@ export default function FlippingPage() {
                              <Info className="h-4 w-4 text-blue-400" />
                              <span className="text-sm font-medium text-blue-400">Trading Tutorial</span>
                            </div>
-                           
+
                            <div className="space-y-3 text-sm">
                              {/* Step 1: How many to buy */}
                              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">

@@ -35,6 +35,8 @@ export interface FlippingQuery {
   maxTime?: number
   minUnitsPerHour?: number
   maxUnitsPerHour?: number
+  maxCompetitionPerHour?: number
+  maxRiskScore?: number
   disableCompetitionPenalties?: boolean
   disableRiskPenalties?: boolean
   sort?: string

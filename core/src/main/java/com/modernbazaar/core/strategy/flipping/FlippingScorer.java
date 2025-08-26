@@ -303,6 +303,8 @@ public class FlippingScorer {
                                                                      Double maxTime,
                                                                      Double minUnitsPerHour,
                                                                      Double maxUnitsPerHour,
+                                                                     Double maxCompetitionPerHour,
+                                                                     Double maxRiskScore,
                                                                      Boolean disableCompetitionPenalties,
                                                                      Boolean disableRiskPenalties) {
         // 1) Snapshots mais recentes conforme filtro
@@ -403,7 +405,7 @@ public class FlippingScorer {
         }
 
         // 5) Aplicar filtros avançados (post-scoring)
-        out = applyAdvancedFilters(out, maxTime, minUnitsPerHour, maxUnitsPerHour);
+        out = applyAdvancedFilters(out, maxTime, minUnitsPerHour, maxUnitsPerHour, maxCompetitionPerHour, maxRiskScore);
 
         // 6) Ordenar por score desc
         out.sort(Comparator.comparingDouble(FlipOpportunityResponseDTO::score).reversed());
@@ -414,7 +416,9 @@ public class FlippingScorer {
             List<FlipOpportunityResponseDTO> opportunities,
             Double maxTime,
             Double minUnitsPerHour,
-            Double maxUnitsPerHour) {
+            Double maxUnitsPerHour,
+            Double maxCompetitionPerHour,
+            Double maxRiskScore) {
 
         return opportunities.stream()
                 .filter(opp -> {
@@ -433,7 +437,15 @@ public class FlippingScorer {
                         if (opp.suggestedUnitsPerHour() > maxUnitsPerHour) return false;
                     }
 
+                    // Filter by maximum competition per hour
+                    if (maxCompetitionPerHour != null && opp.competitionPerHour() != null) {
+                        if (opp.competitionPerHour() > maxCompetitionPerHour) return false;
+                    }
 
+                    // Filter by maximum risk score
+                    if (maxRiskScore != null && opp.riskScore() != null) {
+                        if (opp.riskScore() > maxRiskScore) return false;
+                    }
 
                     return true;
                 })

@@ -37,6 +37,8 @@ public class StrategiesController {
             @RequestParam(required = false) Double maxTime,
             @RequestParam(required = false) Double minUnitsPerHour,
             @RequestParam(required = false) Double maxUnitsPerHour,
+            @RequestParam(required = false) Double maxCompetitionPerHour,
+            @RequestParam(required = false) Double maxRiskScore,
             @RequestParam(required = false) Boolean disableCompetitionPenalties,
             @RequestParam(required = false) Boolean disableRiskPenalties,
             @RequestParam(required = false) String sort,
@@ -48,7 +50,7 @@ public class StrategiesController {
         var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread,
                                            maxTime, minUnitsPerHour, maxUnitsPerHour);
         return flipping.listWithAdvancedFilters(filter, Optional.ofNullable(sort), page, limit, budget, horizonHours,
-                                               maxTime, minUnitsPerHour, maxUnitsPerHour,
+                                               maxTime, minUnitsPerHour, maxUnitsPerHour, maxCompetitionPerHour, maxRiskScore,
                                                Boolean.TRUE.equals(disableCompetitionPenalties),
                                                Boolean.TRUE.equals(disableRiskPenalties));
     }

@@ -57,7 +57,7 @@ public class StrategyFlippingService {
         return PagedResponseDTO.of(all, page, limit);
     }
 
-    @Cacheable(value = "flipOpportunitiesAdvanced", key = "#filter+'-'+#sort+'-'+#page+'-'+#limit+'-'+#budget+'-'+#horizonHours+'-'+#maxTime+'-'+#minUnitsPerHour+'-'+#maxUnitsPerHour+'-'+#disableCompetitionPenalties+'-'+#disableRiskPenalties")
+    @Cacheable(value = "flipOpportunitiesAdvanced", key = "#filter+'-'+#sort+'-'+#page+'-'+#limit+'-'+#budget+'-'+#horizonHours+'-'+#maxTime+'-'+#minUnitsPerHour+'-'+#maxUnitsPerHour+'-'+#maxCompetitionPerHour+'-'+#maxRiskScore+'-'+#disableCompetitionPenalties+'-'+#disableRiskPenalties")
     @Transactional(readOnly = true)
     public PagedResponseDTO<FlipOpportunityResponseDTO> listWithAdvancedFilters(
             BazaarItemFilterDTO filter,
@@ -69,6 +69,8 @@ public class StrategyFlippingService {
             Double              maxTime,
             Double              minUnitsPerHour,
             Double              maxUnitsPerHour,
+            Double              maxCompetitionPerHour,
+            Double              maxRiskScore,
             Boolean             disableCompetitionPenalties,
             Boolean             disableRiskPenalties
     ) {
@@ -77,6 +79,7 @@ public class StrategyFlippingService {
 
         List<FlipOpportunityResponseDTO> all = scorer.listWithAdvancedFilters(filter, budget, horizonHours,
                                                                             maxTime, minUnitsPerHour, maxUnitsPerHour,
+                                                                            maxCompetitionPerHour, maxRiskScore,
                                                                             disableCompetitionPenalties, disableRiskPenalties);
 
         // aplicar ordenação (padrão: score desc)
