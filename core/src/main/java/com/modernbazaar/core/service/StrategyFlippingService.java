@@ -17,7 +17,8 @@ public class StrategyFlippingService {
 
     private final FlippingScorer scorer;
 
-    @Cacheable(value = "flipOpportunities", key = "#filter+'-'+#sort+'-'+#page+'-'+#limit+'-'+#budget+'-'+#horizonHours")
+    // IMPORTANT: não incluir page/limit na chave para reutilizar cálculo caro entre páginas (só fazemos slice em memória)
+    @Cacheable(value = "flipOpportunities", key = "#filter+'-'+#sort+'-'+#budget+'-'+#horizonHours")
     @Transactional(readOnly = true)
     public PagedResponseDTO<FlipOpportunityResponseDTO> list(
             BazaarItemFilterDTO filter,
@@ -57,7 +58,8 @@ public class StrategyFlippingService {
         return PagedResponseDTO.of(all, page, limit);
     }
 
-    @Cacheable(value = "flipOpportunitiesAdvanced", key = "#filter+'-'+#sort+'-'+#page+'-'+#limit+'-'+#budget+'-'+#horizonHours+'-'+#maxTime+'-'+#minUnitsPerHour+'-'+#maxUnitsPerHour+'-'+#maxCompetitionPerHour+'-'+#maxRiskScore+'-'+#disableCompetitionPenalties+'-'+#disableRiskPenalties")
+    // Igual: retirar page/limit da chave de cache; filtros avançados agora aplicados dentro do scorer
+    @Cacheable(value = "flipOpportunitiesAdvanced", key = "#filter+'-'+#sort+'-'+#budget+'-'+#horizonHours+'-'+#maxTime+'-'+#minUnitsPerHour+'-'+#maxUnitsPerHour+'-'+#maxCompetitionPerHour+'-'+#maxRiskScore+'-'+#disableCompetitionPenalties+'-'+#disableRiskPenalties")
     @Transactional(readOnly = true)
     public PagedResponseDTO<FlipOpportunityResponseDTO> listWithAdvancedFilters(
             BazaarItemFilterDTO filter,
