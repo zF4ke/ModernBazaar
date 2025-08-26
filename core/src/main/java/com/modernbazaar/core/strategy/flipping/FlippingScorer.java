@@ -209,17 +209,20 @@ public class FlippingScorer {
         double budget = in.budget != null && Double.isFinite(in.budget) ? Math.max(0.0, in.budget) : 0.0;
         double horizon = in.horizonHours != null && Double.isFinite(in.horizonHours) && in.horizonHours > 0.0 ? in.horizonHours : 1.0;
 
-        double qty;
+        // Calculate how many units we can trade per hour (independent of horizon)
+        double unitsPerHour;
         if (budget > 0.0) {
-            double maxAffordable = Math.floor(budget / is);
-            double maxThroughput = Math.floor(throughputPerHour * horizon);
-            if (!Double.isFinite(maxThroughput)) maxThroughput = 0.0;
-            qty = Math.max(0.0, Math.min(maxAffordable, maxThroughput));
+            double maxAffordablePerHour = Math.floor(budget / (is * horizon));
+            double maxThroughputPerHour = throughputPerHour;
+            if (!Double.isFinite(maxThroughputPerHour)) maxThroughputPerHour = 0.0;
+            unitsPerHour = Math.max(0.0, Math.min(maxAffordablePerHour, maxThroughputPerHour));
         } else {
-            qty = Math.max(0.0, Math.floor(throughputPerHour));
+            unitsPerHour = Math.max(0.0, throughputPerHour);
         }
 
-        double plannedUnitsPerHour = qty / Math.max(1.0, horizon);
+        // Total quantity we can trade over the entire horizon
+        double totalQty = unitsPerHour * horizon;
+        double plannedUnitsPerHour = unitsPerHour;
         double profitPerItem = Math.max(0.0, spread * (1.0 - riskScore));
         double profitPerHour = Math.max(0.0, profitPerItem * plannedUnitsPerHour);
 
@@ -231,8 +234,10 @@ public class FlippingScorer {
 
         // Suggested units considering competition and balance
         double compPenalty = 1.0 + (competitionCoeff * effectiveChurn);
-        double baseQuota = Math.min(plannedUnitsPerHour, throughputPerHour * balanceAdj);
-        double suggestedUnitsPerHour = Math.max(0.0, baseQuota / Math.max(1e-6, compPenalty));
+        // Base quota should consider the total capacity over the horizon
+        double totalThroughputCapacity = throughputPerHour * horizon * balanceAdj;
+        double baseQuota = Math.min(totalQty, totalThroughputCapacity);
+        double suggestedUnitsPerHour = Math.max(0.0, baseQuota / (horizon * Math.max(1e-6, compPenalty)));
         double reasonableProfitPerHour = Math.max(0.0, profitPerItem * suggestedUnitsPerHour);
 
         // ETAs para a quantidade sugerida (em horas)
@@ -240,10 +245,16 @@ public class FlippingScorer {
         Double suggestedSellFillHours = null;
         Double suggestedTotalFillHours = null;
         if (suggestedUnitsPerHour > 0.0) {
-            suggestedBuyFillHours = (supplyPerHour > 0.0) ? (suggestedUnitsPerHour / supplyPerHour) : null;
-            suggestedSellFillHours = (demandPerHour > 0.0) ? (suggestedUnitsPerHour / demandPerHour) : null;
+            // Calculate time to fill the total quantity, not just per hour
+            double totalSuggestedUnits = suggestedUnitsPerHour * horizon;
+            suggestedBuyFillHours = (supplyPerHour > 0.0) ? (totalSuggestedUnits / supplyPerHour) : null;
+            suggestedSellFillHours = (demandPerHour > 0.0) ? (totalSuggestedUnits / demandPerHour) : null;
             if (suggestedBuyFillHours != null && suggestedSellFillHours != null) {
-                suggestedTotalFillHours = suggestedBuyFillHours + suggestedSellFillHours;
+                suggestedTotalFillHours = Math.max(suggestedBuyFillHours, suggestedSellFillHours);
+            } else if (suggestedBuyFillHours != null) {
+                suggestedTotalFillHours = suggestedBuyFillHours;
+            } else if (suggestedSellFillHours != null) {
+                suggestedTotalFillHours = suggestedSellFillHours;
             }
         }
 

@@ -556,8 +556,9 @@ export default function FlippingPage() {
                     <SelectItem value="0.25">15 minutes</SelectItem>
                     <SelectItem value="0.5">30 minutes</SelectItem>
                     <SelectItem value="1">1 hour</SelectItem>
-                    <SelectItem value="2">2 hours</SelectItem>
+                    <SelectItem value="3">3 hours</SelectItem>
                     <SelectItem value="6">6 hours</SelectItem>
+                    <SelectItem value="12">12 hours</SelectItem>
                     <SelectItem value="24">1 day</SelectItem>
                     <SelectItem value="168">1 week</SelectItem>
                 </SelectContent>
