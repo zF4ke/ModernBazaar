@@ -32,7 +32,8 @@ import {
   Zap,
   Mountain,
   Clock4,
-  Eraser
+  Eraser,
+  DollarSign
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -513,7 +514,7 @@ export default function FlippingPage() {
 
           {/* Budget & Horizon - Primary */}
           <div className="grid gap-4 md:grid-cols-3">
-                          <div className="space-y-2">
+              <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <Coins className="h-4 w-4" />
                   Your Budget
@@ -545,10 +546,10 @@ export default function FlippingPage() {
                 <Timer className="h-4 w-4" />
                 Time Horizon & Max Time
               </Label>
-                              <Select value={query.horizonHours?.toString() ?? "1"} onValueChange={(value) => {
-                                const hours = parseFloat(value);
-                                updateQuery({ horizonHours: hours, maxTime: hours });
-                              }}>
+                <Select value={query.horizonHours?.toString() ?? "1"} onValueChange={(value) => {
+                  const hours = parseFloat(value);
+                  updateQuery({ horizonHours: hours, maxTime: hours });
+                }}>
                   <SelectTrigger className="h-12 text-sm">
                     <SelectValue placeholder="Select timeframe" />
                 </SelectTrigger>
@@ -808,54 +809,63 @@ export default function FlippingPage() {
              <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                {Array.from({ length: 6 }).map((_, i) => (
                  <Card key={i} className="h-full overflow-hidden bg-background/80 border-border/50">
-                   <CardHeader className="pb-4 pt-5">
+                   <CardHeader className="pb-3 pt-6">
                      <div className="flex items-start justify-between gap-3">
                        <div className="min-w-0 flex-1">
                          <div className="flex items-center gap-2 mb-1">
-                           <div className="h-5 bg-neutral-700 rounded w-32"></div>
-                           <div className="h-4 w-4 bg-neutral-700 rounded"></div>
+                           <div className="h-5 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-32 animate-shimmer bg-[length:200%_100%]"></div>
+                           <div className="h-4 w-4 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded animate-shimmer bg-[length:200%_100%]"></div>
                          </div>
-                         <div className="h-3 bg-neutral-700 rounded w-24 mb-3"></div>
-
-                         {/* Key metric highlight skeleton */}
-                         <div className="flex items-center gap-3 mb-3">
-                           <div className="flex items-center gap-1">
-                             <div className="h-4 w-4 bg-neutral-700 rounded"></div>
-                             <div className="h-5 bg-neutral-700 rounded w-16"></div>
-                             <div className="h-3 bg-neutral-700 rounded w-12"></div>
-                           </div>
-                           <div className="flex items-center gap-1">
-                             <div className="h-3 w-3 bg-neutral-700 rounded"></div>
-                             <div className="h-4 bg-neutral-700 rounded w-8"></div>
-                           </div>
-                         </div>
-
-                         {/* Status badges skeleton */}
-                         <div className="flex flex-wrap items-center gap-1.5">
-                           <div className="h-5 bg-neutral-700 rounded w-16"></div>
-                           <div className="h-5 bg-neutral-700 rounded w-12"></div>
-                           <div className="h-5 bg-neutral-700 rounded w-10"></div>
-                         </div>
+                         <div className="h-3 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-24 mb-3 animate-shimmer bg-[length:200%_100%]"></div>
+                       </div>
+                       {/* Score section skeleton */}
+                       <div className="text-right">
+                         <div className="h-3 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-12 mb-1 animate-shimmer bg-[length:200%_100%]"></div>
+                         <div className="h-4 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-16 mb-1 animate-shimmer bg-[length:200%_100%]"></div>
+                         <div className="h-3 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-4 animate-shimmer bg-[length:200%_100%]"></div>
                        </div>
                      </div>
                    </CardHeader>
-                   <CardContent className="space-y-4 pt-0 pb-5">
-                     {/* Buy/Sell prices skeleton */}
-                     <div className="grid grid-cols-2 gap-3">
-                       <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-lg p-3">
-                         <div className="h-3 bg-neutral-700 rounded w-12 mb-1"></div>
-                         <div className="h-4 bg-neutral-700 rounded w-16"></div>
+                   <CardContent className="space-y-4 pt-0 pb-4">
+                     {/* Profit & Suggested Amount skeleton - matches real card structure */}
+                     <div className="bg-border/20 border border-border/40 rounded-lg p-4">
+                       <div className="flex items-center justify-between mb-2">
+                         <div className="flex items-center gap-1">
+                           <div className="h-4 w-4 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded animate-shimmer bg-[length:200%_100%]"></div>
+                           <div className="h-4 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-24 animate-shimmer bg-[length:200%_100%]"></div>
+                         </div>
+                         <div className="flex items-center gap-1">
+                           <div className="h-4 w-4 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded animate-shimmer bg-[length:200%_100%]"></div>
+                           <div className="h-4 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-20 animate-shimmer bg-[length:200%_100%]"></div>
+                         </div>
                        </div>
-                       <div className="bg-neutral-800/50 border border-neutral-700/50 rounded-lg p-3">
-                         <div className="h-3 bg-neutral-700 rounded w-12 mb-1"></div>
-                         <div className="h-4 bg-neutral-700 rounded w-16"></div>
+                       <div className="h-8 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-32 mb-1 animate-shimmer bg-[length:200%_100%]"></div>
+                       <div className="h-3 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-24 animate-shimmer bg-[length:200%_100%]"></div>
+                     </div>
+
+                     {/* Buy/Sell prices skeleton - matches real card structure */}
+                     <div className="grid grid-cols-2 gap-2">
+                       <div className="bg-neutral-800/50 border border-neutral-700/50 rounded p-2">
+                         <div className="h-3 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-16 mb-1 animate-shimmer bg-[length:200%_100%]"></div>
+                         <div className="h-4 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-20 animate-shimmer bg-[length:200%_100%]"></div>
+                       </div>
+                       <div className="bg-neutral-800/50 border border-neutral-700/50 rounded p-2">
+                         <div className="h-3 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-16 mb-1 animate-shimmer bg-[length:200%_100%]"></div>
+                         <div className="h-4 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-20 animate-shimmer bg-[length:200%_100%]"></div>
                        </div>
                      </div>
 
-                     {/* Market data skeleton */}
-                     <div className="flex items-center justify-between pt-2 border-t border-neutral-700/50">
-                       <div className="h-3 bg-neutral-700 rounded w-24"></div>
-                       <div className="h-3 bg-neutral-700 rounded w-16"></div>
+                     {/* Status badges & Market data skeleton - matches real card structure */}
+                     <div className="space-y-2">
+                       <div className="flex flex-wrap items-center gap-1.5">
+                         <div className="h-5 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-20 animate-shimmer bg-[length:200%_100%]"></div>
+                         <div className="h-5 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-16 animate-shimmer bg-[length:200%_100%]"></div>
+                         <div className="h-5 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-16 animate-shimmer bg-[length:200%_100%]"></div>
+                         <div className="ml-auto flex items-center gap-1">
+                           <div className="h-3 w-3 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded animate-shimmer bg-[length:200%_100%]"></div>
+                           <div className="h-3 bg-gradient-to-r from-neutral-700 via-neutral-600 to-neutral-700 rounded w-24 animate-shimmer bg-[length:200%_100%]"></div>
+                         </div>
+                       </div>
                      </div>
                    </CardContent>
                  </Card>
@@ -924,7 +934,7 @@ export default function FlippingPage() {
                 }
 
                 return (
-                                     <Card
+                  <Card
                      key={o.productId}
                      className={`group overflow-hidden transition-all ease-out bg-background/80 border-border/50 cursor-pointer hover:shadow-lg hover:border-border ${isExpanded ? 'shadow-xl' : 'hover:border-muted-foreground/30'}`}
                      onClick={handleCardClick}
@@ -951,7 +961,7 @@ export default function FlippingPage() {
                              </span>
                            </Link>
                          </div>
-                                                  {/* Move score to corner with subtle expand indicator */}
+                        {/* Move score to corner with subtle expand indicator */}
                          <div className="text-right">
                            <div className="text-xs text-muted-foreground">Score</div>
                            <div className="text-sm font-semibold">{format(o.score, 2)}</div>
@@ -961,12 +971,12 @@ export default function FlippingPage() {
                           </div>
                         </div>
                       </CardHeader>
-                     <CardContent className="space-y-4 pt-0 pb-4">
+                     <CardContent className="space-y-4 pt-0 pb-0">
                        {/* Profit & Suggested Amount - Prominent */}
                        <div className="bg-border/20 border border-border/40 rounded-lg p-4">
                          <div className="flex items-center justify-between mb-2">
                            <div className="flex items-center gap-1">
-                             <Activity className="h-4 w-4 text-muted-foreground" />
+                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                              <span className="text-sm font-medium">
                                Expected Profit
                                {query.horizonHours && query.horizonHours !== 1 && (
@@ -977,7 +987,10 @@ export default function FlippingPage() {
                            <div className="flex items-center gap-1">
                              <Package className="h-4 w-4 text-muted-foreground" />
                              <span className="text-sm font-semibold text-muted-foreground">
-                               {format(o.suggestedUnitsPerHour, 0)} units/hr
+                               {query.horizonHours && query.horizonHours !== 1 
+                                 ? `${format((o.suggestedUnitsPerHour || 0) * query.horizonHours, 0)} units (${format(query.horizonHours, 1)}h)`
+                                 : `${format(o.suggestedUnitsPerHour, 0)} units/hr`
+                               }
                              </span>
                            </div>
                          </div>
@@ -1033,172 +1046,183 @@ export default function FlippingPage() {
                          </div>
                        </div>
 
-                       {/* Status badges & Market data */}
-                       <div className="space-y-2">
-                         <div className="flex flex-wrap items-center gap-1.5">
-                           <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${spreadPctVal >= 20 ? 'border-emerald-500/50 text-emerald-400' : spreadPctVal >= 10 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
-                             <TrendingUp className="h-3 w-3 mr-1" />
-                             {format(spreadPctVal, 0)}% spread
-                           </Badge>
-                           {riskPct !== undefined && (
-                             o.riskNote ? (
-                               <Tooltip>
-                                 <TooltipTrigger asChild>
-                                   <Badge variant="outline" className={`text-[10px] px-2 py-0.5 cursor-help ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
-                                     <ShieldAlert className="h-3 w-3 mr-1" />
-                                     {riskPct}% risk
-                                   </Badge>
-                                 </TooltipTrigger>
-                                 <TooltipContent>
-                                   <p className="max-w-xs text-sm">{o.riskNote}</p>
-                                 </TooltipContent>
-                               </Tooltip>
-                             ) : (
-                               <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
-                                 <ShieldAlert className="h-3 w-3 mr-1" />
-                                 {riskPct}% risk
-                               </Badge>
-                             )
-                           )}
-                           <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${competitionScore >= 1000 ? 'border-red-500/50 text-red-400' : competitionScore >= 500 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
-                             <Users className="h-3 w-3 mr-1" />
-                             {format(competitionScore, 0)} comp
-                           </Badge>
-                           <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-                             <BarChart3 className="h-3 w-3" />
-                             <span>Demand {format(d,0)} · Supply {format(s,0)}</span>
-                           </div>
-                         </div>
-                       </div>
+                        {/* Status badges & Market data */}
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${spreadPctVal >= 20 ? 'border-emerald-500/50 text-emerald-400' : spreadPctVal >= 10 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                              {format(spreadPctVal, 0)}% spread
+                            </Badge>
+                            {riskPct !== undefined && (
+                              o.riskNote ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="outline" className={`text-[10px] px-2 py-0.5 cursor-help ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
+                                      <ShieldAlert className="h-3 w-3 mr-1" />
+                                      {riskPct}% risk
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs text-sm">{o.riskNote}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : (
+                                <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
+                                    <ShieldAlert className="h-3 w-3 mr-1" />
+                                    {riskPct}% risk
+                                  </Badge>
+                                )
+                              )}
+                            <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${competitionScore >= 1000 ? 'border-red-500/50 text-red-400' : competitionScore >= 500 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
+                              <Users className="h-3 w-3 mr-1" />
+                              {format(competitionScore, 0)} comp
+                            </Badge>
+                            <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+                              <BarChart3 className="h-3 w-3" />
+                              <span>Demand {format(d,0)} · Supply {format(s,0)}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Expand indicator arrow */}
+                          {!isExpanded && (
+                            <div className="flex justify-center pt-1 pb-2">
+                              <div className="h-8 w-8 p-0 hover:bg-muted hover:text-foreground transition-colors flex items-center justify-center rounded-md">
+                                <ChevronDown className="h-4 w-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
                        {/* Expanded Tutorial Content */}
-                       <div className={`overflow-hidden transition-all duration-100 ease-out ${isExpanded ? 'max-h-[800px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                         <div className="mt-4 pt-4 border-t border-border/50">
-                           <div className="flex items-center gap-2 mb-3">
-                             <Info className="h-4 w-4 text-blue-400" />
-                             <span className="text-sm font-medium text-blue-400">Trading Tutorial</span>
-                           </div>
+                       {isExpanded && (
+                        <div className={`overflow-hidden transition-all duration-100 ease-out ${isExpanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
+                          <div className="mt-4 pt-4 border-t border-border/50">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Info className="h-4 w-4 text-blue-400" />
+                              <span className="text-sm font-medium text-blue-400">Trading Tutorial</span>
+                            </div>
 
-                           <div className="space-y-3 text-sm">
-                             {/* Step 1: How many to buy */}
-                             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-                               <div className="flex items-center gap-2 mb-2">
-                                 <Target className="h-4 w-4 text-blue-400" />
-                                 <span className="font-medium text-blue-300">Step 1: Calculate Purchase Amount</span>
-                               </div>
-                               <div className="text-xs text-muted-foreground space-y-1">
-                                 <div className="flex items-center justify-between">
-                                   <span>Suggested amount per hour:</span>
-                                   <span className="font-mono text-blue-300">{format(o.suggestedUnitsPerHour, 0)} units</span>
-                                 </div>
-                                 {query.horizonHours && (
-                                   <div className="flex items-center justify-between">
-                                     <span>For {query.horizonHours}h timeframe:</span>
-                                     <span className="font-mono text-blue-300">{format((o.suggestedUnitsPerHour || 0) * query.horizonHours, 0)} units</span>
-                                   </div>
-                                 )}
-                                 <div className="flex items-center justify-between border-t border-blue-500/20 pt-1">
-                                   <span>Total investment needed:</span>
-                                   <span className="font-mono text-blue-300">
-                                     {format((query.horizonHours || 1) * Math.round(o.suggestedUnitsPerHour || 0) * buy, 0)} coins
-                                   </span>
-                                 </div>
-                               </div>
-                             </div>
+                            <div className="space-y-3 text-sm">
+                              {/* Step 1: How many to buy */}
+                              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Target className="h-4 w-4 text-blue-400" />
+                                  <span className="font-medium text-blue-300">Step 1: Calculate Purchase Amount</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span>Suggested amount per hour:</span>
+                                    <span className="font-mono text-blue-300">{format(o.suggestedUnitsPerHour, 0)} units</span>
+                                  </div>
+                                  {query.horizonHours && (
+                                    <div className="flex items-center justify-between">
+                                      <span>For {query.horizonHours}h timeframe:</span>
+                                      <span className="font-mono text-blue-300">{format((o.suggestedUnitsPerHour || 0) * query.horizonHours, 0)} units</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center justify-between border-t border-blue-500/20 pt-1">
+                                    <span>Total investment needed:</span>
+                                    <span className="font-mono text-blue-300">
+                                      {format((query.horizonHours || 1) * Math.round(o.suggestedUnitsPerHour || 0) * buy, 0)} coins
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
 
-                             {/* Step 2: Buy orders */}
-                             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                               <div className="flex items-center gap-2 mb-2">
-                                 <ArrowDown className="h-4 w-4 text-red-400" />
-                                 <span className="font-medium text-red-300">Step 2: Place Buy Orders</span>
-                               </div>
-                               <div className="text-xs text-muted-foreground space-y-1">
-                                 <div>• Go to the Bazaar and search for <span className="font-mono text-red-300">{o.displayName || o.productId}</span></div>
-                                 <div>• Place buy orders at <span className="font-mono text-red-300">{format(buy, 2)} coins</span> each</div>
-                                 <div>• Expected fill time: <span className="text-red-300">{(o as any).suggestedBuyFillHours ? formatTime((o as any).suggestedBuyFillHours) : 'Unknown'}</span></div>
-                               </div>
-                             </div>
+                              {/* Step 2: Buy orders */}
+                              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <ArrowDown className="h-4 w-4 text-red-400" />
+                                  <span className="font-medium text-red-300">Step 2: Place Buy Orders</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                  <div>• Go to the Bazaar and search for <span className="font-mono text-red-300">{o.displayName || o.productId}</span></div>
+                                  <div>• Place buy orders at <span className="font-mono text-red-300">{format(buy, 2)} coins</span> each</div>
+                                  <div>• Expected fill time: <span className="text-red-300">{(o as any).suggestedBuyFillHours ? formatTime((o as any).suggestedBuyFillHours) : 'Unknown'}</span></div>
+                                </div>
+                              </div>
 
-                             {/* Step 3: Sell orders */}
-                             <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-                               <div className="flex items-center gap-2 mb-2">
-                                 <ArrowUp className="h-4 w-4 text-emerald-400" />
-                                 <span className="font-medium text-emerald-300">Step 3: Place Sell Orders</span>
-                               </div>
-                               <div className="text-xs text-muted-foreground space-y-1">
-                                 <div>• Once items are bought, place sell orders at <span className="font-mono text-emerald-300">{format(sell, 2)} coins</span> each</div>
-                                 <div>• After {(bazaarTaxRate * 100).toFixed(2)}% tax, you'll receive <span className="font-mono text-emerald-300">{format(sell * (1 - bazaarTaxRate), 2)} coins</span> net</div>
-                                 <div>• Expected fill time: <span className="text-emerald-300">{(o as any).suggestedSellFillHours ? formatTime((o as any).suggestedSellFillHours) : 'Unknown'}</span></div>
-                                 <div>• Total expected time: <span className="text-emerald-300">{(o as any).suggestedTotalFillHours ? formatTime((o as any).suggestedTotalFillHours) : 'Unknown'}</span></div>
-                               </div>
-                             </div>
+                              {/* Step 3: Sell orders */}
+                              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <ArrowUp className="h-4 w-4 text-emerald-400" />
+                                  <span className="font-medium text-emerald-300">Step 3: Place Sell Orders</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                  <div>• Once items are bought, place sell orders at <span className="font-mono text-emerald-300">{format(sell, 2)} coins</span> each</div>
+                                  <div>• After {(bazaarTaxRate * 100).toFixed(2)}% tax, you'll receive <span className="font-mono text-emerald-300">{format(sell * (1 - bazaarTaxRate), 2)} coins</span> net</div>
+                                  <div>• Expected fill time: <span className="text-emerald-300">{(o as any).suggestedSellFillHours ? formatTime((o as any).suggestedSellFillHours) : 'Unknown'}</span></div>
+                                  <div>• Total expected time: <span className="text-emerald-300">{(o as any).suggestedTotalFillHours ? formatTime((o as any).suggestedTotalFillHours) : 'Unknown'}</span></div>
+                                </div>
+                              </div>
 
-                             {/* Step 4: Profit Setup */}
-                             <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
-                               <div className="flex items-center gap-2 mb-2">
-                                 <Calculator className="h-4 w-4 text-purple-400" />
-                                 <span className="font-medium text-purple-300">Step 4: Profit Setup</span>
-                               </div>
-                               <div className="text-xs text-muted-foreground space-y-1">
-                                 {/* Per Item Calculations */}
-                                 <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Per Item:</div>
-                                 <div className="flex items-center justify-between">
-                                   <span>Gross profit:</span>
-                                   <span className="font-mono text-purple-300">{format(sell - buy, 2)} coins</span>
-                                 </div>
-                                 <div className="flex items-center justify-between">
-                                   <span>Tax deduction ({(bazaarTaxRate * 100).toFixed(2)}%):</span>
-                                   <span className="font-mono text-red-300">-{format(sell * bazaarTaxRate, 2)} coins</span>
-                                 </div>
-                                 <div className="flex items-center justify-between border-t mb-4 border-purple-500/20 pt-1">
-                                   <span>Net profit per item:</span>
-                                   <span className="font-mono text-purple-300">{format((sell * (1 - bazaarTaxRate)) - buy, 2)} coins</span>
-                                 </div>
+                              {/* Step 4: Profit Setup */}
+                              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Calculator className="h-4 w-4 text-purple-400" />
+                                  <span className="font-medium text-purple-300">Step 4: Profit Setup</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                  {/* Per Item Calculations */}
+                                  <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Per Item:</div>
+                                  <div className="flex items-center justify-between">
+                                    <span>Gross profit:</span>
+                                    <span className="font-mono text-purple-300">{format(sell - buy, 2)} coins</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span>Tax deduction ({(bazaarTaxRate * 100).toFixed(2)}%):</span>
+                                    <span className="font-mono text-red-300">-{format(sell * bazaarTaxRate, 2)} coins</span>
+                                  </div>
+                                  <div className="flex items-center justify-between border-t mb-4 border-purple-500/20 pt-1">
+                                    <span>Net profit per item:</span>
+                                    <span className="font-mono text-purple-300">{format((sell * (1 - bazaarTaxRate)) - buy, 2)} coins</span>
+                                  </div>
 
-                                 {/* Spacer */}
-                                 <div className="h-3"></div>
+                                  {/* Spacer */}
+                                  <div className="h-3"></div>
 
-                                 {/* Rate Calculations */}
-                                 <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Profit Rates:</div>
-                                 <div className="flex items-center justify-between">
-                                   <span>Profit per hour:</span>
-                                   <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * (1 - bazaarTaxRate), 0)} coins/hour</span>
-                                 </div>
-                                 {query.horizonHours && (
-                                   <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
-                                     <span>Total profit ({query.horizonHours}h):</span>
-                                     <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours * (1 - bazaarTaxRate), 0)} coins</span>
-                                   </div>
-                                 )}
-                               </div>
-                             </div>
+                                  {/* Rate Calculations */}
+                                  <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Profit Rates:</div>
+                                  <div className="flex items-center justify-between">
+                                    <span>Profit per hour:</span>
+                                    <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * (1 - bazaarTaxRate), 0)} coins/hour</span>
+                                  </div>
+                                  {query.horizonHours && (
+                                    <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
+                                      <span>Total profit ({query.horizonHours}h):</span>
+                                      <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours * (1 - bazaarTaxRate), 0)} coins</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
 
-                             {/* Risk Warning */}
-                             {riskPct !== undefined && riskPct >= 30 && (
-                               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                                 <div className="flex items-center gap-2 mb-2">
-                                   <AlertCircle className="h-4 w-4 text-amber-400" />
-                                   <span className="font-medium text-amber-300">Risk Warning</span>
+                              {/* Risk Warning */}
+                              {riskPct !== undefined && riskPct >= 30 && (
+                                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <AlertCircle className="h-4 w-4 text-amber-400" />
+                                    <span className="font-medium text-amber-300">Risk Warning</span>
+                            </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    This flip has a <span className="text-amber-300">{riskPct}% risk score</span>. Market conditions can change quickly - monitor your orders closely.
+                            </div>
                           </div>
-                                 <div className="text-xs text-muted-foreground">
-                                   This flip has a <span className="text-amber-300">{riskPct}% risk score</span>. Market conditions can change quickly - monitor your orders closely.
-                          </div>
-                        </div>
-                             )}
+                              )}
 
-                             <div className="text-center pt-2">
-                               <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 onClick={handleCollapse}
-                                 className="h-8 w-8 p-0 hover:bg-muted hover:text-foreground transition-colors"
-                               >
-                                 <ChevronUp className="h-4 w-4" />
-                               </Button>
-                             </div>
+                              <div className="text-center pb-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={handleCollapse}
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                >
+                                  <ChevronUp className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                 )

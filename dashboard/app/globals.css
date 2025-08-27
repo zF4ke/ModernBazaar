@@ -8,6 +8,21 @@
   }
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@layer utilities {
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
