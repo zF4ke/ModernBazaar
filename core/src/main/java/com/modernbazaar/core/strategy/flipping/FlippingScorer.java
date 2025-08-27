@@ -250,7 +250,9 @@ public class FlippingScorer {
             suggestedBuyFillHours = (supplyPerHour > 0.0) ? (totalSuggestedUnits / supplyPerHour) : null;
             suggestedSellFillHours = (demandPerHour > 0.0) ? (totalSuggestedUnits / demandPerHour) : null;
             if (suggestedBuyFillHours != null && suggestedSellFillHours != null) {
-                suggestedTotalFillHours = Math.max(suggestedBuyFillHours, suggestedSellFillHours);
+                //suggestedTotalFillHours = Math.max(suggestedBuyFillHours, 
+                // sum is more realistic
+                suggestedTotalFillHours = suggestedBuyFillHours + suggestedSellFillHours;
             } else if (suggestedBuyFillHours != null) {
                 suggestedTotalFillHours = suggestedBuyFillHours;
             } else if (suggestedSellFillHours != null) {
@@ -324,19 +326,29 @@ public class FlippingScorer {
                 filter.minBuy(), filter.maxBuy(), filter.minSpread());
         if (snaps == null || snaps.isEmpty()) return List.of();
 
-        // 2) Ids e nomes
-        List<String> ids = snaps.stream().map(BazaarItemSnapshot::getProductId).toList();
+        // 2) Ids e nomes (ordenar ids para chave de cache estável em camadas superiores)
+        List<String> ids = snaps.stream().map(BazaarItemSnapshot::getProductId).distinct().sorted().toList();
         Map<String, String> names = preloadNames(new HashSet<>(ids));
 
-        // 3) Médias multi-janelas em UMA única query bulk
+        // 3) Médias multi-janelas em UMA única query bulk (cacheável em FinanceMetricsService)
         Map<Integer, Map<String, FinanceAverages>> multi = finance.getMultiWindowAverages(ids, 48, 6, 1);
         Map<String, FinanceAverages> avgs48 = multi.getOrDefault(48, Map.of());
         Map<String, FinanceAverages> avgs06 = multi.getOrDefault(6, Map.of());
         Map<String, FinanceAverages> avgs01 = multi.getOrDefault(1, Map.of());
 
-        // 4) Score item a item e construir resposta
-        List<FlipOpportunityResponseDTO> out = new ArrayList<>(snaps.size());
-        for (BazaarItemSnapshot s : snaps) {
+        final boolean disableComp = Boolean.TRUE.equals(disableCompetitionPenalties);
+        final boolean disableRisk = Boolean.TRUE.equals(disableRiskPenalties);
+        final double fMaxTime = maxTime != null ? maxTime : Double.POSITIVE_INFINITY;
+        final double fMinUnits = minUnitsPerHour != null ? minUnitsPerHour : Double.NEGATIVE_INFINITY;
+        final double fMaxUnits = maxUnitsPerHour != null ? maxUnitsPerHour : Double.POSITIVE_INFINITY;
+        final double fMaxComp  = maxCompetitionPerHour != null ? maxCompetitionPerHour : Double.POSITIVE_INFINITY;
+        final double fMaxRisk  = maxRiskScore != null ? maxRiskScore : Double.POSITIVE_INFINITY;
+
+        // 4) Score item a item com early-filter; usar parallel se nº itens grande
+        boolean useParallel = snaps.size() >= 128; // threshold heurístico
+        var stream = useParallel ? snaps.parallelStream() : snaps.stream();
+
+        List<FlipOpportunityResponseDTO> out = stream.map(s -> {
             String id = s.getProductId();
             FinanceAverages a48 = avgs48.get(id);
             FinanceAverages a06 = avgs06.get(id);
@@ -345,7 +357,6 @@ public class FlippingScorer {
             double ib = s.getInstantBuyPrice();
             double is = s.getInstantSellPrice();
 
-            // Preferir insta metrics por janela; fallback para |delta| por hora
             Double d48 = a48 != null && a48.avgInstaBoughtItems() > 0 ? a48.avgInstaBoughtItems() : (a48 != null ? Math.abs(a48.avgDeltaBuyOrders()) : null);
             Double s48 = a48 != null && a48.avgInstaSoldItems()   > 0 ? a48.avgInstaSoldItems()   : (a48 != null ? Math.abs(a48.avgDeltaSellOrders()) : null);
             Double d06 = a06 != null && a06.avgInstaBoughtItems() > 0 ? a06.avgInstaBoughtItems() : (a06 != null ? Math.abs(a06.avgDeltaBuyOrders()) : null);
@@ -353,12 +364,9 @@ public class FlippingScorer {
             Double d01 = a01 != null && a01.avgInstaBoughtItems() > 0 ? a01.avgInstaBoughtItems() : (a01 != null ? Math.abs(a01.avgDeltaBuyOrders()) : null);
             Double s01 = a01 != null && a01.avgInstaSoldItems()   > 0 ? a01.avgInstaSoldItems()   : (a01 != null ? Math.abs(a01.avgDeltaSellOrders()) : null);
 
-            // Conservador: usar o mínimo entre janelas disponíveis (>0), privilegiando throughput recente
             Double demand = minPos(d48, d06, d01);
             Double supply = minPos(s48, s06, s01);
-
             double flowProxy = ((demand != null ? demand : 0.0) + (supply != null ? supply : 0.0));
-            // Competição: manter 48h se disponível (mais estável)
             double churnBuy = a48 != null ? a48.avgCreatedBuyOrders() : 0.0;
             double churnSell = a48 != null ? a48.avgCreatedSellOrders() : 0.0;
 
@@ -378,23 +386,27 @@ public class FlippingScorer {
                     horizonHours
             );
 
-            Score sc = scoreWithToggles(in, disableRiskPenalties, disableCompetitionPenalties);
+            Score sc = scoreWithToggles(in, disableRisk, disableComp);
 
-            double spread = sc.spread();
-            double spreadPct = sc.spreadPct();
-            Double compPerHour = a48 != null ? (a48.avgCreatedBuyOrders() + a48.avgCreatedSellOrders()) : null;
+            // Early rejection com base nos filtros avançados (evita construir DTO desnecessário)
+            if (sc.suggestedTotalFillHours() != null && sc.suggestedTotalFillHours() > fMaxTime) return null;
+            if (sc.suggestedUnitsPerHour() > 0) {
+                if (sc.suggestedUnitsPerHour() < fMinUnits) return null;
+                if (sc.suggestedUnitsPerHour() > fMaxUnits) return null;
+            }
+            double compPerHour = (a48 != null ? (a48.avgCreatedBuyOrders() + a48.avgCreatedSellOrders()) : 0.0);
+            if (compPerHour > fMaxComp) return null;
+            if (sc.riskScore() > fMaxRisk) return null;
 
-            // construir resposta com todos os campos
-            out.add(new FlipOpportunityResponseDTO(
+            return new FlipOpportunityResponseDTO(
                     id,
                     names.getOrDefault(id, id),
                     ib,
                     is,
-                    // order-book claros para BO→SO
                     is,
                     ib,
-                    spread,
-                    spreadPct,
+                    sc.spread(),
+                    sc.spreadPct(),
                     demand,
                     supply,
                     compPerHour,
@@ -404,7 +416,6 @@ public class FlippingScorer {
                     sc.profitPerItem(),
                     sc.profitPerHour(),
                     sc.reasonableProfitPerHour(),
-                    // novas estimativas de tempo
                     sc.suggestedBuyFillHours(),
                     sc.suggestedSellFillHours(),
                     sc.suggestedTotalFillHours(),
@@ -412,13 +423,11 @@ public class FlippingScorer {
                     sc.risky(),
                     sc.riskNote(),
                     sc.score()
-            ));
-        }
+            );
+        }).filter(Objects::nonNull)
+          .collect(Collectors.toCollection(() -> new ArrayList<>(snaps.size())));
 
-        // 5) Aplicar filtros avançados (post-scoring)
-        out = applyAdvancedFilters(out, maxTime, minUnitsPerHour, maxUnitsPerHour, maxCompetitionPerHour, maxRiskScore);
-
-        // 6) Ordenar por score desc
+        // 5) Ordenar por score desc
         out.sort(Comparator.comparingDouble(FlipOpportunityResponseDTO::score).reversed());
         return out;
     }

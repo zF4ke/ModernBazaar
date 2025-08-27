@@ -945,10 +945,10 @@ export default function FlippingPage() {
                               <Star className={`h-4 w-4 ${fav ? 'fill-amber-400' : ''}`} />
                             </button>
                            </div>
-                           <Link href={href}>
-                             <div className="text-xs text-muted-foreground truncate hover:underline hover:decoration-2 transition-all cursor-pointer">
+                           <Link href={href} className="inline-block">
+                             <span className="text-xs text-muted-foreground hover:underline hover:decoration-2 transition-all cursor-pointer">
                                {o.productId}
-                             </div>
+                             </span>
                            </Link>
                          </div>
                                                   {/* Move score to corner with subtle expand indicator */}
@@ -1140,6 +1140,8 @@ export default function FlippingPage() {
                                  <span className="font-medium text-purple-300">Step 4: Profit Setup</span>
                                </div>
                                <div className="text-xs text-muted-foreground space-y-1">
+                                 {/* Per Item Calculations */}
+                                 <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Per Item:</div>
                                  <div className="flex items-center justify-between">
                                    <span>Gross profit:</span>
                                    <span className="font-mono text-purple-300">{format(sell - buy, 2)} coins</span>
@@ -1148,17 +1150,23 @@ export default function FlippingPage() {
                                    <span>Tax deduction ({(bazaarTaxRate * 100).toFixed(2)}%):</span>
                                    <span className="font-mono text-red-300">-{format(sell * bazaarTaxRate, 2)} coins</span>
                                  </div>
-                                 <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
-                                   <span>Net profit:</span>
+                                 <div className="flex items-center justify-between border-t mb-4 border-purple-500/20 pt-1">
+                                   <span>Net profit per item:</span>
                                    <span className="font-mono text-purple-300">{format((sell * (1 - bazaarTaxRate)) - buy, 2)} coins</span>
                                  </div>
+
+                                 {/* Spacer */}
+                                 <div className="h-3"></div>
+
+                                 {/* Rate Calculations */}
+                                 <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Profit Rates:</div>
                                  <div className="flex items-center justify-between">
-                                   <span>Per hour profit:</span>
-                                   <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * (1 - bazaarTaxRate), 0)} coins</span>
+                                   <span>Profit per hour:</span>
+                                   <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * (1 - bazaarTaxRate), 0)} coins/hour</span>
                                  </div>
                                  {query.horizonHours && (
                                    <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
-                                     <span>Timeframe profit:</span>
+                                     <span>Total profit ({query.horizonHours}h):</span>
                                      <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours * (1 - bazaarTaxRate), 0)} coins</span>
                                    </div>
                                  )}
