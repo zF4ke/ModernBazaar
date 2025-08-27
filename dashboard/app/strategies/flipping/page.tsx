@@ -945,10 +945,10 @@ export default function FlippingPage() {
                               <Star className={`h-4 w-4 ${fav ? 'fill-amber-400' : ''}`} />
                             </button>
                            </div>
-                           <Link href={href}>
-                             <div className="text-xs text-muted-foreground truncate hover:underline hover:decoration-2 transition-all cursor-pointer">
+                           <Link href={href} className="inline-block">
+                             <span className="text-xs text-muted-foreground hover:underline hover:decoration-2 transition-all cursor-pointer">
                                {o.productId}
-                             </div>
+                             </span>
                            </Link>
                          </div>
                                                   {/* Move score to corner with subtle expand indicator */}

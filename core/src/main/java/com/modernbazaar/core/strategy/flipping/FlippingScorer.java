@@ -250,7 +250,9 @@ public class FlippingScorer {
             suggestedBuyFillHours = (supplyPerHour > 0.0) ? (totalSuggestedUnits / supplyPerHour) : null;
             suggestedSellFillHours = (demandPerHour > 0.0) ? (totalSuggestedUnits / demandPerHour) : null;
             if (suggestedBuyFillHours != null && suggestedSellFillHours != null) {
-                suggestedTotalFillHours = Math.max(suggestedBuyFillHours, suggestedSellFillHours);
+                //suggestedTotalFillHours = Math.max(suggestedBuyFillHours, 
+                // sum is more realistic
+                suggestedTotalFillHours = suggestedBuyFillHours + suggestedSellFillHours;
             } else if (suggestedBuyFillHours != null) {
                 suggestedTotalFillHours = suggestedBuyFillHours;
             } else if (suggestedSellFillHours != null) {
