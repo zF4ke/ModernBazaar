@@ -83,6 +83,10 @@ skyblock:
     retention:
       enabled: true
       interval-days: 45 # 45 days
+    finance:
+      metrics:
+        enabled: true
+        interval-minutes: 60 # 1 hour
   catalog:
     enabled: true
     refresh-days: 7

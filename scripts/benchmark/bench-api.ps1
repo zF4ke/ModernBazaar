@@ -1,7 +1,6 @@
 param(
   [string]$BaseUrl = "http://188.166.192.72:8080",
-  [int]$Repeat = 5,
-  [int]$Warmup = 1,
+  [int]$Warmup = 0,
   [int]$TimeoutSec = 30,
   [int]$HistoryHours = 24,
   [int]$MaxIds = 5,
@@ -9,6 +8,12 @@ param(
   [switch]$SaveJson,
   [switch]$SaveCsv
 )
+
+# Forçar repeat para 1 conforme pedido (não configurável)
+$Repeat = 1
+
+# Garantir UTF-8 na consola para evitar "ConcluÃ­do" etc.
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -21,26 +26,21 @@ function Measure-Endpoint {
   param(
     [string]$Name,
     [string]$Url,
-    [int]$Repeat = 5,
-    [int]$Warmup = 1,
+    [int]$Repeat = 1,
+    [int]$Warmup = 0,
     [int]$TimeoutSec = 30
   )
-
   $results = @()
-
-  # Warmup
   for ($i = 0; $i -lt $Warmup; $i++) {
-    try { Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec $TimeoutSec | Out-Null } catch { }
+    $wUrl = Add-CacheBuster $Url
+    try { Invoke-WebRequest -Uri $wUrl -Method GET -TimeoutSec $TimeoutSec -Headers @{ 'User-Agent'='bench-api.ps1'; 'Cache-Control'='no-cache'; 'Pragma'='no-cache' } | Out-Null } catch { }
   }
-
-  # Timed runs
   for ($i = 1; $i -le $Repeat; $i++) {
+    $finalUrl = Add-CacheBuster $Url
     $sw = New-Stopwatch
-    $ok = $true
-    $size = 0
-    $code = $null
+    $ok = $true; $size = 0; $code = $null
     try {
-      $resp = Invoke-WebRequest -Uri $Url -Method GET -TimeoutSec $TimeoutSec -Headers @{ 'User-Agent' = 'bench-api.ps1' }
+      $resp = Invoke-WebRequest -Uri $finalUrl -Method GET -TimeoutSec $TimeoutSec -Headers @{ 'User-Agent'='bench-api.ps1'; 'Cache-Control'='no-cache'; 'Pragma'='no-cache' }
       $code = $resp.StatusCode
       $size = if ($resp.Content) { [Text.Encoding]::UTF8.GetByteCount($resp.Content) } else { 0 }
     } catch {
@@ -49,18 +49,9 @@ function Measure-Endpoint {
       $size = 0
     } finally {
       $sw.Stop()
-      $results += [PSCustomObject]@{
-        name   = $Name
-        url    = $Url
-        ok     = $ok
-        code   = $code
-        ms     = [int]$sw.Elapsed.TotalMilliseconds
-        bytes  = $size
-        at     = (Get-Date).ToString('s')
-      }
+      $results += [PSCustomObject]@{ name=$Name; url=$finalUrl; ok=$ok; code=$code; ms=[int]$sw.Elapsed.TotalMilliseconds; bytes=$size; at=(Get-Date).ToString('s') }
     }
   }
-
   return $results
 }
 
@@ -109,18 +100,29 @@ function Discover-ProductIds {
   }
 }
 
-# MAIN
-$stamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
-$all = @()
+function Add-CacheBuster {
+  param([string]$Url)
+  $ticks = [DateTime]::UtcNow.Ticks
+  $rnd = [Guid]::NewGuid().ToString('N').Substring(0,8)
+  if ($Url -like '*?*') { $sep = '&' } else { $sep = '?' }
+  return "${Url}${sep}_=${ticks}${rnd}"
+}
 
+# MAIN ajustes (remover logs de parâmetros antigos)
 Write-Host "BaseUrl: $BaseUrl" -ForegroundColor Cyan
-Write-Host "Warmup: $Warmup, Repeat: $Repeat, TimeoutSec: $TimeoutSec, HistoryHours: $HistoryHours, WithPoints: $WithPoints" -ForegroundColor DarkCyan
+Write-Host "Repeat fixo: $Repeat" -ForegroundColor DarkCyan
 
-# 1) List endpoint
+# Randomizar budget (10M - 1000M) para evitar cache de resultados de flipping
+$randomBudget = Get-Random -Minimum 10000000 -Maximum 1000000001
+Write-Host "Budget aleatorio flipping: $randomBudget" -ForegroundColor DarkCyan
+
+# 1) List endpoint (com cache buster implícito em Measure-Endpoint)
+$all = @()
 $all += Measure-Endpoint -Name 'list' -Url "$BaseUrl/api/bazaar/items?limit=50&page=0" -Repeat $Repeat -Warmup $Warmup -TimeoutSec $TimeoutSec
 
-# 1b) Flipping strategy endpoint (básico)
-$all += Measure-Endpoint -Name 'flipping' -Url "$BaseUrl/api/strategies/flipping?limit=50&page=0" -Repeat $Repeat -Warmup $Warmup -TimeoutSec $TimeoutSec
+# 1b) Flipping heavy (fixo + random budget + parâmetros pesados)
+$flipUrl = "$BaseUrl/api/strategies/flipping?sort=score&limit=50&page=0&budget=$randomBudget&horizonHours=6&disableCompetitionPenalties=false&disableRiskPenalties=false&maxTime=6&maxCompetitionPerHour=30&maxRiskScore=0.2"
+$all += Measure-Endpoint -Name 'flipping-heavy' -Url $flipUrl -Repeat $Repeat -Warmup $Warmup -TimeoutSec $TimeoutSec
 
 # 2) Discover some product IDs automatically
 $ids = @()
@@ -169,10 +171,15 @@ $summary | Sort-Object endpoint | Format-Table -AutoSize | Out-String | Write-Ho
 # Optional saves
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ($SaveJson) {
+  # atualizar para incluir randomBudget
+  $existingConfigIndex = ($null)
+  # reconstruir JSON simples
+  $stamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
+  $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
   $outJson = Join-Path $dir "bench-results-$stamp.json"
   [PSCustomObject]@{
     baseUrl = $BaseUrl
-    config  = @{ repeat=$Repeat; warmup=$Warmup; timeoutSec=$TimeoutSec; historyHours=$HistoryHours; withPoints=$WithPoints.IsPresent; maxIds=$MaxIds }
+    config  = @{ repeat=$Repeat; timeoutSec=$TimeoutSec; historyHours=$HistoryHours; withPoints=$WithPoints.IsPresent; maxIds=$MaxIds; flippingBudgetRandom=$randomBudget }
     summary = $summary
     samples = $all
   } | ConvertTo-Json -Depth 6 | Out-File -FilePath $outJson -Encoding utf8
@@ -184,4 +191,4 @@ if ($SaveCsv) {
   Write-Host "Salvo CSV: $outCsv" -ForegroundColor DarkGreen
 }
 
-Write-Host "Concluído." -ForegroundColor Cyan
+Write-Host "Concluido." -ForegroundColor Cyan
