@@ -5,9 +5,18 @@
 
 > ⚠️ Work in progress.
 
-A personal attempt to build a modular, enterprise‑grade bazaar market analyzer for Hypixel SkyBlock.  
-Java/Spring Boot core, TypeScript NextJS dashboard, Dockerized infra (PostgreSQL, Prometheus, Grafana).  
+A personal attempt to build a modular, enterprise‑grade bazaar market analyzer for Hypixel SkyBlock.
+Java/Spring Boot core, TypeScript NextJS dashboard, Dockerized infra (PostgreSQL, Prometheus, Grafana).
 Real-time bazaar analytics with comprehensive trading data and strategies; ML-driven forecasting and anomaly detection later.
+
+## 📸 Preview
+
+<div align="center">
+  <img src="./assets/dashboard__strategies__flipping_2025_08_28__cut.png" alt="Flipping Strategy Dashboard" width="49%" />
+  <img src="./assets/dashboard__bazaar_items__diamond_spreading_2025_08_28__cut.png" alt="Bazaar Items with Diamond Spreading Analysis" width="49%" />
+</div>
+
+*[View full-size screenshots](./SCREENSHOTS.md)*
 
 ## 💡 Vision 
 A cleanly separated system:
