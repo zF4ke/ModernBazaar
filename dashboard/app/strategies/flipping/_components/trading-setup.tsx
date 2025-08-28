@@ -94,10 +94,11 @@ export function TradingSetup(props: TradingSetupProps) {
 
   const getTaxRateValue = useCallback((rate: number): string => {
     const percentage = rate * 100
+    if (percentage === 1.125) return "1.125"
     if (percentage === 1.1) return "1.1"
     if (percentage === 1.25) return "1.25"
     if (percentage === 1.0) return "1"
-    return "1.1"
+    return "1.125"
   }, [])
 
   return (
@@ -265,6 +266,7 @@ export function TradingSetup(props: TradingSetupProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1.25" className="cursor-pointer">1.25%</SelectItem>
+                <SelectItem value="1.125" className="cursor-pointer">1.125%</SelectItem>
                 <SelectItem value="1.1" className="cursor-pointer">1.1%</SelectItem>
                 <SelectItem value="1" className="cursor-pointer">1.0%</SelectItem>
               </SelectContent>
