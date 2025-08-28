@@ -42,10 +42,14 @@ skyblock:
       price-move-threshold: 0.2 # 0.2%
       max-snapshot-gap-min: 15 # 5 minutes
       hourly:
-        enabled: true
+        enabled: false
     retention:
-      enabled: true
+      enabled: false
       interval-days: 45 # 45 days
+    finance:
+      metrics:
+        enabled: false
+        interval-minutes: 60 # 1 hour
   catalog:
     enabled: false
     refresh-days: 7

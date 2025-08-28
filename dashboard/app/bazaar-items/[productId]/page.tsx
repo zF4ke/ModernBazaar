@@ -85,7 +85,7 @@ async function fetchBazaarItemSnapshots(productId: string, limit: number = 5): P
 
 export default function BazaarItemDetailPage({ params }: { params: Promise<{ productId: string }> }) {
   const resolvedParams = use(params)
-  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | '7d' | 'total'>('7d')
+  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h' | '7d' | 'total'>('24h')
   const [buyOrdersCollapsed, setBuyOrdersCollapsed] = useState(false)
   const [sellOrdersCollapsed, setSellOrdersCollapsed] = useState(false)
   
