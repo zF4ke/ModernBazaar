@@ -15,6 +15,9 @@ $Repeat = 1
 # Garantir UTF-8 na consola para evitar "ConcluÃ­do" etc.
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
+# Timestamp único para arquivos de saída
+$stamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -171,11 +174,6 @@ $summary | Sort-Object endpoint | Format-Table -AutoSize | Out-String | Write-Ho
 # Optional saves
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ($SaveJson) {
-  # atualizar para incluir randomBudget
-  $existingConfigIndex = ($null)
-  # reconstruir JSON simples
-  $stamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
-  $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
   $outJson = Join-Path $dir "bench-results-$stamp.json"
   [PSCustomObject]@{
     baseUrl = $BaseUrl
