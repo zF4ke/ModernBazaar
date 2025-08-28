@@ -113,4 +113,7 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
         """, nativeQuery = true)
     List<BazaarItemHourSummary> findLastWindowByProductIds(@Param("ids") Collection<String> ids,
                                                            @Param("window") int windowHours);
+
+    @Query("select distinct s.productId from BazaarItemHourSummary s")
+    List<String> findDistinctProductIds();
 }

@@ -333,13 +333,13 @@ export default function FlippingPage() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
-          <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-            {isFetching ? 'Refreshing…' : 'Refresh'}
-          </Button>
-        </div>
+        <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+          {isFetching ? 'Refreshing…' : 'Refresh'}
+        </Button>
+      </div>
 
-        {/* Trading Setup */}
+      {/* Trading Setup */}
         <TradingSetup
           query={query}
           updateQuery={updateQuery}
@@ -361,7 +361,7 @@ export default function FlippingPage() {
           tradingPresets={tradingPresets}
         />
 
-        {/* Opportunities grid */}
+      {/* Opportunities grid */}
         <OpportunitiesGrid
           items={itemsArray as FlipOpportunity[]}
           isLoading={isLoading}
@@ -379,7 +379,7 @@ export default function FlippingPage() {
           expandedCard={expandedCard}
           setExpandedCard={setExpandedCard}
         />
-      </div>
+    </div>
     </TooltipProvider>
   )
 }
