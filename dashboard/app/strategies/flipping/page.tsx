@@ -256,7 +256,7 @@ export default function FlippingPage() {
 
   // debounced budget
   const [budgetInput, setBudgetInput] = useState("")
-  const debouncedBudget = useDebounce(budgetInput, 500)
+  const debouncedBudget = useDebounce(budgetInput, 1000)
 
   // Sync budget input with query (only after loading is complete)
   useEffect(() => {

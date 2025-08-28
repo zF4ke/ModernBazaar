@@ -212,10 +212,9 @@ export function TradingSetup(props: TradingSetupProps) {
                 if (value) {
                   const numValue = parseInt(value)
                   setBudgetInput(new Intl.NumberFormat().format(numValue))
-                  setQuery(prev => ({ ...prev, budget: numValue }))
+                  // Remove immediate setQuery - only use debounced value
                 } else {
                   setBudgetInput("")
-                  setQuery(prev => ({ ...prev, budget: undefined }))
                 }
               }}
               className="h-12 text-base"
