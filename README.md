@@ -48,8 +48,9 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] HTTP Basic authentication on API and actuator endpoints (Spring Security)
 - [x] Service cache and rate limiting
 - [x] Flyway baseline and initial migration
-- [x] **Optimize DB queries** (30-60x performance improvement achieved)
+- [x] Optimize DB queries (30-60x performance improvement achieved)
 - [x] Retention: Remove snapshots, summaries, and points older than 45 days
+- [x] Finance metrics aggregation job: pre-computes rolling averages (1h/6h/48h) with startup bootstrap when table empty
 - [ ] Optional S3 export for long-term history
 - [ ] Cold-snapshot archive to reduce DB footprint
 - [ ] (Optional) Trade journal tracking and storage
@@ -76,6 +77,7 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
     - [x] `GET /api/strategies/flipping` endpoint
     - [x] Flipping route with budget input, sorting options, and pagination
     - [x] QoL features: flipping tutorial, favorite items, etc.
+    - [x] Caching and performance optimizations
 - [ ] NPC Flipping
 - [ ] Craft Flipping
 - [ ] Bazaar Manipulation
