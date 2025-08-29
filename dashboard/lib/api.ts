@@ -2,17 +2,14 @@
  * Custom fetch function that automatically includes the configured backend URL
  * from localStorage as a header for API routes to use
  */
-export async function fetchWithBackendUrl(url: string, options: RequestInit = {}) {
+export async function fetchWithBackendUrl(url: string, options: RequestInit = {}, accessToken?: string) {
   // Get the configured backend URL from localStorage
   const configuredBackendUrl = typeof window !== 'undefined' 
     ? localStorage.getItem('apiEndpoint') 
     : null
-
-  // Add the backend URL header if configured
   const headers = new Headers(options.headers)
-  if (configuredBackendUrl) {
-    headers.set('x-backend-url', configuredBackendUrl)
-  }
+  if (configuredBackendUrl) headers.set('x-backend-url', configuredBackendUrl)
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
 
   return fetch(url, {
     ...options,
@@ -27,7 +24,8 @@ export async function fetchWithBackendUrl(url: string, options: RequestInit = {}
 export async function fetchFromBackend(
   request: Request, 
   endpoint: string, 
-  options: RequestInit = {}
+  options: RequestInit = {},
+  accessToken?: string
 ) {
   const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
   let backendUrl = request.headers.get('x-backend-url') || DEFAULT_BACKEND_URL
@@ -49,6 +47,7 @@ export async function fetchFromBackend(
       method: options.method ? options.method : "GET",
       headers: {
         "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
       },
       ...options,
     })
@@ -78,7 +77,8 @@ export async function fetchFromBackend(
 export async function postFetchFromBackend(
   request: Request,
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  accessToken?: string
 ) {
   const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
   let backendUrl = request.headers.get('x-backend-url') || DEFAULT_BACKEND_URL
@@ -100,6 +100,7 @@ export async function postFetchFromBackend(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
       },
       ...options,
     })
@@ -130,4 +131,4 @@ export function buildQueryParams(params: Record<string, any>): URLSearchParams {
   })
   
   return searchParams
-} 
+}

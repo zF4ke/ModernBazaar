@@ -1,7 +1,8 @@
 "use client"
 
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, LogIn, LogOut, User } from "lucide-react"
 import { useTheme } from "next-themes"
+import { useAuth0 } from '@auth0/auth0-react'
 
 import { Button } from "@/components/ui/button"
 import {
@@ -17,8 +18,9 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
 
 export function Header() {
-  // const { setTheme, theme } = useTheme()
+  const { setTheme, theme } = useTheme()
   const pathname = usePathname()
+  const { loginWithRedirect, logout, isAuthenticated, user, isLoading } = useAuth0()
 
   const getBreadcrumbs = () => {
     const segments = pathname.split("/").filter(Boolean)
@@ -68,12 +70,20 @@ export function Header() {
           ))}
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="ml-auto">
-        {/* <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          <span className="sr-only">Toggle theme</span>
-        </Button> */}
+      <div className="ml-auto flex items-center gap-2">
+        {isLoading && <span className="text-xs text-muted-foreground">...</span>}
+        {!isLoading && !isAuthenticated && (
+          <Button size="sm" variant="outline" onClick={() => loginWithRedirect()}> <LogIn className="h-4 w-4 mr-1"/> Login</Button>
+        )}
+        {isAuthenticated && (
+          <>
+            <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground">
+              <User className="h-4 w-4"/>
+              <span>{user?.email || user?.name || 'User'}</span>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}><LogOut className="h-4 w-4 mr-1"/>Logout</Button>
+          </>
+        )}
       </div>
     </header>
   )

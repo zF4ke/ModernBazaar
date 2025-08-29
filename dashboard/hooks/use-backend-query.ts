@@ -1,5 +1,6 @@
 import { useQuery, UseQueryOptions } from "@tanstack/react-query"
 import { fetchWithBackendUrl } from "@/lib/api"
+import { useAuth0 } from '@auth0/auth0-react'
 
 /**
  * Custom hook that wraps useQuery with automatic backend URL dependency
@@ -10,23 +11,27 @@ export function useBackendQuery<T>(
   options: Omit<UseQueryOptions<T>, 'queryKey' | 'queryFn'> & {
     queryKey?: string[]
     enabled?: boolean
+    requireAuth?: boolean
   } = {}
 ) {
-  const { queryKey = [], enabled = true, ...queryOptions } = options
-  
-  // Get the API endpoint from localStorage to include in the query key
-  const apiEndpoint = typeof window !== 'undefined' 
+  const { queryKey = [], enabled = true, requireAuth = false, ...queryOptions } = options
+  const { getAccessTokenSilently, isAuthenticated } = useAuth0()
+  const apiEndpoint = typeof window !== 'undefined'
     ? localStorage.getItem('apiEndpoint') || 'default'
     : 'default'
-
   return useQuery<T>({
-    queryKey: [endpoint, apiEndpoint, ...queryKey],
+    queryKey: [endpoint, apiEndpoint, requireAuth ? 'auth' : 'anon', ...queryKey],
     queryFn: async () => {
-      const response = await fetchWithBackendUrl(endpoint)
+      let token: string | undefined
+      if (requireAuth) {
+        if (!isAuthenticated) throw new Error('Not authenticated')
+        token = await getAccessTokenSilently({})
+      }
+      const response = await fetchWithBackendUrl(endpoint, {}, token)
       if (!response.ok) throw new Error(`Failed to fetch ${endpoint}`)
       return response.json()
     },
-    enabled,
+    enabled: enabled && (!requireAuth || isAuthenticated),
     ...queryOptions,
   })
-} 
+}
