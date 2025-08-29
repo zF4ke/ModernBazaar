@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { handleBackendError } from '@/lib/api'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +10,10 @@ export async function GET(request: NextRequest) {
     
     if (!authHeader) {
       return NextResponse.json(
-        { error: 'Authorization header required' },
+        { 
+          error: 'Authorization header required',
+          details: 'This endpoint requires a valid JWT token in the Authorization header'
+        },
         { status: 401 }
       )
     }
@@ -23,15 +27,19 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      throw new Error(`Backend responded with status: ${response.status}`)
+      const errorDetails = await handleBackendError(response, '/api/admin/plans')
+      return NextResponse.json(errorDetails, { status: errorDetails.status })
     }
 
     const plans = await response.json()
     return NextResponse.json(plans)
   } catch (error) {
-    console.error('Error fetching admin plans:', error)
+    console.error('Error fetching plans:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch admin plans' },
+      { 
+        error: 'Failed to fetch plans',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     )
   }
@@ -46,7 +54,10 @@ export async function POST(request: NextRequest) {
     
     if (!authHeader) {
       return NextResponse.json(
-        { error: 'Authorization header required' },
+        { 
+          error: 'Authorization header required',
+          details: 'This endpoint requires a valid JWT token in the Authorization header'
+        },
         { status: 401 }
       )
     }
@@ -63,11 +74,8 @@ export async function POST(request: NextRequest) {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      return NextResponse.json(
-        { error: errorText },
-        { status: response.status }
-      )
+      const errorDetails = await handleBackendError(response, '/api/admin/plans')
+      return NextResponse.json(errorDetails, { status: errorDetails.status })
     }
 
     const plan = await response.json()
@@ -75,7 +83,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating plan:', error)
     return NextResponse.json(
-      { error: 'Failed to create plan' },
+      { 
+        error: 'Failed to create plan',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     )
   }

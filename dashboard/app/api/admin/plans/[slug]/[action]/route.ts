@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { handleBackendError } from '@/lib/api'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { slug: string; action: string } }
+  { params }: { params: Promise<{ slug: string; action: string }> }
 ) {
+  const { slug, action } = await params
+  
   try {
-    const { slug, action } = params
     
     if (!['activate', 'deactivate'].includes(action)) {
       return NextResponse.json(
-        { error: 'Invalid action. Use activate or deactivate' },
+        { 
+          error: 'Invalid action',
+          details: 'Action must be either "activate" or "deactivate"'
+        },
         { status: 400 }
       )
     }
@@ -21,7 +26,10 @@ export async function POST(
     
     if (!authHeader) {
       return NextResponse.json(
-        { error: 'Authorization header required' },
+        { 
+          error: 'Authorization header required',
+          details: 'This endpoint requires a valid JWT token in the Authorization header'
+        },
         { status: 401 }
       )
     }
@@ -35,18 +43,18 @@ export async function POST(
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      return NextResponse.json(
-        { error: errorText },
-        { status: response.status }
-      )
+      const errorDetails = await handleBackendError(response, '/api/admin/plans')
+      return NextResponse.json(errorDetails, { status: errorDetails.status })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error(`Error ${params.action}ing plan:`, error)
+    console.error(`Error ${action}ing plan:`, error)
     return NextResponse.json(
-      { error: `Failed to ${params.action} plan` },
+      { 
+        error: `Failed to ${action} plan`,
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     )
   }

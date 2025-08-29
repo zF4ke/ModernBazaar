@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Home, Package, Settings, Shuffle, Layers, LineChart, Compass, Shield } from "lucide-react"
+import { BarChart3, Home, Package, Settings, Shuffle, Layers, LineChart, Compass, Shield, Code } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -56,6 +56,7 @@ const sections = [
     label: "Admin",
     items: [
       { title: "Plans", url: "/admin/plans", icon: Shield },
+      { title: "Endpoints", url: "/admin/endpoints", icon: Code },
     ],
   },
 ]

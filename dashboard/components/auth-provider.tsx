@@ -12,8 +12,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://modern-bazaar.api'
   const redirectUri = process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI || 'http://localhost:3001'
 
-
-
   return (
     <Auth0Provider
       domain={domain}

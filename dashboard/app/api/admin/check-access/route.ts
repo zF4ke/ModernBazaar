@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { handleBackendError } from '@/lib/api'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +10,11 @@ export async function GET(request: NextRequest) {
     
     if (!authHeader) {
       return NextResponse.json(
-        { error: 'Authorization header required' },
+        { 
+          hasAccess: false,
+          error: 'Authorization header required',
+          details: 'This endpoint requires a valid JWT token in the Authorization header'
+        },
         { status: 401 }
       )
     }
@@ -26,12 +31,20 @@ export async function GET(request: NextRequest) {
     if (response.ok) {
       return NextResponse.json({ hasAccess: true })
     } else {
-      return NextResponse.json({ hasAccess: false }, { status: 403 })
+      const errorDetails = await handleBackendError(response, '/api/admin/plans')
+      return NextResponse.json({ 
+        hasAccess: false,
+        ...errorDetails
+      }, { status: errorDetails.status })
     }
   } catch (error) {
     console.error('Error checking admin access:', error)
     return NextResponse.json(
-      { error: 'Failed to check admin access' },
+      { 
+        hasAccess: false,
+        error: 'Failed to check admin access',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
       { status: 500 }
     )
   }

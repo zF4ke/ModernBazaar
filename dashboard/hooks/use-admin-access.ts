@@ -17,32 +17,6 @@ interface UseAdminAccessReturn {
 
 /**
  * Custom hook for checking admin access permissions
- * 
- * @example
- * ```tsx
- * // Basic usage
- * const { hasAdminAccess, loading, error } = useAdminAccess()
- * 
- * // With custom scope
- * const { hasAdminAccess } = useAdminAccess({ 
- *   requiredScope: 'manage:users' 
- * })
- * 
- * // With callbacks
- * const { hasAdminAccess } = useAdminAccess({
- *   onAccessGranted: () => console.log('Admin access granted'),
- *   onAccessDenied: () => console.log('Access denied')
- * })
- * 
- * // Manual control
- * const { hasAdminAccess, checkAccess } = useAdminAccess({ 
- *   autoFetch: false 
- * })
- * 
- * useEffect(() => {
- *   checkAccess()
- * }, [])
- * ```
  */
 export function useAdminAccess(options: UseAdminAccessOptions = {}): UseAdminAccessReturn {
   const {
@@ -61,6 +35,15 @@ export function useAdminAccess(options: UseAdminAccessOptions = {}): UseAdminAcc
     if (!isAuthenticated) {
       setHasAdminAccess(false)
       setLoading(false)
+      return
+    }
+
+    // In development mode, allow admin access for testing purposes
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Development mode: Bypassing admin access check')
+      setHasAdminAccess(true)
+      setLoading(false)
+      onAccessGranted?.()
       return
     }
 

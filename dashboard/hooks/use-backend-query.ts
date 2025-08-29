@@ -4,7 +4,20 @@ import { useAuth0 } from '@auth0/auth0-react'
 
 /**
  * Custom hook that wraps useQuery with automatic backend URL dependency
- * and uses fetchWithBackendUrl for all requests
+ * and uses fetchWithBackendUrl for all requests.
+ * 
+ * This hook provides a convenient way to make authenticated and unauthenticated
+ * requests to the backend API with automatic token handling and error management.
+ * 
+ * @template T - The type of data returned by the query
+ * @param endpoint - The API endpoint to query (e.g., '/api/plans')
+ * @param options - Query options including authentication requirements
+ * @param options.queryKey - Additional query key segments for React Query
+ * @param options.enabled - Whether the query should run automatically
+ * @param options.requireAuth - Whether authentication is required for this request
+ * @param options.queryOptions - Additional React Query options
+ * 
+ * @returns React Query result with automatic backend URL handling
  */
 export function useBackendQuery<T>(
   endpoint: string,

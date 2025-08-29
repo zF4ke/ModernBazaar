@@ -7,18 +7,40 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 import { Activity, Database, DollarSign, Package, Zap } from "lucide-react"
 import type { SystemMetrics, TimeSeriesData } from "@/types/metrics"
 
+/**
+ * Fetches system metrics from the API.
+ * 
+ * @returns Promise that resolves to system metrics data
+ * @throws Error if the API request fails
+ */
 async function fetchMetrics(): Promise<SystemMetrics> {
   const response = await fetch("/api/metrics")
   if (!response.ok) throw new Error("Failed to fetch metrics")
   return response.json()
 }
 
+/**
+ * Fetches time series data for system metrics.
+ * 
+ * @returns Promise that resolves to time series data for latency and heap usage
+ * @throws Error if the API request fails
+ */
 async function fetchTimeSeries(): Promise<{ latency: TimeSeriesData[]; heap: TimeSeriesData[] }> {
   const response = await fetch("/api/metrics/timeseries")
   if (!response.ok) throw new Error("Failed to fetch time series data")
   return response.json()
 }
 
+/**
+ * Main dashboard component displaying system overview and metrics.
+ * 
+ * This component shows:
+ * - Key performance indicators (total items, average spread, volume, latency, heap usage)
+ * - Real-time charts for API latency and memory utilization
+ * - Loading states for all data fetching operations
+ * 
+ * @returns Dashboard component with metrics cards and charts
+ */
 export default function Dashboard() {
   const { data: metrics, isLoading: metricsLoading } = useQuery({
     queryKey: ["metrics"],
@@ -30,6 +52,12 @@ export default function Dashboard() {
     queryFn: fetchTimeSeries,
   })
 
+  /**
+   * Formats a timestamp string to a readable time format.
+   * 
+   * @param timestamp - ISO timestamp string
+   * @returns Formatted time string (e.g., "2:30 PM")
+   */
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString("en-US", {
       hour: "2-digit",
