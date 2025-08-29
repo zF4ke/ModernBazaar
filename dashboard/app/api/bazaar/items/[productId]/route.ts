@@ -7,13 +7,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { productId } = resolvedParams
 
   try {
-    const item: BazaarItemLiveView = await fetchFromBackend(
+    // Forward Authorization header if present
+    const authHeader = request.headers.get('authorization') || undefined
+    const token = authHeader?.replace(/^Bearer\s+/i, '')
+
+    const itemOrError: BazaarItemLiveView | { status: number; [key: string]: any } = await fetchFromBackend(
       request, 
-      `/api/bazaar/items/${encodeURIComponent(productId)}`
+      `/api/bazaar/items/${encodeURIComponent(productId)}`,
+      {},
+      token
     )
+
+    if (typeof (itemOrError as any)?.status === 'number' && (itemOrError as any).status >= 400) {
+      return NextResponse.json(itemOrError as any, { status: (itemOrError as any).status })
+    }
     
     // Cache for 45 seconds (slightly less than backend's 60 seconds)
-    const response = NextResponse.json(item)
+    const response = NextResponse.json(itemOrError as BazaarItemLiveView)
     response.headers.set('Cache-Control', 'public, s-maxage=45, stale-while-revalidate=30')
     return response
   } catch (error) {

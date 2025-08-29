@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   ChevronDown,
   ChevronRight,
@@ -38,6 +39,38 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { useAdminAccess } from '@/hooks/use-admin-access'
 
+// Permission syntax used in error payloads
+// - requiredPermissions: (string | string[])[]
+//   • Each entry represents a group that MUST be satisfied (AND between groups)
+//   • Within a group, ANY permission satisfies the group (OR within the group)
+//   • Examples:
+//     - [["SCOPE_use:starter","SCOPE_use:flipper","SCOPE_use:elite"]] -> any tier allowed
+//     - [["SCOPE_manage:plans"]] -> single required permission
+//     - [["SCOPE_read:plans"], ["SCOPE_use:starter","SCOPE_use:flipper"]] -> read:plans AND (use:starter OR use:flipper)
+// - missingPermissions follows the same double-list structure for groups NOT satisfied
+
+// Helper: normalize a raw groups structure (string | string[])[] into string[][] with SCOPE_ removed
+const normalizePermissionGroups = (
+  raw?: (string | string[])[] | string,
+  normalizeScopeFn?: (s?: string) => string | undefined
+): string[][] => {
+  if (!raw) return []
+  if (typeof raw === 'string') {
+    const parts = raw
+      .split(/\s+OR\s+|\s*,\s*/i)
+      .map(s => s.trim())
+      .filter(Boolean)
+    const mapped = normalizeScopeFn ? parts.map(p => normalizeScopeFn(p)!) : parts
+    return [mapped]
+  }
+  if (Array.isArray(raw)) {
+    const looksNested = raw.some((e) => Array.isArray(e))
+    const groups = looksNested ? (raw as (string[])[]) : [raw as string[]]
+    return groups.map(g => (normalizeScopeFn ? g.map(p => normalizeScopeFn(p)!) : g))
+  }
+  return []
+}
+
 interface EndpointInfo {
   path: string
   method: string
@@ -55,8 +88,11 @@ interface EndpointTest {
   authorizedResponse?: any
   permissionDetails?: {
     requiredPermission?: string
+    // Double-list syntax for groups: AND between groups, OR within a group
+    requiredPermissions?: (string | string[])[]
     currentPermissions?: string[]
-    missingPermissions?: string[]
+    // Supports double-list syntax for OR groups
+    missingPermissions?: (string | string[])[]
     error?: string
     details?: string
   } | null
@@ -144,7 +180,17 @@ const PermissionDetails = ({
   if (!permissionDetails) return null
 
   const requiredPerms = normalizeScopes(permissionDetails.currentPermissions)
-  const missingPerms = normalizeScopes(permissionDetails.missingPermissions)
+  const missingRaw = permissionDetails.missingPermissions as (string | string[])[] | undefined
+  const missingGroups: string[][] = normalizePermissionGroups(missingRaw, normalizeScope)
+  const missingGroupsCount = missingGroups.filter(g => g.length > 0).length
+
+  // Build required groups using the same double-list semantics
+  const requiredGroups: string[][] = normalizePermissionGroups(
+    permissionDetails.requiredPermissions && permissionDetails.requiredPermissions.length > 0
+      ? permissionDetails.requiredPermissions
+      : permissionDetails.requiredPermission,
+    normalizeScope
+  )
 
   return (
     <div className="space-y-6 pt-6 border-t border-border/50">
@@ -154,9 +200,9 @@ const PermissionDetails = ({
           <Shield className="h-5 w-5 text-muted-foreground" />
           <span className="font-semibold text-sm">Permission Analysis</span>
         </div>
-        {missingPerms.length > 0 && (
+        {missingGroupsCount > 0 && (
           <Badge variant="outline" className="text-xs bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30">
-            {missingPerms.length} missing
+            {missingGroupsCount} missing
           </Badge>
         )}
       </div>
@@ -171,11 +217,30 @@ const PermissionDetails = ({
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Required</span>
             </div>
             <div className="min-h-[2rem] w-full">
-              {permissionDetails.requiredPermission ? (
-                <div className="w-full">
-                  <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30 text-xs font-medium px-2 py-1">
-                    {normalizeScope(permissionDetails.requiredPermission)}
-                  </Badge>
+              {requiredGroups.length > 0 ? (
+                <div className="flex flex-col gap-2 w-full">
+                  {requiredGroups.map((group, gi) => (
+                    group.length > 1 ? (
+                      <div key={`req-grp-${gi}`} className="flex flex-wrap items-center gap-1">
+                        {group.map((p, idx) => (
+                          <span key={`${p}-${idx}`} className="flex items-center gap-1">
+                            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30 text-xs font-medium px-2 py-1">
+                              {p}
+                            </Badge>
+                            {idx < group.length - 1 && (
+                              <span className="text-[10px] text-muted-foreground mx-1">OR</span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div key={`req-grp-${gi}`} className="flex flex-wrap items-center gap-1">
+                        <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30 text-xs font-medium px-2 py-1">
+                          {group[0]}
+                        </Badge>
+                      </div>
+                    )
+                  ))}
                 </div>
               ) : (
                 <span className="text-xs text-muted-foreground italic">No specific permission required</span>
@@ -217,16 +282,33 @@ const PermissionDetails = ({
               <XCircle className="h-4 w-4 text-red-500" />
               <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Missing</span>
               <Badge variant="destructive" className="text-xs">
-                {missingPerms.length}
+                {missingGroupsCount}
               </Badge>
             </div>
             <div className="min-h-[2rem] w-full">
-              {missingPerms.length > 0 ? (
-                <div className="flex flex-wrap gap-1 w-full">
-                  {missingPerms.map((p) => (
-                    <Badge key={p} variant="destructive" className="text-xs bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30 px-2 py-1">
-                      {p}
-                    </Badge>
+              {missingGroupsCount > 0 ? (
+                <div className="flex flex-col gap-2 w-full">
+                  {missingGroups.map((group, gi) => (
+                    group.length > 1 ? (
+                      <div key={`grp-${gi}`} className="flex flex-wrap items-center gap-1">
+                        {group.map((p, idx) => (
+                          <span key={`${p}-${idx}`} className="flex items-center gap-1">
+                            <Badge variant="destructive" className="text-xs bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30 px-2 py-1">
+                              {p}
+                            </Badge>
+                            {idx < group.length - 1 && (
+                              <span className="text-[10px] text-muted-foreground mx-1">OR</span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div key={`grp-${gi}`} className="flex flex-wrap items-center gap-1">
+                        <Badge variant="destructive" className="text-xs bg-red-500/10 text-red-600 border-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30 px-2 py-1">
+                          {group[0]}
+                        </Badge>
+                      </div>
+                    )
                   ))}
                 </div>
               ) : (
@@ -321,14 +403,32 @@ const EndpointCard = ({
           </div>
         </div>
 
-        {/* Quick permission preview */}
-        {test?.permissionDetails?.requiredPermission && (
+        {/* Quick permission preview (uses same group semantics) */}
+        {(test?.permissionDetails?.requiredPermissions || test?.permissionDetails?.requiredPermission) && (
           <div className="flex items-center gap-2 pt-2">
             <Shield className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Requires:</span>
-            <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30 px-2 py-1">
-              {normalizeScope(test.permissionDetails.requiredPermission)}
-            </Badge>
+            <div className="flex flex-col gap-1">
+              {normalizePermissionGroups(
+                test?.permissionDetails?.requiredPermissions?.length
+                  ? test.permissionDetails.requiredPermissions
+                  : test?.permissionDetails?.requiredPermission,
+                normalizeScope
+              ).map((group, gi) => (
+                <div key={`req-mini-${gi}`} className="flex flex-wrap items-center gap-1">
+                  {group.map((p, idx) => (
+                    <span key={`${p}-${idx}`} className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30 px-2 py-1">
+                        {p}
+                      </Badge>
+                      {idx < group.length - 1 && (
+                        <span className="text-[10px] text-muted-foreground mx-1">OR</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </CardHeader>
@@ -455,6 +555,187 @@ const EndpointCard = ({
   )
 }
 
+// Category Status Summary Component
+const CategoryStatusSummary = ({
+  endpoints,
+  endpointTests
+}: {
+  endpoints: EndpointInfo[]
+  endpointTests: Record<string, EndpointTest>
+}) => {
+  // Calculate status counts
+  const statusCounts = endpoints.reduce(
+    (acc, endpoint) => {
+      const test = endpointTests[`${endpoint.method}:${endpoint.path}`]
+      if (!test || !test.lastTested) {
+        acc.untested++
+        return acc
+      }
+
+      // Use authorized status if available, otherwise unauthorized
+      const status = test.authorizedStatus ?? test.unauthorizedStatus ?? 0
+
+      if (status === null || status === undefined) {
+        acc.untested++
+      } else if (status >= 200 && status < 300) {
+        acc.success++
+      } else if (status >= 400 && status < 500) {
+        acc.clientError++
+      } else if (status >= 500) {
+        acc.serverError++
+      } else {
+        acc.untested++
+      }
+
+      return acc
+    },
+    { success: 0, clientError: 0, serverError: 0, untested: 0 }
+  )
+
+  const total = endpoints.length
+  const tested = total - statusCounts.untested
+
+  if (tested === 0) {
+    return (
+      <div className="flex items-center gap-4">
+        {/* Empty Status Bar */}
+        <div className="flex-1 flex h-2 bg-muted rounded-full overflow-hidden">
+          <div className="flex-1 bg-muted-foreground/20" />
+        </div>
+
+        {/* Status Counts */}
+        <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-muted-foreground/30 rounded-full" />
+            <span className="text-muted-foreground">
+              {total} pending
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const successPercent = (statusCounts.success / tested) * 100
+  const clientErrorPercent = (statusCounts.clientError / tested) * 100
+  const serverErrorPercent = (statusCounts.serverError / tested) * 100
+
+  return (
+    <TooltipProvider>
+      <div className="flex items-center gap-4">
+        {/* Status Bar */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex-1 flex h-2 bg-muted rounded-full overflow-hidden cursor-help">
+              {statusCounts.success > 0 && (
+                <div
+                  className="bg-green-500 transition-all duration-300"
+                  style={{ width: `${successPercent}%` }}
+                />
+              )}
+              {statusCounts.clientError > 0 && (
+                <div
+                  className="bg-red-500 transition-all duration-300"
+                  style={{ width: `${clientErrorPercent}%` }}
+                />
+              )}
+              {statusCounts.serverError > 0 && (
+                <div
+                  className="bg-purple-500 transition-all duration-300"
+                  style={{ width: `${serverErrorPercent}%` }}
+                />
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="text-xs">
+              <div className="font-semibold mb-1">Test Results Summary</div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  <span>Allowed (2xx): {statusCounts.success}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  <span>Not allowed (4xx): {statusCounts.clientError}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full" />
+                  <span>Errors (5xx): {statusCounts.serverError}</span>
+                </div>
+              </div>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Status Counts */}
+        <div className="flex items-center gap-3 text-xs">
+          {statusCounts.success > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 cursor-help">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  <span className="font-medium text-green-600 dark:text-green-400">
+                    {statusCounts.success}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>Allowed (2xx responses)</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {statusCounts.clientError > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 cursor-help">
+                  <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  <span className="font-medium text-red-600 dark:text-red-400">
+                    {statusCounts.clientError}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>Not allowed (4xx responses)</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {statusCounts.serverError > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 cursor-help">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full" />
+                  <span className="font-medium text-purple-600 dark:text-purple-400">
+                    {statusCounts.serverError}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>Server errors (5xx responses)</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {statusCounts.untested > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center gap-1 cursor-help">
+                  <div className="w-2 h-2 bg-muted-foreground/30 rounded-full" />
+                  <span className="text-muted-foreground">
+                    {statusCounts.untested} pending
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <span>Endpoints not yet tested</span>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+    </TooltipProvider>
+  )
+}
+
 // Category Section Component
 const CategorySection = ({
   category,
@@ -490,21 +771,43 @@ const CategorySection = ({
     <Collapsible open={!isCollapsed} onOpenChange={() => toggleCategory(category)}>
       <div className="space-y-4">
         <CollapsibleTrigger asChild>
-          <div className="flex items-center gap-3 pb-2 cursor-pointer hover:bg-muted/30 -mx-4 px-4 py-2 rounded-lg transition-colors">
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform" />
+          <div className="cursor-pointer hover:bg-muted/30 -mx-4 px-4 py-2 rounded-lg transition-colors">
+            <div className="flex items-center gap-3 pb-2">
+              {isCollapsed ? (
+                <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform" />
+              )}
+              <CategoryIcon className="h-5 w-5 text-muted-foreground" />
+              <h3 className="text-xl font-semibold">{category}</h3>
+              <Badge variant="secondary" className="ml-auto">
+                {endpoints.length} endpoint{endpoints.length !== 1 ? 's' : ''}
+              </Badge>
+            </div>
+
+            {/* Status Summary - Always visible */}
+            {isCollapsed && (
+              <div className="mt-2">
+                <CategoryStatusSummary
+                  endpoints={endpoints}
+                  endpointTests={endpointTests}
+                />
+              </div>
             )}
-            <CategoryIcon className="h-5 w-5 text-muted-foreground" />
-            <h3 className="text-xl font-semibold">{category}</h3>
-            <Badge variant="secondary" className="ml-auto">
-              {endpoints.length} endpoint{endpoints.length !== 1 ? 's' : ''}
-            </Badge>
           </div>
         </CollapsibleTrigger>
 
         <CollapsibleContent className="space-y-4">
+          {/* Status Summary - When expanded, show in content area */}
+          {!isCollapsed && (
+            <div className="px-4 py-2 bg-muted/20 rounded-lg border">
+              <CategoryStatusSummary
+                endpoints={endpoints}
+                endpointTests={endpointTests}
+              />
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {endpoints.map(endpoint => (
               <EndpointCard
@@ -530,6 +833,8 @@ const CategorySection = ({
 const ENDPOINTS: EndpointInfo[] = [
   // Health endpoints
   { path: '/api/health', method: 'GET', description: 'Health check endpoint', category: 'System', requiresAuth: false },
+  // Metrics endpoints
+  { path: '/api/metrics', method: 'GET', description: 'Get system metrics', category: 'System', requiresAuth: true },
   
   // Admin endpoints
   { path: '/api/admin/check-access', method: 'GET', description: 'Check admin access', category: 'Admin', requiresAuth: true },
@@ -545,18 +850,15 @@ const ENDPOINTS: EndpointInfo[] = [
   { path: '/api/plans', method: 'GET', description: 'List available plans', category: 'Plans', requiresAuth: false },
   
   // Bazaar endpoints
-  { path: '/api/bazaar/items', method: 'GET', description: 'Get bazaar items', category: 'Bazaar', requiresAuth: false },
-  { path: '/api/bazaar/items/:id', method: 'GET', description: 'Get specific bazaar item', category: 'Bazaar', requiresAuth: false },
-  { path: '/api/bazaar/items/:id/history', method: 'GET', description: 'Get item price history', category: 'Bazaar', requiresAuth: false },
+  { path: '/api/bazaar/items', method: 'GET', description: 'Get bazaar items', category: 'Bazaar', requiresAuth: true },
+  { path: '/api/bazaar/items/:id', method: 'GET', description: 'Get specific bazaar item', category: 'Bazaar', requiresAuth: true },
+  { path: '/api/bazaar/items/:id/history', method: 'GET', description: 'Get item price history', category: 'Bazaar', requiresAuth: true },
   
   // Skyblock endpoints
-  { path: '/api/skyblock/items', method: 'GET', description: 'Get skyblock items', category: 'Skyblock', requiresAuth: false },
+  { path: '/api/skyblock/items', method: 'GET', description: 'Get skyblock items', category: 'Skyblock', requiresAuth: true },
   
   // Strategies endpoints
-  { path: '/api/strategies/flipping', method: 'GET', description: 'Get flipping strategies', category: 'Strategies', requiresAuth: false },
-  
-  // Metrics endpoints
-  { path: '/api/metrics', method: 'GET', description: 'Get system metrics', category: 'Metrics', requiresAuth: false },
+  { path: '/api/strategies/flipping', method: 'GET', description: 'Get flipping strategies', category: 'Strategies', requiresAuth: false }
 ]
 
 export default function AdminEndpointsPage() {
@@ -702,8 +1004,13 @@ export default function AdminEndpointsPage() {
           // Extract permission details from error responses (authorized)
           if (authorizedResponse.status >= 400) {
             if (authorizedData && typeof authorizedData === 'object') {
+              const requiredList = Array.isArray(authorizedData.requiredPermissions) ? authorizedData.requiredPermissions : undefined
+              const requiredLabel = requiredList && requiredList.length > 0
+                ? requiredList.join(' OR ')
+                : authorizedData.requiredPermission
               permissionDetailsAuthorized = {
-                requiredPermission: authorizedData.requiredPermission,
+                requiredPermission: requiredLabel,
+                requiredPermissions: requiredList,
                 currentPermissions: authorizedData.currentPermissions,
                 missingPermissions: authorizedData.missingPermissions,
                 error: authorizedData.error,
@@ -719,8 +1026,13 @@ export default function AdminEndpointsPage() {
       // Extract permission details from unauthorized responses
       if (noAuthResponse.status >= 400) {
         if (noAuthData && typeof noAuthData === 'object') {
+          const requiredList = Array.isArray(noAuthData.requiredPermissions) ? noAuthData.requiredPermissions : undefined
+          const requiredLabel = requiredList && requiredList.length > 0
+            ? requiredList.join(' OR ')
+            : noAuthData.requiredPermission
           permissionDetailsUnauthorized = {
-            requiredPermission: noAuthData.requiredPermission,
+            requiredPermission: requiredLabel,
+            requiredPermissions: requiredList,
             currentPermissions: noAuthData.currentPermissions,
             missingPermissions: noAuthData.missingPermissions,
             error: noAuthData.error,

@@ -3,6 +3,30 @@ import { fetchWithBackendUrl } from "@/lib/api"
 import { useAuth0 } from '@auth0/auth0-react'
 
 /**
+ * Helper function to determine if an error should be suppressed from logging/retrying
+ * @param error The error to check
+ * @returns true if the error should be suppressed
+ */
+export function isExpectedError(error: any): boolean {
+  if (!(error instanceof Error)) return false
+
+  // Suppress common network errors
+  if (error.message.includes('ECONNREFUSED') ||
+      error.message.includes('fetch failed') ||
+      error.message.includes('Invalid URL') ||
+      error.message.includes('Failed to parse URL')) {
+    return true
+  }
+
+  // Suppress 404 errors (resource not found)
+  if ((error as any).status === 404 || error.message.includes('404')) {
+    return true
+  }
+
+  return false
+}
+
+/**
  * Custom hook that wraps useQuery with automatic backend URL dependency
  * and uses fetchWithBackendUrl for all requests.
  * 
@@ -27,7 +51,8 @@ export function useBackendQuery<T>(
     requireAuth?: boolean
   } = {}
 ) {
-  const { queryKey = [], enabled = true, requireAuth = false, ...queryOptions } = options
+  // Default to authenticated requests; pass requireAuth: false to opt out
+  const { queryKey = [], enabled = true, requireAuth = true, ...queryOptions } = options
   const { getAccessTokenSilently, isAuthenticated } = useAuth0()
   const apiEndpoint = typeof window !== 'undefined'
     ? localStorage.getItem('apiEndpoint') || 'default'
@@ -41,7 +66,12 @@ export function useBackendQuery<T>(
         token = await getAccessTokenSilently({})
       }
       const response = await fetchWithBackendUrl(endpoint, {}, token)
-      if (!response.ok) throw new Error(`Failed to fetch ${endpoint}`)
+      if (!response.ok) {
+        // Create an error with the status code for better error handling
+        const error = new Error(`Failed to fetch ${endpoint}`)
+        ;(error as any).status = response.status
+        throw error
+      }
       return response.json()
     },
     enabled: enabled && (!requireAuth || isAuthenticated),

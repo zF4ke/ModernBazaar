@@ -59,13 +59,13 @@ export default function SettingsPage() {
   // Fetch system health
   const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useBackendQuery<SystemHealth>(
     "/api/health",
-    { refetchInterval: 30000 }
+    { refetchInterval: 30000, requireAuth: false }
   )
 
   // Fetch system metrics
   const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics } = useBackendQuery<SystemMetrics>(
     "/api/metrics", 
-    { refetchInterval: 30000 }
+    { refetchInterval: 30000, requireAuth: true }
   )
 
   const handleSaveSettings = () => {

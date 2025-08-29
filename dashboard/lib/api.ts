@@ -88,10 +88,12 @@ export async function fetchFromBackend(
   } catch (error) {
     // Don't log common expected errors
     const isExpectedError = error instanceof Error && (
-      error.message.includes('ECONNREFUSED') || 
+      error.message.includes('ECONNREFUSED') ||
       error.message.includes('fetch failed') ||
       error.message.includes('Invalid URL') ||
-      error.message.includes('Failed to parse URL')
+      error.message.includes('Failed to parse URL') ||
+      (error as any).status === 404 ||
+      error.message.includes('404')
     )
     
     if (!isExpectedError) {
@@ -188,6 +190,7 @@ export async function handleBackendError(response: Response, endpoint: string) {
         error: errorResponse.error || 'Authentication failed',
         details: errorResponse.details || 'Invalid or expired JWT token. Please login again.',
         requiredPermission: errorResponse.requiredPermission,
+        requiredPermissions: errorResponse.requiredPermissions,
         currentPermissions: errorResponse.currentPermissions,
         missingPermissions: errorResponse.missingPermissions,
         status: response.status
@@ -208,6 +211,7 @@ export async function handleBackendError(response: Response, endpoint: string) {
         error: 'Access denied',
         details: `You do not have permission to access this resource. Required: ${requiredPermission}`,
         requiredPermission: errorResponse.requiredPermission,
+        requiredPermissions: errorResponse.requiredPermissions,
         currentPermissions: errorResponse.currentPermissions,
         missingPermissions: errorResponse.missingPermissions,
         status: response.status

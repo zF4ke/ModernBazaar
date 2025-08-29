@@ -15,23 +15,10 @@ import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { SkyblockItem, SkyblockItemQuery, SkyblockItemsResponse } from "@/types/skyblock"
-import { fetchWithBackendUrl } from "@/lib/api"
+import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
 
-async function fetchSkyblockItems(query: SkyblockItemQuery): Promise<SkyblockItemsResponse> {
-  const params = new URLSearchParams()
-  if (query.q) params.append("q", query.q)
-  if (query.tier) params.append("tier", query.tier)
-  if (query.category) params.append("category", query.category)
-  if (query.inBazaar !== undefined) params.append("inBazaar", String(query.inBazaar))
-  if (query.minNpc !== undefined) params.append("minNpc", String(query.minNpc))
-  if (query.maxNpc !== undefined) params.append("maxNpc", String(query.maxNpc))
-  if (query.limit) params.append("limit", String(query.limit))
-  if (query.page !== undefined) params.append("page", String(query.page))
-  const response = await fetchWithBackendUrl(`/api/skyblock/items?${params.toString()}`)
-  if (!response.ok) throw new Error("Failed to fetch skyblock items")
-  return response.json()
-}
+// Fetch handled by useBackendQuery (auth by default)
 
 export default function SkyblockItemsPage() {
   const [query, setQuery] = useState<SkyblockItemQuery>({ 
@@ -57,15 +44,24 @@ export default function SkyblockItemsPage() {
     maxNpc: debouncedNpcFilters.maxNpc ? Number.parseFloat(debouncedNpcFilters.maxNpc) : undefined,
   }
 
+  const params = new URLSearchParams()
+  if (finalQuery.q) params.append("q", finalQuery.q)
+  if (finalQuery.tier) params.append("tier", finalQuery.tier)
+  if (finalQuery.category) params.append("category", finalQuery.category)
+  if (finalQuery.inBazaar !== undefined) params.append("inBazaar", String(finalQuery.inBazaar))
+  if (finalQuery.minNpc !== undefined) params.append("minNpc", String(finalQuery.minNpc))
+  if (finalQuery.maxNpc !== undefined) params.append("maxNpc", String(finalQuery.maxNpc))
+  if (finalQuery.limit) params.append("limit", String(finalQuery.limit))
+  if (finalQuery.page !== undefined) params.append("page", String(finalQuery.page))
+  const endpoint = `/api/skyblock/items?${params.toString()}`
+
   const {
     data: response,
     isLoading,
     isFetching,
     refetch,
-  } = useQuery({
-    queryKey: ["skyblock-items", finalQuery],
-    queryFn: () => fetchSkyblockItems(finalQuery),
-    placeholderData: (prev) => prev,
+  } = useBackendQuery<SkyblockItemsResponse>(endpoint, {
+    placeholderData: (prev) => prev as any,
     staleTime: 30000,
   })
 

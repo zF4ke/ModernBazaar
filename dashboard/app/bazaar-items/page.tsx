@@ -15,16 +15,11 @@ import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { BazaarItemLiveView, BazaarItemsQuery, BazaarItemsResponse } from "@/types/bazaar"
-import { fetchWithBackendUrl, buildQueryParams } from "@/lib/api"
+import { buildQueryParams } from "@/lib/api"
+import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
 
-async function fetchBazaarItems(query: BazaarItemsQuery): Promise<BazaarItemsResponse> {
-  const params = buildQueryParams(query)
-  const response = await fetchWithBackendUrl(`/api/bazaar/items?${params}`)
-  if (!response.ok) throw new Error("Failed to fetch bazaar items")
-  
-  return response.json()
-}
+// Fetch handled by useBackendQuery (auth by default)
 
 export default function BazaarItemsPage() {
   const [query, setQuery] = useState<BazaarItemsQuery>({
@@ -62,17 +57,16 @@ export default function BazaarItemsPage() {
 
 
 
+  const params = buildQueryParams(finalQuery)
+  const endpoint = `/api/bazaar/items?${params}`
   const {
     data: response,
     isLoading,
     isFetching,
     refetch,
-  } = useQuery({
-    queryKey: ["bazaar-items", finalQuery],
-    queryFn: () => fetchBazaarItems(finalQuery),
-    staleTime: 30000, // 30 seconds
+  } = useBackendQuery<BazaarItemsResponse>(endpoint, {
+    staleTime: 30000,
     refetchOnWindowFocus: false,
-
   })
 
   const itemsArray = response?.items || []

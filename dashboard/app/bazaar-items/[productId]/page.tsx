@@ -30,58 +30,10 @@ import {
   Timer
 } from "lucide-react"
 import type { BazaarItemLiveView, BazaarItemHourSummary, BazaarItemHourAverage, BazaarItemSnapshot } from "@/types/bazaar"
-import { fetchWithBackendUrl } from "@/lib/api"
+import { useBackendQuery, isExpectedError } from "@/hooks/use-backend-query"
 import HistoryChart from "../../../components/history-chart"
 
-async function fetchBazaarItemDetail(productId: string): Promise<BazaarItemLiveView> {
-  const response = await fetchWithBackendUrl(`/api/bazaar/items/${productId}`)
-  if (!response.ok) {
-    const errorMessage = `Failed to fetch bazaar item detail: ${response.status}`
-    const error = new Error(errorMessage)
-    ;(error as any).status = response.status
-    throw error
-  }
-  return response.json()
-}
-
-async function fetchBazaarItemHistory(productId: string, from?: string, to?: string): Promise<BazaarItemHourSummary[]> {
-  const params = new URLSearchParams()
-  if (from) params.append('from', from)
-  if (to) params.append('to', to)
-  // Send withPoints as boolean, not string
-  params.append('withPoints', 'true')
-  
-  const response = await fetchWithBackendUrl(`/api/bazaar/items/${productId}/history?${params}`)
-  if (!response.ok) {
-    const errorMessage = `Failed to fetch bazaar item history: ${response.status}`
-    const error = new Error(errorMessage)
-    ;(error as any).status = response.status
-    throw error
-  }
-  return response.json()
-}
-
-async function fetchBazaarItemAverage(productId: string): Promise<BazaarItemHourAverage> {
-  const response = await fetchWithBackendUrl(`/api/bazaar/items/${productId}/average`)
-  if (!response.ok) {
-    const errorMessage = `Failed to fetch bazaar item average: ${response.status}`
-    const error = new Error(errorMessage)
-    ;(error as any).status = response.status
-    throw error
-  }
-  return response.json()
-}
-
-async function fetchBazaarItemSnapshots(productId: string, limit: number = 5): Promise<BazaarItemHourSummary[]> {
-  const response = await fetchWithBackendUrl(`/api/bazaar/items/${productId}/snapshots?limit=${limit}`)
-  if (!response.ok) {
-    const errorMessage = `Failed to fetch bazaar item snapshots: ${response.status}`
-    const error = new Error(errorMessage)
-    ;(error as any).status = response.status
-    throw error
-  }
-  return response.json()
-}
+// Data fetching moved to useBackendQuery (includes Authorization by default)
 
 export default function BazaarItemDetailPage({ params }: { params: Promise<{ productId: string }> }) {
   const resolvedParams = use(params)
@@ -89,28 +41,23 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
   const [buyOrdersCollapsed, setBuyOrdersCollapsed] = useState(false)
   const [sellOrdersCollapsed, setSellOrdersCollapsed] = useState(false)
   
+  const itemEndpoint = `/api/bazaar/items/${resolvedParams.productId}`
   const {
     data: item,
     isLoading,
     isFetching,
     refetch,
-  } = useQuery({
-    queryKey: ["bazaar-item", resolvedParams.productId],
-    queryFn: () => fetchBazaarItemDetail(resolvedParams.productId),
-    placeholderData: (previousData) => previousData,
-    staleTime: 30000, // 30 seconds
-    retry: (failureCount, error) => {
-      // Max 3 retries, but don't retry on 404s
+  } = useBackendQuery<BazaarItemLiveView>(itemEndpoint, {
+    placeholderData: (previousData) => previousData as any,
+    staleTime: 30000,
+    retry: (failureCount, error: any) => {
       if (failureCount >= 3) return false
-      if (error instanceof Error && (
-        error.message.includes('404') || 
-        (error as any).status === 404
-      )) return false
+      if (isExpectedError(error)) return false
       return true
     },
-    retryDelay: 3000, // Wait 3 seconds before retry
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnReconnect: false, // Don't refetch on reconnect
+    retryDelay: 3000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Calculate time range for history
@@ -146,73 +93,62 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
   // Debug logging
   console.log('Time range:', timeRange, 'From:', from, 'To:', to)
 
+  const historyParams = new URLSearchParams()
+  if (from) historyParams.append('from', from)
+  if (to) historyParams.append('to', to)
+  historyParams.append('withPoints', 'true')
+  const historyEndpoint = `/api/bazaar/items/${resolvedParams.productId}/history?${historyParams.toString()}`
   const {
     data: history,
     isLoading: historyLoading,
     error: historyError,
-  } = useQuery({
-    queryKey: ["bazaar-item-history", resolvedParams.productId, timeRange, from, to, timeRange === 'total' ? 'total' : 'range'],
-    queryFn: () => fetchBazaarItemHistory(resolvedParams.productId, from, to),
+  } = useBackendQuery<BazaarItemHourSummary[]>(historyEndpoint, {
     enabled: !!item,
-    staleTime: 60000, // 1 minute
-    retry: (failureCount, error) => {
-      // Max 3 retries, but don't retry on 404s
+    staleTime: 60000,
+    retry: (failureCount, error: any) => {
       if (failureCount >= 3) return false
-      if (error instanceof Error && (
-        error.message.includes('404') || 
-        (error as any).status === 404
-      )) return false
+      if (isExpectedError(error)) return false
       return true
     },
-    retryDelay: 5000, // Wait 5 seconds before retry
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnReconnect: false, // Don't refetch on reconnect
+    retryDelay: 5000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
+  const averageEndpoint = `/api/bazaar/items/${resolvedParams.productId}/average`
   const {
     data: average,
     isLoading: averageLoading,
     error: averageError,
-  } = useQuery({
-    queryKey: ["bazaar-item-average", resolvedParams.productId],
-    queryFn: () => fetchBazaarItemAverage(resolvedParams.productId),
+  } = useBackendQuery<BazaarItemHourAverage>(averageEndpoint, {
     enabled: !!item,
-    staleTime: 300000, // 5 minutes - averages don't change as frequently
-    retry: (failureCount, error) => {
-      // Max 3 retries, but don't retry on 404s
+    staleTime: 300000,
+    retry: (failureCount, error: any) => {
       if (failureCount >= 3) return false
-      if (error instanceof Error && (
-        error.message.includes('404') || 
-        (error as any).status === 404
-      )) return false
+      if (isExpectedError(error)) return false
       return true
     },
-    retryDelay: 5000, // Wait 5 seconds before retry
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnReconnect: false, // Don't refetch on reconnect
+    retryDelay: 5000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
+  const snapshotsEndpoint = `/api/bazaar/items/${resolvedParams.productId}/snapshots?limit=5`
   const {
     data: snapshots,
     isLoading: snapshotsLoading,
     error: snapshotsError,
-  } = useQuery({
-    queryKey: ["bazaar-item-snapshots", resolvedParams.productId],
-    queryFn: () => fetchBazaarItemSnapshots(resolvedParams.productId, 5),
+  } = useBackendQuery<BazaarItemHourSummary[]>(snapshotsEndpoint, {
     enabled: !!item,
-    staleTime: 30000, // 30 seconds - snapshots change frequently
-    retry: (failureCount, error) => {
-      // Max 3 retries, but don't retry on 404s
+    staleTime: 30000,
+    retry: (failureCount, error: any) => {
       if (failureCount >= 3) return false
-      if (error instanceof Error && (
-        error.message.includes('404') || 
-        (error as any).status === 404
-      )) return false
+      if (isExpectedError(error)) return false
       return true
     },
-    retryDelay: 3000, // Wait 3 seconds before retry
-    refetchOnWindowFocus: false, // Don't refetch when window gains focus
-    refetchOnReconnect: false, // Don't refetch on reconnect
+    retryDelay: 3000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Combine history with latest snapshots for real-time data

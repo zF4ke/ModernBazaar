@@ -25,10 +25,21 @@ import java.util.*;
  *
  * Provides consistent JSON responses for both unauthenticated (401) and
  * forbidden (403) cases with permission context, so the frontend can show
- * actionable messages. It includes:
- * - requiredPermission: permission needed for the endpoint
- * - currentPermissions: permissions extracted from the JWT (403 only)
- * - missingPermissions: best‑effort list of what is missing
+ * actionable messages.
+ *
+ * Fields:
+ * - requiredPermissions: double-list semantics for requirements.
+ *   Each entry is a group that MUST be satisfied (AND between groups),
+ *   while items within a group are alternatives (OR within group).
+ *   Examples:
+ *     [["SCOPE_manage:plans"]]
+ *     [["SCOPE_use:starter","SCOPE_use:flipper","SCOPE_use:elite"]]
+ *     [["SCOPE_read:plans"], ["SCOPE_use:starter","SCOPE_use:flipper"]]
+ * - requiredPermission: human-readable label derived from requiredPermissions
+ *   (e.g., "A OR B", or "(A OR B) AND (C)")
+ * - currentPermissions: authorities extracted from the JWT (403 only)
+ * - missingPermissions: same double-list semantics, but only includes groups
+ *   that are not satisfied by currentPermissions.
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -48,14 +59,33 @@ public class ApiSecurityExceptionHandler implements AuthenticationEntryPoint, Ac
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException, ServletException {
         String endpoint = request.getRequestURI();
-        String requiredPermission = securityConfig.getRequiredPermissionForEndpoint(endpoint);
+        List<String> required = securityConfig.getRequiredPermissionForEndpoint(endpoint);
 
         Map<String, Object> body = baseBody(401, "Authentication failed", "Invalid or missing JWT token. Please login.", endpoint);
-        body.put("requiredPermission", requiredPermission);
+        if (required != null && !required.isEmpty()) {
+            Object requiredOut = (required.size() == 1)
+                    ? List.of(required.get(0))
+                    : List.of(required);
+            body.put("requiredPermissions", requiredOut);
+            String label = required.size() == 1 ? required.get(0) : String.join(" OR ", required);
+            body.put("requiredPermission", label);
+        }
         body.put("currentPermissions", Collections.emptyList());
-        body.put("missingPermissions", requiredPermission != null && !requiredPermission.equals("none") ? List.of(requiredPermission) : Collections.emptyList());
+        Object missing;
+        if (required != null && !required.isEmpty()) {
+            if (required.size() == 1) {
+                missing = List.of(required.get(0));
+            } else {
+                // Double-list syntax: a list inside the array denotes an OR group
+                missing = List.of(required);
+            }
+        } else {
+            missing = Collections.emptyList();
+        }
+        body.put("missingPermissions", missing);
 
-        log.warn("Unauthenticated access: endpoint={}, requiredPermission={}", endpoint, requiredPermission);
+        String reqLabel = (required == null || required.isEmpty()) ? "none" : (required.size() == 1 ? required.get(0) : String.join(" OR ", required));
+        log.warn("Unauthenticated access: endpoint={}, requiredPermission={}", endpoint, reqLabel);
         write(response, 401, body);
     }
 
@@ -70,7 +100,7 @@ public class ApiSecurityExceptionHandler implements AuthenticationEntryPoint, Ac
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
         String endpoint = request.getRequestURI();
-        String requiredPermission = securityConfig.getRequiredPermissionForEndpoint(endpoint);
+        List<String> required = securityConfig.getRequiredPermissionForEndpoint(endpoint);
 
         // Extract current permissions from authentication
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -81,20 +111,34 @@ public class ApiSecurityExceptionHandler implements AuthenticationEntryPoint, Ac
             }
         }
 
-        // Compute missing permissions (simple case: single required)
-        List<String> missingPermissions = new ArrayList<>();
-        if (requiredPermission != null && !requiredPermission.equals("unknown") && !requiredPermission.equals("none") && !requiredPermission.contains(",")) {
-            if (!currentPermissions.contains(requiredPermission)) {
-                missingPermissions.add(requiredPermission);
+        // Compute missing permissions with double-list OR group syntax
+        Object missingPermissions;
+        if (required != null && !required.isEmpty()) {
+            if (required.size() == 1) {
+                String only = required.get(0);
+                missingPermissions = currentPermissions.contains(only) ? Collections.emptyList() : List.of(only);
+            } else {
+                boolean hasAny = currentPermissions.stream().anyMatch(required::contains);
+                missingPermissions = hasAny ? Collections.emptyList() : List.of(required);
             }
+        } else {
+            missingPermissions = Collections.emptyList();
         }
 
         Map<String, Object> body = baseBody(403, "Access denied", "You do not have permission to access this resource.", endpoint);
-        body.put("requiredPermission", requiredPermission);
+        if (required != null && !required.isEmpty()) {
+            Object requiredOut = (required.size() == 1)
+                    ? List.of(required.get(0))
+                    : List.of(required);
+            body.put("requiredPermissions", requiredOut);
+            String label = required.size() == 1 ? required.get(0) : String.join(" OR ", required);
+            body.put("requiredPermission", label);
+        }
         body.put("currentPermissions", currentPermissions);
         body.put("missingPermissions", missingPermissions);
 
-        log.warn("Access denied: endpoint={}, requiredPermission={}, currentPermissions={}", endpoint, requiredPermission, currentPermissions);
+        String reqLabel403 = (required == null || required.isEmpty()) ? "none" : (required.size() == 1 ? required.get(0) : String.join(" OR ", required));
+        log.warn("Access denied: endpoint={}, requiredPermission={}, currentPermissions={}", endpoint, reqLabel403, currentPermissions);
         write(response, 403, body);
     }
 

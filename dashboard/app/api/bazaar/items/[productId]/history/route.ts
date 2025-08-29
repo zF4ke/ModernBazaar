@@ -24,13 +24,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     
     const fullEndpoint = `${endpoint}?${queryParams.toString()}`
 
-    const history: BazaarItemHourSummary[] = await fetchFromBackend(
+    // Forward Authorization header if present
+    const authHeader = request.headers.get('authorization') || undefined
+    const token = authHeader?.replace(/^Bearer\s+/i, '')
+
+    const historyOrError: BazaarItemHourSummary[] | { status: number; [key: string]: any } = await fetchFromBackend(
       request, 
-      fullEndpoint
+      fullEndpoint,
+      {},
+      token
     )
+
+    if (typeof (historyOrError as any)?.status === 'number' && (historyOrError as any).status >= 400) {
+      return NextResponse.json(historyOrError as any, { status: (historyOrError as any).status })
+    }
     
     // Cache for 55 seconds (slightly less than backend's 60 seconds)
-    const response = NextResponse.json(history)
+    const response = NextResponse.json(historyOrError as BazaarItemHourSummary[])
     response.headers.set('Cache-Control', 'public, s-maxage=55, stale-while-revalidate=30')
     return response
   } catch (error) {

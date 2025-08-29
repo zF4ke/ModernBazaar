@@ -9,17 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import type { FlipOpportunity, FlippingQuery, PagedResponse } from "@/types/strategies"
-import { fetchWithBackendUrl, buildQueryParams } from "@/lib/api"
+import { buildQueryParams } from "@/lib/api"
+import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import { TradingSetup } from "./_components/trading-setup"
 import { OpportunitiesGrid } from "./_components/opportunities-grid"
 
-async function fetchFlipping(query: FlippingQuery): Promise<PagedResponse<FlipOpportunity>> {
-  const params = buildQueryParams(query as Record<string, any>)
-  const response = await fetchWithBackendUrl(`/api/strategies/flipping?${params}`)
-  if (!response.ok) throw new Error("Failed to fetch flipping opportunities")
-  return response.json()
-}
+// Fetch handled by useBackendQuery (auth by default)
 
 export default function FlippingPage() {
   const [query, setQuery] = useState<FlippingQuery>({
@@ -283,9 +279,9 @@ export default function FlippingPage() {
     return result
   }, [query, debouncedSearch, debouncedBudget])
 
-  const { data: response, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["strategies-flipping", finalQuery],
-    queryFn: () => fetchFlipping(finalQuery),
+  const params = buildQueryParams(finalQuery as Record<string, any>)
+  const endpoint = `/api/strategies/flipping?${params}`
+  const { data: response, isLoading, isFetching, refetch } = useBackendQuery<PagedResponse<FlipOpportunity>>(endpoint, {
     staleTime: 30000,
     refetchOnWindowFocus: false,
   })

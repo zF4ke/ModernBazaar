@@ -131,6 +131,12 @@ public class SecurityConfig {
     @Value("${auth.audience:}")
     private String audience;
 
+    /**
+     * Whether to enable mock mode for JWT validation (for development).
+     */
+    @Value("${auth.mock-enabled:false}")
+    private boolean mockEnabled;
+
     // ============================================================================
     // Security Configuration Beans
     // ============================================================================
@@ -217,7 +223,8 @@ public class SecurityConfig {
                 "/swagger-ui.html",
                 "/swagger-ui/**",
                 "/api/v1/billing/webhook/stripe",
-                "/api/plans"
+                "/api/plans",
+                "/api/metrics/**"
         };
     }
     
@@ -274,7 +281,6 @@ public class SecurityConfig {
         return new String[]{
                 "/api/bazaar/**",
                 "/api/skyblock/**",
-                "/api/metrics/**"
         };
     }
 
@@ -294,6 +300,12 @@ public class SecurityConfig {
      */
     @Bean
     public JwtDecoder jwtDecoder() {
+        // Check if mock mode is enabled
+        if (mockEnabled) {
+            log.info("Mock mode enabled, using test JWT decoder");
+            return createTestJwtDecoder();
+        }
+
         if (jwksUri == null || jwksUri.isBlank()) {
             log.warn("No JWKS URI configured, using test JWT decoder");
             return createTestJwtDecoder();
@@ -326,15 +338,44 @@ public class SecurityConfig {
      * @return Test JwtDecoder with hardcoded permissions
      */
     private JwtDecoder createTestJwtDecoder() {
-        return tokenValue -> Jwt.withTokenValue(tokenValue)
-                .header("alg", "none")
-                .claims(c -> {
-                    c.put("sub", "test-user");
-                    c.put("scope", "read:plans read:subscription read:market_data manage:plans use:starter use:flipper use:elite");
-                })
-                .issuedAt(Instant.now())
-                .expiresAt(Instant.now().plusSeconds(3600))
-                .build();
+        return tokenValue -> {
+            try {
+                // Try to decode as a real JWT first
+                Jwt realJwt = NimbusJwtDecoder.withJwkSetUri("https://dev-invalid-url/.well-known/jwks.json")
+                        .build()
+                        .decode(tokenValue);
+
+                // If successful, enhance with our test permissions
+                return Jwt.withTokenValue(tokenValue)
+                        .headers(h -> h.putAll(realJwt.getHeaders()))
+                        .claims(c -> {
+                            c.putAll(realJwt.getClaims());
+                            // Add test permissions if not present
+                            if (!c.containsKey("scope")) {
+                                c.put("scope", "read:plans read:subscription read:market_data manage:plans use:starter use:flipper use:elite");
+                            }
+                            if (!c.containsKey("permissions")) {
+                                c.put("permissions", List.of("read:plans", "read:subscription", "read:market_data", "manage:plans", "use:starter", "use:flipper", "use:elite"));
+                            }
+                        })
+                        .issuedAt(realJwt.getIssuedAt())
+                        .expiresAt(realJwt.getExpiresAt())
+                        .build();
+            } catch (Exception e) {
+                // Fall back to mock JWT if real decoding fails
+                log.debug("Failed to decode as real JWT, using mock decoder: {}", e.getMessage());
+                return Jwt.withTokenValue(tokenValue)
+                        .header("alg", "none")
+                        .claims(c -> {
+                            c.put("sub", "test-user");
+                            c.put("scope", "read:plans read:subscription read:market_data manage:plans use:starter use:flipper use:elite");
+                            c.put("permissions", List.of("read:plans", "read:subscription", "read:market_data", "manage:plans", "use:starter", "use:flipper", "use:elite"));
+                        })
+                        .issuedAt(Instant.now())
+                        .expiresAt(Instant.now().plusSeconds(3600))
+                        .build();
+            }
+        };
     }
     
     /**
@@ -418,52 +459,54 @@ public class SecurityConfig {
     }
     
     /**
-     * Gets the required permission for a specific endpoint.
+     * Gets the required permissions for a specific endpoint.
      *
-     * This method maps endpoints to their required permissions based on the
-     * security configuration. It's useful for generating error messages and
-     * documentation.
+     * Returns a list of authorities (e.g., SCOPE_use:starter). If the list
+     * contains a single element, that permission is required. If the list
+     * contains multiple elements, satisfying ANY one of them is sufficient.
+     * Public or unknown endpoints return an empty list.
      *
      * @param endpoint The endpoint path to check
-     * @return The required permission for the endpoint, or "unknown" if not found
+     * @return List of required authorities
      */
-    public String getRequiredPermissionForEndpoint(String endpoint) {
-        // Check admin endpoints first (most restrictive)
+    public List<String> getRequiredPermissionForEndpoint(String endpoint) {
+        // Admin endpoints: require manage:plans
         for (String adminEndpoint : getAdminEndpoints()) {
             if (matchesEndpoint(endpoint, adminEndpoint)) {
-                return SCOPE_MANAGE_PLANS;
+                return List.of(SCOPE_MANAGE_PLANS);
             }
         }
 
-        // Check subscription endpoints
+        // Subscription endpoints: require read:subscription
         for (String subEndpoint : getSubscriptionEndpoints()) {
             if (matchesEndpoint(endpoint, subEndpoint)) {
-                return SCOPE_READ_SUBSCRIPTION;
+                return List.of(SCOPE_READ_SUBSCRIPTION);
             }
         }
 
-        // Check strategy endpoints
+        // Strategy endpoints: ANY of the tier permissions
         for (String strategyEndpoint : getStrategyEndpoints()) {
             if (matchesEndpoint(endpoint, strategyEndpoint)) {
-                return "use:starter, use:flipper, or use:elite";
+                return Arrays.asList(TIER_PERMISSIONS);
             }
         }
 
-        // Check market data endpoints
+        // Market data endpoints: require read:market_data
         for (String marketEndpoint : getMarketDataEndpoints()) {
             if (matchesEndpoint(endpoint, marketEndpoint)) {
-                return SCOPE_READ_MARKET_DATA;
+                return List.of(SCOPE_READ_MARKET_DATA);
             }
         }
 
-        // Check public endpoints (least restrictive)
+        // Public endpoints: no permissions required
         for (String publicEndpoint : getPublicEndpoints()) {
             if (matchesEndpoint(endpoint, publicEndpoint)) {
-                return "none";
+                return List.of();
             }
         }
 
-        return "unknown";
+        // Unknown: default to empty (treated as none specific)
+        return List.of();
     }
 
     /**

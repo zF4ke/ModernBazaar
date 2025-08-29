@@ -7,13 +7,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { productId } = resolvedParams
 
   try {
-    const average: BazaarItemHourAverage = await fetchFromBackend(
+    // Forward Authorization header if present
+    const authHeader = request.headers.get('authorization') || undefined
+    const token = authHeader?.replace(/^Bearer\s+/i, '')
+
+    const averageOrError: BazaarItemHourAverage | { status: number; [key: string]: any } = await fetchFromBackend(
       request, 
-      `/api/bazaar/items/${encodeURIComponent(productId)}/average`
+      `/api/bazaar/items/${encodeURIComponent(productId)}/average`,
+      {},
+      token
     )
+
+    if (typeof (averageOrError as any)?.status === 'number' && (averageOrError as any).status >= 400) {
+      return NextResponse.json(averageOrError as any, { status: (averageOrError as any).status })
+    }
     
     // Cache for 4.5 minutes (slightly less than backend's 5 minutes)
-    const response = NextResponse.json(average)
+    const response = NextResponse.json(averageOrError as BazaarItemHourAverage)
     response.headers.set('Cache-Control', 'public, s-maxage=270, stale-while-revalidate=60')
     return response
   } catch (error) {
