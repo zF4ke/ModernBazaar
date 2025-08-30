@@ -26,7 +26,7 @@ public class BazaarSnapshotsRetentionJob {
     private final BazaarItemHourSummaryRepository hourSummaryRepo;
     private final BazaarHourPointRepository hourPointRepo;
 
-    @Value("${skyblock.bazaar.retention.interval-days:45}")
+    @Value("${skyblock.bazaar.retention.interval-days:30}")
     private long retentionDays;
 
     /**
@@ -59,6 +59,20 @@ public class BazaarSnapshotsRetentionJob {
         hourPointRepo.cascadeDeleteBySummaryHourStartBefore(cutoff);
         hourSummaryRepo.deleteByHourStartBefore(cutoff);
         repo.cascadeDeleteByFetchedAtBefore(cutoff);
+        
+        // Show retention status - oldest remaining snapshot and days left
+        try {
+            Instant oldestSnapshot = repo.findOldestFetchedAt();
+            if (oldestSnapshot != null) {
+                long daysUntilDeletion = ChronoUnit.DAYS.between(oldestSnapshot, cutoff);
+                log.info("Retention status - Oldest snapshot: {} ({} days ago), will be deleted in {} days", 
+                        oldestSnapshot, 
+                        ChronoUnit.DAYS.between(oldestSnapshot, Instant.now()),
+                        daysUntilDeletion);
+            }
+        } catch (Exception e) {
+            log.warn("Could not determine oldest snapshot date: {}", e.getMessage());
+        }
         
         log.info("Purged Bazaar data older than {} days - Deleted {} records", 
                 retentionDays, snapshotsToDelete + hourSummariesToDelete + hourPointsToDelete);

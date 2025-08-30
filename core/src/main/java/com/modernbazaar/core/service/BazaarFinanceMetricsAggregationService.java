@@ -35,7 +35,7 @@ public class BazaarFinanceMetricsAggregationService {
         List<String> allIds = hourRepo.findDistinctProductIds();
         if (allIds.isEmpty()) return;
 
-        final int batchSize = 250;
+        final int batchSize = 500;
         Instant now = Instant.now();
         for (int i=0;i<allIds.size();i+=batchSize) {
             List<String> batch = allIds.subList(i, Math.min(allIds.size(), i+batchSize));
