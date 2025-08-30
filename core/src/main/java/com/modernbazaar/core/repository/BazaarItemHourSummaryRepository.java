@@ -116,4 +116,10 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
 
     @Query("select distinct s.productId from BazaarItemHourSummary s")
     List<String> findDistinctProductIds();
+
+    /**
+     * Count hour summaries older than the given cutoff time for retention purposes
+     */
+    @Query("select count(hs) from BazaarItemHourSummary hs where hs.hourStart < :cutoff")
+    long countByHourStartBefore(@Param("cutoff") Instant cutoff);
 }

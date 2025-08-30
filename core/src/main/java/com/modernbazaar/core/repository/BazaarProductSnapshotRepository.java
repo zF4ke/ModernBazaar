@@ -214,4 +214,10 @@ public interface BazaarProductSnapshotRepository
          where fetched_at < :cutoff;
         """, nativeQuery = true)
     void cascadeDeleteByFetchedAtBefore(@Param("cutoff") Instant cutoff);
+
+    /**
+     * Count snapshots older than the given cutoff time for retention purposes
+     */
+    @Query("select count(s) from BazaarItemSnapshot s where s.fetchedAt < :cutoff")
+    long countByFetchedAtBefore(@Param("cutoff") Instant cutoff);
 }

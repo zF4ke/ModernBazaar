@@ -30,4 +30,10 @@ public interface BazaarHourPointRepository
            and hs.hour_start < :cutoff;
         """, nativeQuery = true)
     void cascadeDeleteBySummaryHourStartBefore(@Param("cutoff") Instant cutoff);
+
+    /**
+     * Count hour points older than the given cutoff time for retention purposes
+     */
+    @Query("select count(hp) from BazaarItemHourPoint hp join hp.hourSummary hs where hs.hourStart < :cutoff")
+    long countBySummaryHourStartBefore(@Param("cutoff") Instant cutoff);
 }

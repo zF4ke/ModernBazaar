@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,15 @@ public class BazaarSnapshotsRetentionJob {
     private long retentionDays;
 
     /**
+     * Runs on application startup to purge old data immediately
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void onStartup() {
+        log.info("Application started, running initial Bazaar data retention cleanup...");
+        purgeOld();
+    }
+
+    /**
      * Scheduled job to purge old Bazaar data (minute points, hour summaries, and snapshots).
      * Runs daily at 03:00 and deletes records older than the configured retention period.
      */
@@ -35,13 +46,21 @@ public class BazaarSnapshotsRetentionJob {
     @Transactional
     public void purgeOld() {
         Instant cutoff = Instant.now().minus(retentionDays, ChronoUnit.DAYS);
-        // 1) apagar minute points e suas order-books vinculadas às hour summaries antigas
+        
+        // Quick count of records to be deleted (single query per table)
+        long snapshotsToDelete = repo.countByFetchedAtBefore(cutoff);
+        long hourSummariesToDelete = hourSummaryRepo.countByHourStartBefore(cutoff);
+        long hourPointsToDelete = hourPointRepo.countBySummaryHourStartBefore(cutoff);
+        
+        log.info("Starting cleanup: {} snapshots, {} hour summaries, {} hour points to delete", 
+                snapshotsToDelete, hourSummariesToDelete, hourPointsToDelete);
+        
+        // Execute deletions
         hourPointRepo.cascadeDeleteBySummaryHourStartBefore(cutoff);
-        // 2) apagar hour summaries antigas
         hourSummaryRepo.deleteByHourStartBefore(cutoff);
-        // 3) apagar snapshots antigos e suas order-books
         repo.cascadeDeleteByFetchedAtBefore(cutoff);
-
-        log.info("Purged Bazaar data older than {} days", retentionDays);
+        
+        log.info("Purged Bazaar data older than {} days - Deleted {} records", 
+                retentionDays, snapshotsToDelete + hourSummariesToDelete + hourPointsToDelete);
     }
 }
