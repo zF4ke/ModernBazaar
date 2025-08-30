@@ -53,7 +53,7 @@ const strategies = [
     id: "bazaar-manipulation",
     title: "Bazaar Manipulation",
     description: "Set market prices and manipulate supply to create profitable opportunities. High risk, high reward.",
-    icon: Target,
+    icon: Shield,
     status: "planned",
     features: ["Price setting", "Supply manipulation", "Market control", "Risk management"],
     color: "purple"
@@ -66,7 +66,7 @@ export default function StrategiesLandingPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-4xl font-bold tracking-tight">Trading Strategies</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Trading Strategies</h1>
           <Badge variant="outline" className="px-3 py-1">
             <Activity className="h-3 w-3 mr-1" />
             Live Market Data
@@ -129,7 +129,7 @@ export default function StrategiesLandingPage() {
                     <CardTitle className="text-xl">{strategy.title}</CardTitle>
                     <div className="flex items-center gap-2 mt-1">
                       {isActive && (
-                        <Badge variant="outline" className={colors.badge}>
+                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-300 border-emerald-500/20">
                           <Zap className="h-3 w-3 mr-1" />
                           Active
                         </Badge>
@@ -141,7 +141,7 @@ export default function StrategiesLandingPage() {
                         </Badge>
                       )}
                       {isPlanned && (
-                        <Badge variant="outline" className="bg-muted/10 text-muted-foreground border-muted/20">
+                        <Badge variant="outline" className="bg-slate-500/10 text-slate-300 border-slate-500/20">
                           <Info className="h-3 w-3 mr-1" />
                           Planned
                         </Badge>

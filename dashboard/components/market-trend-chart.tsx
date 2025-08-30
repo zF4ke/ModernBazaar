@@ -18,7 +18,7 @@ interface MarketInsightCardProps {
 export function MarketInsightCard({ title, description, className, metric }: MarketInsightCardProps) {
   // Get real data - top items sorted by spread for opportunities
   const { data: itemsData, isLoading } = useBackendQuery<BazaarItemsResponse>(
-    '/api/bazaar/items?limit=10&sort=spread',
+    '/api/bazaar/items?limit=10&sort=spreaddesc',
     {
       refetchInterval: 300000, // Refresh every 5 minutes
       queryKey: ['market-insights', metric],
@@ -115,7 +115,14 @@ export function MarketInsightCard({ title, description, className, metric }: Mar
   const MetricIcon = metric === 'opportunities' ? Target : metric === 'activity' ? BarChart3 : DollarSign
 
   return (
-    <Card className={`${className} hover:shadow-md transition-shadow`}>
+    <Card
+      className={`${className} backdrop-blur-sm`}
+      style={{
+        background:
+          'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
+        backgroundColor: 'rgba(255,255,255,0.02)'
+      }}
+    >
       <CardContent className="p-4">
         <div className="space-y-3">
           <div className="flex items-center justify-between">

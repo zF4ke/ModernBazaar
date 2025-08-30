@@ -1,6 +1,6 @@
 "use client"
 
-import { Moon, Sun, LogIn, LogOut, User } from "lucide-react"
+import { Moon, Sun, LogIn, LogOut, User, Settings, ChevronDown } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth0 } from '@auth0/auth0-react'
 
@@ -15,11 +15,19 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function Header() {
   const { setTheme, theme } = useTheme()
   const pathname = usePathname()
+  const router = useRouter()
   const { loginWithRedirect, logout, isAuthenticated, user, isLoading } = useAuth0()
 
   const getBreadcrumbs = () => {
@@ -76,13 +84,43 @@ export function Header() {
           <Button size="sm" variant="outline" onClick={() => loginWithRedirect()}> <LogIn className="h-4 w-4 mr-1"/> Login</Button>
         )}
         {isAuthenticated && (
-          <>
-            <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground">
-              <User className="h-4 w-4"/>
-              <span>{user?.email || user?.name || 'User'}</span>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}><LogOut className="h-4 w-4 mr-1"/>Logout</Button>
-          </>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                className="flex items-center gap-2 hover:bg-white/10" 
+                style={{ outline: 'none', boxShadow: 'none' }}
+              >
+                <User className="h-4 w-4" />
+                <span className="font-medium">{user?.name || user?.email || 'Account'}</span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-background border border-border">
+              <DropdownMenuItem 
+                className="cursor-pointer hover:bg-accent focus:bg-accent"
+                onClick={() => router.push('/profile')}
+              >
+                <User className="h-4 w-4 mr-2" />
+                View Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                className="cursor-pointer hover:bg-accent focus:bg-accent"
+                onClick={() => router.push('/settings')}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-border" />
+              <DropdownMenuItem 
+                className="cursor-pointer text-red-400 hover:text-red-300 focus:text-red-300 hover:bg-accent focus:bg-accent"
+                onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </header>

@@ -219,6 +219,7 @@ public class SecurityConfig {
     private String[] getPublicEndpoints() {
         return new String[]{
                 "/actuator/health",
+                "/actuator/prometheus",
                 "/v3/api-docs/**",
                 "/swagger-ui.html",
                 "/swagger-ui/**",

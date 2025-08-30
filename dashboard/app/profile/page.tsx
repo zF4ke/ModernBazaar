@@ -1,13 +1,13 @@
 "use client"
 
 import { useAuth0 } from '@auth0/auth0-react'
-import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
   User,
   Settings,
@@ -19,26 +19,15 @@ import {
   Calendar,
   Crown,
   Star,
-  Activity,
-  BarChart3
+  BarChart3,
+  CheckCircle,
+  Key
 } from 'lucide-react'
 import { useBackendQuery } from '@/hooks/use-backend-query'
 
-/**
- * Profile page component for user account management.
- *
- * Features:
- * - User profile information
- * - Account settings
- * - Subscription details
- * - Activity history
- * - Security settings
- */
 export default function ProfilePage() {
   const { user, logout, isAuthenticated } = useAuth0()
-  const [activeTab, setActiveTab] = useState('profile')
 
-  // Fetch user subscription data
   const { data: subscription, isLoading: subscriptionLoading } = useBackendQuery<{
     planName: string
     status: string
@@ -53,22 +42,24 @@ export default function ProfilePage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-4">
-        <h2 className="text-3xl font-bold tracking-tight">Profile</h2>
-        <Card>
-          <CardContent className="p-6">
-            <p className="text-muted-foreground">Please log in to view your profile.</p>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">Profile</h2>
+          <p className="text-muted-foreground">Please log in to view your profile.</p>
+        </div>
+        <Card className="max-w-sm mx-auto backdrop-blur-sm" style={{
+          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.025) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 55%)',
+          backgroundColor: 'rgba(255,255,255,0.06)'
+        }}>
+          <CardContent className="p-6 text-center">
+            <User className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Sign in to access your profile and settings.</p>
           </CardContent>
         </Card>
       </div>
     )
   }
 
-  const userInitials = user?.name
-    ?.split(' ')
-    .map(n => n[0])
-    .join('')
-    .toUpperCase() || 'U'
-
+  const userInitials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -79,338 +70,233 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Sign Out */}
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Profile</h2>
+        <Button variant="outline" size="sm" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
       </div>
 
-      {/* Profile Overview Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center space-x-4">
+      {/* Profile Overview */}
+      <Card className="backdrop-blur-sm" style={{
+        background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.025) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 55%)',
+        backgroundColor: 'rgba(255,255,255,0.06)'
+      }}>
+        <CardContent className="p-6">
+          <div className="flex items-center space-x-6">
             <Avatar className="h-20 w-20">
               <AvatarImage src={user?.picture} alt={user?.name} />
-              <AvatarFallback className="text-lg">{userInitials}</AvatarFallback>
+              <AvatarFallback className="text-xl">{userInitials}</AvatarFallback>
             </Avatar>
-            <div className="space-y-1">
-              <CardTitle className="text-2xl">{user?.name || 'User'}</CardTitle>
+            <div className="flex-1 space-y-3">
+              <div className="flex items-center gap-3">
+                <h3 className="text-2xl font-semibold">{user?.name || 'User'}</h3>
+                <Badge variant="secondary">
+                  <Crown className="h-3 w-3 mr-1" />
+                  {subscription?.planName || 'Free Plan'}
+                </Badge>
+                {user?.email_verified && (
+                  <Badge variant="outline" className="border-emerald-500/20 text-emerald-300">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Verified
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center space-x-2 text-muted-foreground">
                 <Mail className="h-4 w-4" />
                 <span>{user?.email}</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Crown className="h-3 w-3" />
-                  {subscription?.planName || 'Free Plan'}
-                </Badge>
-                {subscription?.status === 'active' && (
-                  <Badge variant="default" className="bg-green-500">
-                    Active
-                  </Badge>
-                )}
+              <div className="text-sm text-muted-foreground">
+                Last login: {user?.updated_at ? formatDate(user.updated_at) : 'Not available'}
               </div>
             </div>
           </div>
-        </CardHeader>
+        </CardContent>
       </Card>
 
-      {/* Profile Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Profile
-          </TabsTrigger>
-          <TabsTrigger value="subscription" className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4" />
-            Subscription
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </TabsTrigger>
-          <TabsTrigger value="activity" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Activity
-          </TabsTrigger>
-        </TabsList>
+      {/* Main Content Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Account Information */}
+        <Card className="backdrop-blur-sm" style={{
+          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.025) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 55%)',
+          backgroundColor: 'rgba(255,255,255,0.06)'
+        }}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Account Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex justify-between py-2 border-b border-white/10">
+                <span className="text-sm text-muted-foreground">Full Name</span>
+                <span className="text-sm font-medium">{user?.name || 'Not provided'}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-white/10">
+                <span className="text-sm text-muted-foreground">Email</span>
+                <span className="text-sm font-medium">{user?.email || 'Not provided'}</span>
+              </div>
+              <div className="flex justify-between py-2">
+                <span className="text-sm text-muted-foreground">User ID</span>
+                <span className="text-sm font-mono text-muted-foreground">{user?.sub || 'Not available'}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Personal Information
-                </CardTitle>
-                <CardDescription>
-                  Your account details and profile information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name</label>
-                  <p className="text-sm text-muted-foreground">{user?.name || 'Not provided'}</p>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Email Address</label>
-                  <p className="text-sm text-muted-foreground">{user?.email || 'Not provided'}</p>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">User ID</label>
-                  <p className="text-sm text-muted-foreground font-mono">{user?.sub || 'Not available'}</p>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Last Login</label>
-                  <p className="text-sm text-muted-foreground">
-                    {user?.updated_at ? formatDate(user.updated_at) : 'Not available'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Account Security
-                </CardTitle>
-                <CardDescription>
-                  Manage your account security and authentication
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Email Verified</p>
+                {/* Subscription Details */}
+        <Card className="backdrop-blur-sm" style={{
+          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.025) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 55%)',
+          backgroundColor: 'rgba(255,255,255,0.06)'
+        }}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Subscription
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {subscriptionLoading ? (
+              <div className="space-y-2">
+                <div className="h-4 bg-white/10 rounded animate-pulse" />
+                <div className="h-4 bg-white/10 rounded animate-pulse w-2/3" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
+                  <div>
+                    <p className="font-medium">{subscription?.planName || 'Free Plan'}</p>
                     <p className="text-xs text-muted-foreground">
-                      {user?.email_verified ? 'Verified' : 'Not verified'}
+                      {subscription?.status === 'active' ? 'Active subscription' : 'No active subscription'}
                     </p>
                   </div>
-                  <Badge variant={user?.email_verified ? "default" : "destructive"}>
-                    {user?.email_verified ? '✓' : '✗'}
-                  </Badge>
+                  {/* <Badge variant={subscription?.status === 'active' ? "default" : "secondary"}>
+                    {subscription?.status || 'Inactive'}
+                  </Badge> */}
                 </div>
-                <Separator />
-                <div className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
-                    <Bell className="h-4 w-4 mr-2" />
-                    Notification Preferences
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Change Password
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-red-600 hover:text-red-700"
-                    onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-                  >
-                    <LogOut className="h-4 w-4 mr-2" />
-                    Sign Out
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
 
-        {/* Subscription Tab */}
-        <TabsContent value="subscription" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Subscription Details
-              </CardTitle>
-              <CardDescription>
-                Your current plan and billing information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {subscriptionLoading ? (
-                <div className="space-y-4">
-                  <div className="h-4 bg-muted rounded animate-pulse" />
-                  <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-lg font-semibold">{subscription?.planName || 'Free Plan'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {subscription?.status === 'active' ? 'Active subscription' : 'No active subscription'}
-                      </p>
+                {subscription?.currentPeriodStart && subscription?.currentPeriodEnd && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Current Period</span>
                     </div>
-                    <Badge variant={subscription?.status === 'active' ? "default" : "secondary"}>
-                      {subscription?.status || 'Inactive'}
-                    </Badge>
+                    <p className="text-sm text-muted-foreground pl-6">
+                      {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                    </p>
                   </div>
+                )}
 
-                  {subscription?.currentPeriodStart && subscription?.currentPeriodEnd && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Current Period</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
-                      </p>
+                {subscription?.features && subscription.features.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Star className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Plan Features</span>
                     </div>
-                  )}
-
-                  {subscription?.features && subscription.features.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Star className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Plan Features</span>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {subscription.features.map((feature, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
+                    <div className="flex flex-wrap gap-2 pl-6">
+                      {subscription.features.map((feature, index) => (
+                        <Badge key={index} variant="outline" className="text-xs border-white/20 bg-white/5">
+                          {feature}
+                        </Badge>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  <Separator />
+                <Separator className="bg-white/10" />
 
-                  <div className="flex gap-3">
-                    <Button className="flex-1">
-                      <Crown className="h-4 w-4 mr-2" />
-                      Upgrade Plan
-                    </Button>
-                    <Button variant="outline">
-                      <BarChart3 className="h-4 w-4 mr-2" />
-                      View Usage
-                    </Button>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <div className="flex gap-2">
+                  <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade Plan
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1 bg-white/5 border-white/10">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    View Usage
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
-        {/* Settings Tab */}
-        <TabsContent value="settings" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notifications
-                </CardTitle>
-                <CardDescription>
-                  Configure how you receive notifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Email Notifications</p>
-                    <p className="text-xs text-muted-foreground">Receive updates via email</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="rounded" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Price Alerts</p>
-                    <p className="text-xs text-muted-foreground">Get notified about price changes</p>
-                  </div>
-                  <input type="checkbox" defaultChecked className="rounded" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Market Updates</p>
-                    <p className="text-xs text-muted-foreground">Weekly market summaries</p>
-                  </div>
-                  <input type="checkbox" className="rounded" />
-                </div>
-              </CardContent>
-            </Card>
+         {/* Security & Settings */}
+         <Card className="backdrop-blur-sm" style={{
+           background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.025) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 55%)',
+           backgroundColor: 'rgba(255,255,255,0.06)'
+         }}>
+           <CardHeader>
+             <CardTitle className="flex items-center gap-2">
+               <Shield className="h-5 w-5" />
+               Security & Settings
+             </CardTitle>
+           </CardHeader>
+           <CardContent className="space-y-4">
+             <div className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
+               <div>
+                 <p className="text-sm font-medium">Email Verification</p>
+                 <p className="text-xs text-muted-foreground">
+                   {user?.email_verified ? 'Your email is verified' : 'Please verify your email'}
+                 </p>
+               </div>
+               <Badge variant={user?.email_verified ? "default" : "destructive"} className='bg-white/10 text-white hover:bg-white/10 hover:text-white cursor-default'>
+                 {user?.email_verified ? '✓ Verified' : '✗ Unverified'}
+               </Badge>
+             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Preferences
-                </CardTitle>
-                <CardDescription>
-                  Customize your account preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Theme</label>
-                  <select className="w-full p-2 border rounded-md text-sm">
-                    <option>System</option>
-                    <option>Light</option>
-                    <option>Dark</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Language</label>
-                  <select className="w-full p-2 border rounded-md text-sm">
-                    <option>English</option>
-                    <option>Portuguese</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Timezone</label>
-                  <select className="w-full p-2 border rounded-md text-sm">
-                    <option>UTC</option>
-                    <option>America/New_York</option>
-                    <option>Europe/London</option>
-                  </select>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+             <div className="space-y-2">
+               <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10">
+                 <Key className="h-4 w-4 mr-2" />
+                 Change Password
+               </Button>
+               <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10 text-red-400 hover:text-red-300 border-red-500/20 hover:bg-red-500/10">
+                 <Shield className="h-4 w-4 mr-2" />
+                 Delete Account
+               </Button>
+             </div>
+           </CardContent>
+         </Card>
 
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Recent Activity
-              </CardTitle>
-              <CardDescription>
-                Your recent account activity and usage
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div className="w-2 h-2 bg-green-500 rounded-full" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Logged in</p>
-                    <p className="text-xs text-muted-foreground">2 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Viewed market data</p>
-                    <p className="text-xs text-muted-foreground">5 hours ago</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Updated subscription</p>
-                    <p className="text-xs text-muted-foreground">2 days ago</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        {/* Preferences */}
+        <Card className="backdrop-blur-sm opacity-60" style={{
+          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.025) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 55%)',
+          backgroundColor: 'rgba(255,255,255,0.03)'
+        }}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Preferences
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center py-8">
+            <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-lg font-medium mb-2">Coming Soon</p>
+            <p className="text-sm text-muted-foreground">Theme, language, and timezone preferences will be available soon.</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Notifications Section */}
+      <Card className="backdrop-blur-sm opacity-60" style={{
+        background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.025) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 55%)',
+        backgroundColor: 'rgba(255,255,255,0.03)'
+      }}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Notifications
+          </CardTitle>
+          <CardDescription>Configure how you receive notifications</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-lg font-medium mb-2">Coming Soon</p>
+          <p className="text-sm text-muted-foreground">Email notifications, price alerts, and market updates will be available soon.</p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

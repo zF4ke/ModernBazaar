@@ -23,7 +23,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 
 export default function BazaarItemsPage() {
   const [query, setQuery] = useState<BazaarItemsQuery>({
-    sort: undefined,
+    sort: 'spreaddesc',
     limit: 50,
     page: 0,
   })
@@ -210,12 +210,12 @@ export default function BazaarItemsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="spreadDesc" className="cursor-pointer">Highest Spread</SelectItem>
-                  <SelectItem value="spreadAsc" className="cursor-pointer">Lowest Spread</SelectItem>
-                  <SelectItem value="sellDesc" className="cursor-pointer">Highest Sell Price</SelectItem>
-                  <SelectItem value="sellAsc" className="cursor-pointer">Lowest Sell Price</SelectItem>
-                  <SelectItem value="buyDesc" className="cursor-pointer">Highest Buy Price</SelectItem>
-                  <SelectItem value="buyAsc" className="cursor-pointer">Lowest Buy Price</SelectItem>
+                  <SelectItem value="spreaddesc" className="cursor-pointer">Highest Spread</SelectItem>
+                  <SelectItem value="spreadasc" className="cursor-pointer">Lowest Spread</SelectItem>
+                  <SelectItem value="selldesc" className="cursor-pointer">Highest Sell Price</SelectItem>
+                  <SelectItem value="sellasc" className="cursor-pointer">Lowest Sell Price</SelectItem>
+                  <SelectItem value="buydesc" className="cursor-pointer">Highest Buy Price</SelectItem>
+                  <SelectItem value="buyasc" className="cursor-pointer">Lowest Buy Price</SelectItem>
                 </SelectContent>
               </Select>
             </div>
