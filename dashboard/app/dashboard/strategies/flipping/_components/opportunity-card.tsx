@@ -44,7 +44,7 @@ export function OpportunityCard({ o, query, bazaarTaxRate, fav, onToggleFav, exp
   const s = o.supplyPerHour ?? 0
   const ratio = d > 0 ? s / d : 0
   const riskPct = o.riskScore !== undefined ? Math.round(o.riskScore * 100) : undefined
-  const href = `/bazaar-items/${o.productId}`
+  const href = `/dashboard/bazaar-items/${o.productId}`
   const spreadPctVal = (o.spreadPct ?? 0) * 100
   const isExpanded = expandedCard === o.productId
 
