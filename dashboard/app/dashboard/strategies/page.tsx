@@ -27,7 +27,7 @@ const strategies = [
     description: "Discover quick buy/sell opportunities with intelligent scoring and risk assessment.",
     icon: ArrowRightLeft,
     status: "active",
-    href: "/strategies/flipping",
+    href: "/dashboard/strategies/flipping",
     features: ["Real-time opportunities", "Risk scoring", "Profit calculations", "ETA predictions"],
     color: "emerald"
   },

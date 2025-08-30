@@ -81,7 +81,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <h2 className="text-xl md:text-2xl font-semibold">Market Overview</h2>
           {/* <Button variant="outline" size="sm" asChild className="text-foreground">
-            <Link href="/settings">
+            <Link href="/dashboard/settings">
               View Details <ArrowRight className="h-4 w-4 ml-1" />
             </Link>
           </Button> */}

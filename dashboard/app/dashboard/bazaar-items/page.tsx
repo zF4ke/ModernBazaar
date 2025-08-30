@@ -363,7 +363,7 @@ export default function BazaarItemsPage() {
                       className="cursor-pointer hover:bg-muted-foreground/5"
                     >
                       <TableCell>
-                        <Link href={`/bazaar-items/${snapshot.productId}`} className="font-medium text-primary hover:underline">
+                        <Link href={`/dashboard/bazaar-items/${snapshot.productId}`} className="font-medium text-primary hover:underline">
                           {snapshot.productId}
                         </Link>
                       </TableCell>
