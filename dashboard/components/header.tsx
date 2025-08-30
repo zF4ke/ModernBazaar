@@ -32,25 +32,31 @@ export function Header() {
 
   const getBreadcrumbs = () => {
     const segments = pathname.split("/").filter(Boolean)
-    if (segments.length === 0) return [{ label: "Dashboard", href: "/" }]
+    
+    // Always start with Dashboard
+    const breadcrumbs = [{ label: "Dashboard", href: "/dashboard" }]
+    
+    // If we're at the root dashboard, just return Dashboard
+    if (segments.length === 0 || (segments.length === 1 && segments[0] === "dashboard")) {
+      return breadcrumbs
+    }
 
-    const breadcrumbs = [{ label: "Dashboard", href: "/" }]
-
-    if (segments[0] === "bazaar-items") {
-      breadcrumbs.push({ label: "Bazaar Items", href: "/bazaar-items" })
-      if (segments[1]) {
-        breadcrumbs.push({ label: segments[1].toUpperCase(), href: `/bazaar-items/${segments[1]}` })
+    // Handle dashboard routes - build dynamically
+    if (segments[0] === "dashboard") {
+      let currentPath = "/dashboard"
+      
+      // Start from segment 1 (after "dashboard")
+      for (let i = 1; i < segments.length; i++) {
+        currentPath += `/${segments[i]}`
+        
+        // Convert segment to readable label (e.g., "bazaar-items" -> "Bazaar Items")
+        const label = segments[i]
+          .split("-")
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ")
+        
+        breadcrumbs.push({ label, href: currentPath })
       }
-    } else if (segments[0] === "skyblock-items") {
-      breadcrumbs.push({ label: "Skyblock Items", href: "/skyblock-items" })
-      if (segments[1]) {
-        breadcrumbs.push({ label: segments[1].toUpperCase(), href: `/skyblock-items/${segments[1]}` })
-      }
-    } else {
-      breadcrumbs.push({
-        label: segments[0].charAt(0).toUpperCase() + segments[0].slice(1),
-        href: `/${segments[0]}`,
-      })
     }
 
     return breadcrumbs
@@ -81,7 +87,7 @@ export function Header() {
       <div className="ml-auto flex items-center gap-2">
         {isLoading && <span className="text-xs text-muted-foreground">...</span>}
         {!isLoading && !isAuthenticated && (
-          <Button size="sm" variant="outline" onClick={() => loginWithRedirect()}> <LogIn className="h-4 w-4 mr-1"/> Login</Button>
+          <Button size="sm" variant="outline" onClick={() => window.location.href = '/login'}> <LogIn className="h-4 w-4 mr-1"/> Login</Button>
         )}
         {isAuthenticated && (
           <DropdownMenu>
@@ -99,14 +105,14 @@ export function Header() {
             <DropdownMenuContent align="end" className="w-48 bg-background border border-border">
               <DropdownMenuItem 
                 className="cursor-pointer hover:bg-accent focus:bg-accent"
-                onClick={() => router.push('/profile')}
+                onClick={() => router.push('/dashboard/profile')}
               >
                 <User className="h-4 w-4 mr-2" />
                 View Profile
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className="cursor-pointer hover:bg-accent focus:bg-accent"
-                onClick={() => router.push('/settings')}
+                onClick={() => router.push('/dashboard/settings')}
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Settings

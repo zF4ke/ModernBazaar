@@ -22,37 +22,36 @@ const sections = [
   {
     label: "Overview",
     items: [
-      { title: "Home", url: "/", icon: Home },
+      { title: "Home", url: "/dashboard", icon: Home },
     ],
   },
   {
     label: "Market",
     items: [
-      { title: "Bazaar Items", url: "/bazaar-items", icon: Package },
-      { title: "Skyblock Items", url: "/skyblock-items", icon: Layers },
+      { title: "Bazaar Items", url: "/dashboard/bazaar-items", icon: Package },
+      { title: "Skyblock Items", url: "/dashboard/skyblock-items", icon: Layers },
     ],
   },
   {
     label: "Strategies",
     items: [
-      { title: "Strategies", url: "/strategies", icon: Compass },
-      { title: "Flipping", url: "/strategies/flipping", icon: Shuffle },
+      { title: "Strategies", url: "/dashboard/strategies", icon: Compass },
+      { title: "Flipping", url: "/dashboard/strategies/flipping", icon: Shuffle },
     ],
   },
 
   {
     label: "Account",
     items: [
-      { title: "Profile", url: "/profile", icon: User },
-      { title: "Settings", url: "/settings", icon: Settings },
-      { title: "Subscription", url: "/subscription", icon: BarChart3 },
+      { title: "Profile", url: "/dashboard/profile", icon: User },
+      { title: "Settings", url: "/dashboard/settings", icon: Settings },
     ],
   },
   {
     label: "Admin",
     items: [
-      { title: "Plans", url: "/admin/plans", icon: Shield },
-      { title: "Endpoints", url: "/admin/endpoints", icon: Code },
+      { title: "Plans", url: "/dashboard/admin/plans", icon: Shield },
+      { title: "Endpoints", url: "/dashboard/admin/endpoints", icon: Code },
     ],
   },
 ]
