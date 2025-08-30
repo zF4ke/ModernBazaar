@@ -9,9 +9,17 @@ export async function GET(request: NextRequest) {
   const endpoint = `/api/strategies/flipping${queryString ? `?${queryString}` : ''}`
 
   try {
-    const response: PagedResponse<FlipOpportunity> = await fetchFromBackend(request, endpoint)
+    // Forward Authorization header if present
+    const authHeader = request.headers.get('authorization') || undefined
+    const token = authHeader?.replace(/^Bearer\s+/i, '')
 
-    const nextResponse = NextResponse.json(response)
+    const responseOrError: PagedResponse<FlipOpportunity> | { status: number; [key: string]: any } = await fetchFromBackend(request, endpoint, {}, token)
+
+    if (typeof (responseOrError as any)?.status === 'number' && (responseOrError as any).status >= 400) {
+      return NextResponse.json(responseOrError as any, { status: (responseOrError as any).status })
+    }
+
+    const nextResponse = NextResponse.json(responseOrError as PagedResponse<FlipOpportunity>)
     nextResponse.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=30')
     return nextResponse
   } catch (error) {

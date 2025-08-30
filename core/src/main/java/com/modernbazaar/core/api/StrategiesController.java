@@ -10,10 +10,21 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
+/**
+ * REST controller for trading strategy analysis and recommendations.
+ * 
+ * This controller provides endpoints for:
+ * - Analyzing bazaar flipping opportunities
+ * - Filtering opportunities based on various criteria
+ * - Calculating risk scores and competition analysis
+ * 
+ * All endpoints require appropriate tier permissions (starter, flipper, or elite).
+ */
 @RestController
 @RequestMapping(path = "/api/strategies", produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
@@ -22,6 +33,32 @@ public class StrategiesController {
 
     private final StrategyFlippingService flipping;
 
+    /**
+     * Lists bazaar flipping opportunities based on current market conditions.
+     * 
+     * This endpoint analyzes current snapshots and 48-hour averages to identify
+     * profitable flipping opportunities with advanced filtering options.
+     * 
+     * @param q Search query for item names
+     * @param minSell Minimum sell price filter
+     * @param maxSell Maximum sell price filter
+     * @param minBuy Minimum buy price filter
+     * @param maxBuy Maximum buy price filter
+     * @param minSpread Minimum spread percentage filter
+     * @param maxTime Maximum time to hold items
+     * @param minUnitsPerHour Minimum units traded per hour
+     * @param maxUnitsPerHour Maximum units traded per hour
+     * @param maxCompetitionPerHour Maximum competition level
+     * @param maxRiskScore Maximum risk score threshold
+     * @param disableCompetitionPenalties Disable competition-based penalties
+     * @param disableRiskPenalties Disable risk-based penalties
+     * @param sort Sort field for results
+     * @param budget Available budget for calculations
+     * @param horizonHours Time horizon for analysis
+     * @param page Page number (0-based)
+     * @param limit Items per page
+     * @return Paginated response with flipping opportunities
+     */
     @GetMapping("/flipping")
     @Operation(summary = "Bazaar Flipping opportunities",
             description = "Lista oportunidades baseadas no snapshot atual e últimas médias de 48h.",

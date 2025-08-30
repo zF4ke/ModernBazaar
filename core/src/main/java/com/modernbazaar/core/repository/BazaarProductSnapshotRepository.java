@@ -129,15 +129,36 @@ public interface BazaarProductSnapshotRepository
     int countDistinctProducts();
 
     @Query(value = """
+        select coalesce(count(*), 0) from (
+          select distinct on (product_id)
+                 case
+                   when weighted_two_percent_buy_price > weighted_two_percent_sell_price then 1
+                   else 0
+                 end as is_profitable
+          from bazaar_product_snapshot
+          where weighted_two_percent_buy_price > 0
+            and weighted_two_percent_sell_price > 0
+          order by product_id, fetched_at desc
+        ) as latest where is_profitable = 1
+        """, nativeQuery = true)
+    Integer countProfitableItems();
+
+    @Query(value = """
         with latest as (
           select distinct on (product_id)
-                 (weighted_two_percent_sell_price - weighted_two_percent_buy_price) as spread
+                 case
+                   when weighted_two_percent_buy_price > weighted_two_percent_sell_price
+                   then (weighted_two_percent_buy_price - weighted_two_percent_sell_price) / weighted_two_percent_sell_price * 100
+                   else 0
+                 end as spread_percentage
           from bazaar_product_snapshot
+          where weighted_two_percent_buy_price > 0
+            and weighted_two_percent_sell_price > 0
           order by product_id, fetched_at desc
         )
-        select avg(spread) from latest
+        select coalesce(avg(spread_percentage), 0.0) from latest where spread_percentage > 0
         """, nativeQuery = true)
-    double calculateAverageSpread();
+    Double calculateAverageProfitMargin();
 
     @Query("""
        select s

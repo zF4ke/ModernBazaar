@@ -20,22 +20,43 @@ public class MetricsService {
     private final BazaarProductSnapshotRepository snapshotRepository;
     private final JdbcTemplate jdbcTemplate;
 
+    /**
+     * Returns basic system metrics suitable for free users.
+     * Limited information to avoid exposing too much data to unauthenticated users.
+     */
     public MetricsResponseDTO getSystemMetrics() {
         Instant latest = snapshotRepository.findLatestFetchTime().orElse(null);
         LocalDateTime lastFetch = latest != null
                 ? LocalDateTime.ofInstant(latest, ZoneId.systemDefault())
                 : LocalDateTime.now().minusDays(1);
 
-        int totalItems = snapshotRepository.countDistinctProducts();
-        double avgSpread = snapshotRepository.calculateAverageSpread();
-        double heapUsage = getHeapUsagePercentage();
         String dbStatus = checkDatabaseHealth() ? "Healthy" : "Unhealthy";
+        
+        // Limited metrics for free users - only basic information
+        int totalItems = snapshotRepository.countDistinctProducts();
+        
+        // Cap values to prevent exposing exact profitable item counts
+        // Show general ranges instead of exact numbers
+        Integer profitableItemsResult = snapshotRepository.countProfitableItems();
+        int actualProfitableItems = profitableItemsResult != null ? profitableItemsResult : 0;
+        
+        // Round profitable items to nearest 50 to avoid exposing exact counts
+        int profitableItems = Math.round(actualProfitableItems / 50.0f) * 50;
+        
+        // Provide general activity score without revealing exact profit margins
+        double profitableRatio = totalItems > 0 ? (double) actualProfitableItems / totalItems : 0.0;
+        double freshnessScore = latest != null ? Math.min(1.0, (double) java.time.Duration.between(latest, Instant.now()).toHours() / 24.0) : 0.0;
+        double marketActivityScore = (profitableRatio * 0.7 + (1.0 - freshnessScore) * 0.3) * 100.0;
+        
+        // Don't expose exact profit margins to free users - keep it general
+        double avgProfitMargin = 0.0; // Set to 0 for free users
 
         return new MetricsResponseDTO(
                 lastFetch,
                 totalItems,
-                avgSpread,
-                heapUsage,
+                profitableItems,
+                avgProfitMargin,
+                marketActivityScore,
                 dbStatus
         );
     }

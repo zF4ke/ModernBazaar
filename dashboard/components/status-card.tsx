@@ -54,7 +54,14 @@ export function StatusCard({
   const displayValue = value || (isLoading ? "Checking..." : status || "Unknown")
 
   return (
-    <div className="rounded-lg border bg-card p-4 hover:bg-accent/50 transition-colors">
+    <div
+      className="rounded-lg border p-4 backdrop-blur-sm"
+      style={{
+        background:
+          'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
+        backgroundColor: 'rgba(255,255,255,0.02)'
+      }}
+    >
       <div className="flex items-center space-x-3">
         <div className={`flex h-10 w-10 items-center justify-center rounded-full ${getBgColor()}`}>
           <Icon className={`h-5 w-5 ${getIconColor()}`} />

@@ -70,6 +70,23 @@ management:
     health:
       show-details: when_authorized
 
+# --- Feature Flags / Toggles ---
+# Controle explícito para evitar ativação não intencional em ambientes novos.
+billing:
+  enabled: false   # habilitar somente quando Stripe configurado
+
+# Auth (resource server) - configurar em runtime
+auth:
+  mock-enabled: false  # true: usa decoder stub quando jwks-uri ausente
+  jwks-uri: ${AUTH_JWKS_URI:}
+  issuer-uri: ${AUTH_ISSUER_URI:}
+  audience: ${AUTH_AUDIENCE:}
+
+# Stripe
+stripe:
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+
+
 skyblock:
   bazaar:
     poll:

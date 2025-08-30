@@ -363,7 +363,7 @@ public class BazaarItemsQueryService {
                 s.getWeightedTwoPercentSellPrice(),
                 s.getInstantBuyPrice(),
                 s.getInstantSellPrice(),
-                s.getInstantSellPrice() - s.getInstantBuyPrice(),
+                s.getInstantBuyPrice() - s.getInstantSellPrice(),
                 s.getBuyMovingWeek(),
                 s.getSellMovingWeek(),
                 s.getActiveBuyOrdersCount(),
@@ -395,7 +395,7 @@ public class BazaarItemsQueryService {
                 s.getWeightedTwoPercentSellPrice(),
                 s.getInstantBuyPrice(),
                 s.getInstantSellPrice(),
-                s.getInstantSellPrice() - s.getInstantBuyPrice(),
+                s.getInstantBuyPrice() - s.getInstantSellPrice(),
                 s.getBuyMovingWeek(),
                 s.getSellMovingWeek(),
                 s.getActiveBuyOrdersCount(),
@@ -477,6 +477,6 @@ public class BazaarItemsQueryService {
     }
 
     private double spread(BazaarItemLiveViewResponseDTO dto) {
-        return sellPrice(dto) - buyPrice(dto);
+        return buyPrice(dto) - sellPrice(dto);
     }
 }
