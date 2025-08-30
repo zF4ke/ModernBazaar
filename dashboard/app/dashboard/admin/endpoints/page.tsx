@@ -840,8 +840,8 @@ const ENDPOINTS: EndpointInfo[] = [
   { path: '/api/admin/check-access', method: 'GET', description: 'Check admin access', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/plans', method: 'GET', description: 'List all subscription plans', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/plans', method: 'POST', description: 'Create new subscription plan', category: 'Admin', requiresAuth: true },
-  { path: '/api/admin/plans/:slug/activate', method: 'POST', description: 'Activate a plan', category: 'Admin', requiresAuth: true },
-  { path: '/api/admin/plans/:slug/deactivate', method: 'POST', description: 'Deactivate a plan', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/plans/test-plan/activate', method: 'POST', description: 'Activate a plan', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/plans/test-plan/deactivate', method: 'POST', description: 'Deactivate a plan', category: 'Admin', requiresAuth: true },
   
   // User endpoints
   { path: '/api/me/subscription', method: 'GET', description: 'Get user subscription info', category: 'User', requiresAuth: true },
