@@ -3,6 +3,7 @@
 import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useAdminAccess } from "@/hooks/use-admin-access"
 
 import {
   Sidebar,
@@ -17,47 +18,48 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// Estrutura por secções (estilo Discord: categorias com canais)
-const sections = [
-  {
-    label: "Overview",
-    items: [
-      { title: "Home", url: "/dashboard", icon: Home },
-    ],
-  },
-  {
-    label: "Market",
-    items: [
-      { title: "Bazaar Items", url: "/dashboard/bazaar-items", icon: Package },
-      { title: "Skyblock Items", url: "/dashboard/skyblock-items", icon: Layers },
-    ],
-  },
-  {
-    label: "Strategies",
-    items: [
-      { title: "Strategies", url: "/dashboard/strategies", icon: Compass },
-      { title: "Flipping", url: "/dashboard/strategies/flipping", icon: Shuffle },
-    ],
-  },
-
-  {
-    label: "Account",
-    items: [
-      { title: "Profile", url: "/dashboard/profile", icon: User },
-      { title: "Settings", url: "/dashboard/settings", icon: Settings },
-    ],
-  },
-  {
-    label: "Admin",
-    items: [
-      { title: "Plans", url: "/dashboard/admin/plans", icon: Shield },
-      { title: "Endpoints", url: "/dashboard/admin/endpoints", icon: Code },
-    ],
-  },
-]
-
 export function AppSidebar() {
   const pathname = usePathname()
+  const { hasAdminAccess } = useAdminAccess()
+
+  // Estrutura por secções (estilo Discord: categorias com canais)
+  const sections = [
+    {
+      label: "Overview",
+      items: [
+        { title: "Home", url: "/dashboard", icon: Home },
+      ],
+    },
+    {
+      label: "Market",
+      items: [
+        { title: "Bazaar Items", url: "/dashboard/bazaar-items", icon: Package },
+        { title: "Skyblock Items", url: "/dashboard/skyblock-items", icon: Layers },
+      ],
+    },
+    {
+      label: "Strategies",
+      items: [
+        { title: "Strategies", url: "/dashboard/strategies", icon: Compass },
+        { title: "Flipping", url: "/dashboard/strategies/flipping", icon: Shuffle },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { title: "Profile", url: "/dashboard/profile", icon: User },
+        { title: "Settings", url: "/dashboard/settings", icon: Settings },
+      ],
+    },
+    // Only show Admin section if user has admin access
+    ...(hasAdminAccess ? [{
+      label: "Admin",
+      items: [
+        { title: "Plans", url: "/dashboard/admin/plans", icon: Shield },
+        { title: "Endpoints", url: "/dashboard/admin/endpoints", icon: Code },
+      ],
+    }] : []),
+  ]
 
   const isActive = (itemUrl: string) => {
     if (itemUrl === "/") return pathname === "/"
