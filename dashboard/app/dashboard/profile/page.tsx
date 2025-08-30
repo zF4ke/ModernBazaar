@@ -81,8 +81,7 @@ export default function ProfilePage() {
 
       {/* Profile Overview */}
       <Card className="backdrop-blur-sm" style={{
-        background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.015) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.01) 0%, transparent 55%)',
-        backgroundColor: 'rgba(255,255,255,0.04)'
+        background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 50%)'
       }}>
         <CardContent className="p-6">
           <div className="flex items-center space-x-6">
@@ -120,8 +119,8 @@ export default function ProfilePage() {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Account Information */}
         <Card className="backdrop-blur-sm" style={{
-          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.015) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.01) 0%, transparent 55%)',
-          backgroundColor: 'rgba(255,255,255,0.04)'
+          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
+          backgroundColor: 'rgba(255,255,255,0.02)'
         }}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -149,8 +148,8 @@ export default function ProfilePage() {
 
                 {/* Subscription Details */}
         <Card className="backdrop-blur-sm" style={{
-          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.015) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.01) 0%, transparent 55%)',
-          backgroundColor: 'rgba(255,255,255,0.04)'
+          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
+          backgroundColor: 'rgba(255,255,255,0.02)'
         }}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -225,8 +224,8 @@ export default function ProfilePage() {
 
          {/* Security & Settings */}
          <Card className="backdrop-blur-sm" style={{
-           background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.015) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.01) 0%, transparent 55%)',
-           backgroundColor: 'rgba(255,255,255,0.04)'
+           background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
+           backgroundColor: 'rgba(255,255,255,0.02)'
          }}>
            <CardHeader>
              <CardTitle className="flex items-center gap-2">
