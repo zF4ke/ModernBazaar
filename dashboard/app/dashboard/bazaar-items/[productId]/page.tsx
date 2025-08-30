@@ -31,7 +31,7 @@ import {
 } from "lucide-react"
 import type { BazaarItemLiveView, BazaarItemHourSummary, BazaarItemHourAverage, BazaarItemSnapshot } from "@/types/bazaar"
 import { useBackendQuery, isExpectedError } from "@/hooks/use-backend-query"
-import HistoryChart from "../../../components/history-chart"
+import HistoryChart from "@/components/history-chart"
 
 // Data fetching moved to useBackendQuery (includes Authorization by default)
 
