@@ -7,11 +7,16 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'dev-5dw1c9bd.us.auth0.com'
-  const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || 'fZ6gr0w2WK15rKHAWV8rFdjxuDabljND'
-  const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://modern-bazaar.api'
-  const redirectUri = process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI || 'http://localhost:3001'
+  const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN
+  const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID
+  const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE
+  const redirectUri = process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI
 
+  if (!domain || !clientId || !audience || !redirectUri) {
+    throw new Error(
+      'Missing required Auth0 environment variables. Please set NEXT_PUBLIC_AUTH0_DOMAIN, NEXT_PUBLIC_AUTH0_CLIENT_ID, NEXT_PUBLIC_AUTH0_AUDIENCE, and NEXT_PUBLIC_AUTH0_REDIRECT_URI.'
+    )
+  }
   return (
     <Auth0Provider
       domain={domain}
