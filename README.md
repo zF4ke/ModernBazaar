@@ -12,8 +12,10 @@ Real-time bazaar analytics with comprehensive trading data and strategies; ML-dr
 ## 📸 Preview
 
 <div align="center">
-  <img src="./assets/dashboard__strategies__flipping_2025_08_28__cut.png" alt="Flipping Strategy Dashboard" width="49%" />
-  <img src="./assets/dashboard__bazaar_items__diamond_spreading_2025_08_28__cut.png" alt="Bazaar Items with Diamond Spreading Analysis" width="49%" />
+  <img src="./assets/images/dashboard__home_2025_08_30__cut.png" alt="Dashboard Home" />
+  <br/>
+  <img src="./assets/images/dashboard__strategies__flipping_2025_08_30__cut.png" alt="Flipping Strategy Dashboard" width="49%" />
+  <img src="./assets/images/dashboard__bazaar_items__diamond_spreading_2025_08_30__cut.png" alt="Bazaar Items with Diamond Spreading Analysis" width="49%" />
 </div>
 
 *[View full-size screenshots](./SCREENSHOTS.md)*
@@ -65,9 +67,16 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Responsive layout, tooltips, zoom/pan, smooth animations
 - [x] Advanced filtering and search features
 - [x] 48-hour average card with frontend caching
-- [ ] Replace prior bot interactions with API-powered UI
-- [ ] Trading strategies category and pages
-- [ ] (Optional) Auth + subscription support
+- [x] Auth0 authentication with Discord, GitHub, and Google
+- [x] Custom login page design
+- [x] Stripe subscription integration with 2/4 plans:
+  - [x] Free plan
+  - [x] Starter plan
+  - [ ] Flipper plan
+  - [ ] Elite plan
+- [x] Modern gradient-based UI design system
+- [x] Admin management pages for plans and endpoints
+- [x] Profile page with user management
 
 **Trading strategies, services and endpoints**
 - [x] Bazaar Flipping
@@ -76,11 +85,13 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
     - [x] Finance Averages
     - [x] `GET /api/strategies/flipping` endpoint
     - [x] Flipping route with budget input, sorting options, and pagination
-    - [x] QoL features: flipping tutorial, favorite items, etc.
+    - [x] QoL features: flipping tutorial, favorite items, trading presets, etc.
     - [x] Caching and performance optimizations
 - [ ] NPC Flipping
 - [ ] Craft Flipping
 - [ ] Bazaar Manipulation
+- [ ] Budget Planner
+- [ ] Auction House
 
 **Other**
 - [ ] ML modules (prediction, anomaly detection) tied into Core
