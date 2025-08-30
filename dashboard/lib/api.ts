@@ -153,10 +153,10 @@ export async function postFetchFromBackend(
       if (response.status === 401 || response.status === 403) {
         try {
           const body = await response.json()
-          return new Response(JSON.stringify(body), { status: response.status }) as unknown as Response
+          return new Response(JSON.stringify(body), { status: response.status })
         } catch {
           const text = await response.text()
-          return new Response(JSON.stringify({ error: `Backend request failed with status: ${response.status}`, details: text }), { status: response.status }) as unknown as Response
+          return new Response(JSON.stringify({ error: `Backend request failed with status: ${response.status}`, details: text }), { status: response.status })
         }
       }
       throw new Error(`Backend request failed with status: ${response.status}`)
