@@ -1,12 +1,12 @@
 export interface SystemMetrics {
-  totalItems: number
-  avgSpread: number
-  volume24h: number
-  apiLatency: number
-  heapUsage: number
+  // Campos mantidos somente para Settings
   lastFetch: string | null
-  status: string
   dbStatus: string
+  // Additional metrics from backend
+  totalItems: number
+  profitableItems: number
+  avgProfitMargin: number
+  marketActivityScore: number
 }
 
 export interface TimeSeriesData {
@@ -16,4 +16,4 @@ export interface TimeSeriesData {
 
 export interface SystemHealth {
   status: string
-} 
+}

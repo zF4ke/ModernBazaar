@@ -30,16 +30,18 @@ public class MetricsController {
     private final MetricsService metricsService;
 
     /**
-     * Retrieves comprehensive system metrics and performance data.
+     * Retrieves basic system metrics suitable for all users including free users.
      * 
-     * This endpoint provides real-time information about system health,
-     * performance statistics, and operational metrics.
+     * This endpoint provides limited information about system health and basic
+     * market statistics. Sensitive data like exact profit margins is restricted
+     * to avoid exposing competitive information to free users.
      * 
-     * @return System metrics and performance information
+     * @return Basic system metrics and market overview
      */
     @Operation(
-            summary = "Get system metrics",
-            description = "Returns system performance metrics and status information.",
+            summary = "Get basic system metrics",
+            description = "Returns limited system metrics and market overview suitable for free users. " +
+                         "Detailed profit margins and exact counts are restricted to premium users.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Successful operation")
             }
