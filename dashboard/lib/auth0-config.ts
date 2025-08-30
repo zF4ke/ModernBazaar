@@ -7,7 +7,7 @@ export const auth0Config = {
     scope: 'openid profile email'
   },
   // Custom login page configuration
-  cacheLocation: 'localstorage',
+  cacheLocation: 'localStorage',
   useRefreshTokens: true,
   // Custom login page URL
   customLoginPage: '/login'
