@@ -851,8 +851,8 @@ const ENDPOINTS: EndpointInfo[] = [
   
   // Bazaar endpoints
   { path: '/api/bazaar/items', method: 'GET', description: 'Get bazaar items', category: 'Bazaar', requiresAuth: true },
-  { path: '/api/bazaar/items/:id', method: 'GET', description: 'Get specific bazaar item', category: 'Bazaar', requiresAuth: true },
-  { path: '/api/bazaar/items/:id/history', method: 'GET', description: 'Get item price history', category: 'Bazaar', requiresAuth: true },
+  { path: '/api/bazaar/items/DIAMOND_SPREADING', method: 'GET', description: 'Get specific bazaar item', category: 'Bazaar', requiresAuth: true },
+  { path: '/api/bazaar/items/DIAMOND_SPREADING/history', method: 'GET', description: 'Get item price history', category: 'Bazaar', requiresAuth: true },
   
   // Skyblock endpoints
   { path: '/api/skyblock/items', method: 'GET', description: 'Get skyblock items', category: 'Skyblock', requiresAuth: true },
