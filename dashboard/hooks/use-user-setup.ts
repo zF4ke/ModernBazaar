@@ -63,8 +63,8 @@ export function useUserSetup() {
   }, [user?.sub])
 
   const refreshTokenWithPolling = async (opts?: { maxAttempts?: number; intervalMs?: number; force?: boolean }) => {
-    const maxAttempts = opts?.maxAttempts ?? 4
-    const intervalMs = opts?.intervalMs ?? 1500
+    const maxAttempts = opts?.maxAttempts ?? 10
+    const intervalMs = opts?.intervalMs ?? 2000
     const force = opts?.force ?? false
     if (!force && tokenRefreshDoneRef.current) return
     tokenRefreshDoneRef.current = true
@@ -84,8 +84,11 @@ export function useUserSetup() {
         const freshToken = await getAccessTokenSilently({
           cacheMode: 'off',
           detailedResponse: false,
-          timeoutInSeconds: 15,
-          authorizationParams: undefined // usa defaults do provider
+          timeoutInSeconds: 20,
+          authorizationParams: {
+            audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+            scope: 'openid profile email offline_access'
+          }
         })
         const elapsed = Math.round(performance.now() - start)
         clearTimeout(hangWarningTimer)
