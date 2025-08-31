@@ -98,24 +98,24 @@ export function useUserSetup() {
           console.log('✅ Permissions obtidas:', permissions)
           permissionsFound = permissions
           if (!pageReloadedRef.current) {
-            // marcar persistência ANTES do reload para não repetir
-            markSetupDonePersistent()
-            pageReloadedRef.current = true
-            console.log('🔃 A aguardar persistência e depois recarregar página para aplicar novas permissões...')
-            // Aguardar um pouco mais para garantir que Auth0 persiste o estado
-            setTimeout(async () => {
-              try { 
-                // Tentar obter o token uma última vez para garantir que está persistido
-                await getAccessTokenSilently({ cacheMode: 'off' })
-                console.log('🔄 A recarregar página...')
-                window.location.reload() 
-              } catch (e) {
-                console.error('❌ Erro ao recarregar página:', e)
-                // Se falhar, tentar reload mesmo assim
-                try { window.location.reload() } catch {}
-              }
-            }, 1000) // Aumentado para 1s para dar tempo ao Auth0
-          }
+              // marcar persistência ANTES do reload para não repetir
+              markSetupDonePersistent()
+              pageReloadedRef.current = true
+              console.log('🔃 Permissões obtidas - setup concluído sem recarregar página')
+              // Disabled page reload to prevent logout issues on Vercel
+              // setTimeout(async () => {
+              //   try { 
+              //     // Tentar obter o token uma última vez para garantir que está persistido
+              //     await getAccessTokenSilently({ cacheMode: 'off' })
+              //     console.log('🔄 A recarregar página...')
+              //     window.location.reload() 
+              //   } catch (e) {
+              //       console.error('❌ Erro ao recarregar página:', e)
+              //       // Se falhar, tentar reload mesmo assim
+              //       try { window.location.reload() } catch {}
+              //     }
+              //   }, 1000) // Aumentado para 1s para dar tempo ao Auth0
+            }
           break
         }
       } catch (err: any) {
