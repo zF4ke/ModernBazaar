@@ -142,36 +142,21 @@ export function useUserSetup() {
           markSetupDonePersistent()
           tokenRefreshDoneRef.current = false
           
-          // Force token refresh to get new permissions immediately (same as Force Token Refresh button)
-          // Add retry mechanism for production environments
-          let retryCount = 0
-          const maxRetries = 10
-          
-          const attemptTokenRefresh = async () => {
-            try {
-              // const token = await getAccessTokenSilently({
-              //   cacheMode: 'off'
-              // })
-              console.log('Token refresh após setup concluído com sucesso')
-              return true
-            } catch (refreshError: any) {
-              retryCount++
-              console.error(`Erro no refresh do token após setup (tentativa ${retryCount}/${maxRetries}):`, refreshError)
-              
-              // If it's a login required error and we haven't maxed out retries, wait and retry
-              if (refreshError?.error === 'login_required' && retryCount < maxRetries) {
-                console.log(`Aguardando ${retryCount * 1000}ms antes de tentar novamente...`)
-                await new Promise(resolve => setTimeout(resolve, retryCount * 1000))
-                return await attemptTokenRefresh()
-              }
-              
-              // If we've exhausted retries or it's a different error, continue anyway
-              console.log('Token refresh falhou após todas as tentativas, continuando...')
-              return false
-            }
+          // Force token refresh to get new permissions immediately
+          // Add delay in production to allow refresh token to be established
+          try {
+            // Wait for refresh token to be fully established (especially important in production)
+            console.log('Aguardando refresh token ser estabelecido...')
+            await new Promise(resolve => setTimeout(resolve, 5000)) // 2 second delay
+            
+            const token = await getAccessTokenSilently({
+              cacheMode: 'off'
+            })
+            console.log('Token refresh após setup concluído com sucesso')
+          } catch (refreshError: any) {
+            console.error('Erro no refresh do token após setup:', refreshError)
+            // Continue anyway - the setup was successful
           }
-          
-          await attemptTokenRefresh()
           
           setIsSetupComplete(true)
         } else {
