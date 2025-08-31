@@ -161,7 +161,9 @@ export function useUserSetup() {
             }
             
             // Now get a fresh token with new permissions
-            const token = await getAccessTokenSilently()
+            const token = await getAccessTokenSilently({
+              cacheMode: 'off'
+            })
             console.log('Token refresh após setup concluído com sucesso')
           } catch (refreshError: any) {
             console.error('Erro no refresh do token após setup:', refreshError)
