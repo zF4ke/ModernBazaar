@@ -10,11 +10,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN
   const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID
   const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE
-  const redirectUri = process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI
+  // Compute redirect URI at runtime so it matches the current host in prod
+  const redirectUri = typeof window !== 'undefined'
+    ? window.location.origin
+    : process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI
 
-  if (!domain || !clientId || !audience || !redirectUri) {
+  if (!domain || !clientId || !audience) {
     throw new Error(
-      'Missing required Auth0 environment variables. Please set NEXT_PUBLIC_AUTH0_DOMAIN, NEXT_PUBLIC_AUTH0_CLIENT_ID, NEXT_PUBLIC_AUTH0_AUDIENCE, and NEXT_PUBLIC_AUTH0_REDIRECT_URI.'
+      'Missing required Auth0 environment variables. Please set NEXT_PUBLIC_AUTH0_DOMAIN, NEXT_PUBLIC_AUTH0_CLIENT_ID, and NEXT_PUBLIC_AUTH0_AUDIENCE.'
     )
   }
 

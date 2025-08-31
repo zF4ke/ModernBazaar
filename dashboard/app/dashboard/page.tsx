@@ -393,7 +393,7 @@ export default function Dashboard() {
                   <p className="text-sm font-medium">Currently working on</p>
                   <p className="text-sm text-muted-foreground">
                     Improving the flipping strategy algorithms, adding more sophisticated risk assessment,
-                    and planning ML-based price prediction features. Always learning something new!
+                    and planning ML-based price prediction features. The next feature should be Bazaar Manipulation.
                   </p>
                 </div>
               </div>
