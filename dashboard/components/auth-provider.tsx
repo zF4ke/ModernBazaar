@@ -32,7 +32,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }}
       cacheLocation="localstorage"
       useRefreshTokens
-      useRefreshTokensFallback
       onRedirectCallback={(appState) => {
         // Skip navigation when running in the silent-auth iframe
         if (typeof window !== 'undefined' && window.self !== window.top) return
