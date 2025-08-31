@@ -59,19 +59,19 @@ export default function Dashboard() {
             Watch Hypixel SkyBlock prices, find reliable buy/sell gaps, and flip items with confidence.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
               <Link href="/dashboard/bazaar-items">
                 <Boxes className="h-4 w-4" />
                 Browse Market
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="outline" size="lg" className="transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
               <Link href="/dashboard/skyblock-items">
                 <Layers className="h-4 w-4" />
                 Item Catalog
               </Link>
             </Button>
-            <Button asChild variant="secondary" size="lg">
+            <Button asChild variant="secondary" size="lg" className="transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
               <Link href="/dashboard/strategies/flipping">
                 <TrendingUp className="h-4 w-4" />
                 Find Flips
@@ -124,7 +124,7 @@ export default function Dashboard() {
               <StatusCard
                 title="Avg. Profit Margin"
                 icon={DollarSign}
-                value={formatPercentage(metrics?.avgProfitMargin || 0)}
+                value={formatCurrency(metrics?.avgProfitMargin || 0)}
                 iconColorClass="text-amber-600 dark:text-amber-400"
                 bgColorClass="bg-amber-100 dark:bg-amber-900/20"
               />
@@ -214,7 +214,7 @@ export default function Dashboard() {
               Discover quick buy/sell opportunities with intelligent scoring and risk assessment.
             </p>
             <div className="flex gap-2 mt-auto">
-              <Button asChild size="sm" className="w-full bg-white/10 hover:bg-white/15 text-white border-white/20">
+              <Button asChild size="sm" className="w-full bg-white/10 hover:bg-white/15 text-white border-white/20 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
                 <Link href="/dashboard/strategies/flipping">Open Strategy</Link>
               </Button>
               <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white">
@@ -223,7 +223,7 @@ export default function Dashboard() {
             </div>
           </FeatureCard>
           
-          <FeatureCard backgroundStyle="glass">
+          <FeatureCard backgroundStyle="glass" className="opacity-60">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Hammer className="h-4 w-4 text-blue-500" />
@@ -234,9 +234,17 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mb-4">
               Profit from crafting items by analyzing material costs vs. final prices.
             </p>
+            <div className="flex gap-2 mt-auto">
+              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
+                Coming Soon
+              </Button>
+              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                Learn More
+              </Button>
+            </div>
           </FeatureCard>
           
-          <FeatureCard backgroundStyle="glass">
+          <FeatureCard backgroundStyle="glass" className="opacity-60">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Coins className="h-4 w-4 text-amber-500" />
@@ -247,9 +255,17 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mb-4">
               Maximize profits from daily NPC limits by finding the highest margin items.
             </p>
+            <div className="flex gap-2 mt-auto">
+              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
+                Coming Soon
+              </Button>
+              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                Learn More
+              </Button>
+            </div>
           </FeatureCard>
           
-          <FeatureCard backgroundStyle="glass">
+          <FeatureCard backgroundStyle="glass" className="opacity-60">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Shield className="h-4 w-4 text-purple-500" />
@@ -260,9 +276,17 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mb-4">
               Set market prices and manipulate supply to create profitable opportunities.
             </p>
+            <div className="flex gap-2 mt-auto">
+              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
+                In Planning
+              </Button>
+              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                Learn More
+              </Button>
+            </div>
           </FeatureCard>
           
-          <FeatureCard backgroundStyle="glass">
+          <FeatureCard backgroundStyle="glass" className="opacity-60">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-rose-500" />
@@ -273,9 +297,17 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mb-4">
               Allocate coins across strategies with risk-adjusted projections.
             </p>
+            <div className="flex gap-2 mt-auto">
+              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
+                In Planning
+              </Button>
+              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                Learn More
+              </Button>
+            </div>
           </FeatureCard>
           
-          <FeatureCard backgroundStyle="glass">
+          <FeatureCard backgroundStyle="glass" className="opacity-60">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-indigo-500" />
@@ -286,6 +318,14 @@ export default function Dashboard() {
             <p className="text-sm text-muted-foreground mb-4">
               Snipe and flip AH items using live listings and historical trends.
             </p>
+            <div className="flex gap-2 mt-auto">
+              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
+                Considering
+              </Button>
+              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                Learn More
+              </Button>
+            </div>
           </FeatureCard>
         </div>
       </section>

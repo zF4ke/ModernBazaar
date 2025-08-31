@@ -56,7 +56,7 @@ export function FeatureCard({
         backgroundColor: bg.solid
       }}
     >
-      <CardContent className="p-6">
+      <CardContent className="p-6 flex-1 flex flex-col">
         {children}
       </CardContent>
     </Card>

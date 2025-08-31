@@ -23,7 +23,8 @@ import {
   Star,
   BarChart3,
   CheckCircle,
-  Key
+  Key,
+  Rocket
 } from 'lucide-react'
 import { useBackendQuery } from '@/hooks/use-backend-query'
 
@@ -119,27 +120,27 @@ export default function ProfilePage() {
       {/* Main Content Grid */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Account Information */}
-        <FeatureCard backgroundStyle="subtle">
+        <FeatureCard backgroundStyle="subtle" className="flex flex-col">
           <CardHeader className="p-0 mb-4">
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
               Account Information
             </CardTitle>
           </CardHeader>
-          <div className="space-y-3">
-            <div className="flex justify-between py-2 border-b border-white/10">
-              <span className="text-sm text-muted-foreground">Full Name</span>
-              <span className="text-sm font-medium">{user?.name || 'Not provided'}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b border-white/10">
-              <span className="text-sm text-muted-foreground">Email</span>
-              <span className="text-sm font-medium">{user?.email || 'Not provided'}</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="text-sm text-muted-foreground">User ID</span>
-              <span className="text-sm font-mono text-muted-foreground">{user?.sub || 'Not available'}</span>
-            </div>
-          </div>
+            <div className="space-y-3 flex-1 flex flex-col justify-end">
+             <div className="grid grid-cols-2 gap-4 h-12 border-b border-white/10 items-center">
+               <span className="text-sm text-muted-foreground">Full Name</span>
+               <span className="text-sm font-medium text-right">{user?.name || 'Not provided'}</span>
+             </div>
+             <div className="grid grid-cols-2 gap-4 h-12 border-b border-white/10 items-center">
+               <span className="text-sm text-muted-foreground">Email</span>
+               <span className="text-sm font-medium text-right">{user?.email || 'Not provided'}</span>
+             </div>
+             <div className="grid grid-cols-2 gap-4 h-12 items-center">
+               <span className="text-sm text-muted-foreground">User ID</span>
+               <span className="text-sm font-mono text-muted-foreground text-right">{user?.sub || 'Not available'}</span>
+             </div>
+           </div>
         </FeatureCard>
 
         {/* Subscription Details */}
@@ -198,11 +199,11 @@ export default function ProfilePage() {
                 <Separator className="bg-white/10" />
 
                 <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-                    <Crown className="h-4 w-4 mr-2" />
+                  <Button size="sm" className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                    <Rocket className="h-4 w-4" />
                     Upgrade Plan
                   </Button>
-                  <Button variant="outline" size="sm" className="flex-1 bg-white/5 border-white/10">
+                  <Button variant="outline" size="sm" className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 transform">
                     <BarChart3 className="h-4 w-4 mr-2" />
                     View Usage
                   </Button>
@@ -213,14 +214,14 @@ export default function ProfilePage() {
         </FeatureCard>
 
         {/* Security & Settings */}
-        <FeatureCard backgroundStyle="subtle">
+        <FeatureCard backgroundStyle="subtle" className="flex flex-col">
           <CardHeader className="p-0 mb-4">
             <CardTitle className="flex items-center gap-2">
               <Shield className="h-5 w-5" />
               Security & Settings
             </CardTitle>
           </CardHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 flex-1 flex flex-col justify-end">
             <div className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
               <div>
                 <p className="text-sm font-medium">Email Verification</p>
@@ -229,7 +230,7 @@ export default function ProfilePage() {
                 </p>
               </div>
               <Badge variant={user?.email_verified ? "default" : "destructive"} className='bg-white/10 text-white hover:bg-white/10 hover:text-white cursor-default'>
-                {user?.email_verified ? '✓ Verified' : '✗ Unverified'}
+                {user?.email_verified ? 'Verified' : 'Unverified'}
               </Badge>
             </div>
 
@@ -238,7 +239,7 @@ export default function ProfilePage() {
                 <Key className="h-4 w-4 mr-2" />
                 Change Password
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10 text-red-400 hover:text-red-300 border-red-500/20 hover:bg-red-500/10">
+              <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10 text-red-400 hover:text-red-300  hover:bg-red-500/10">
                 <Shield className="h-4 w-4 mr-2" />
                 Delete Account
               </Button>

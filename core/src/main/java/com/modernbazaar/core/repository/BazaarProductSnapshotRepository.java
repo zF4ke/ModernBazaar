@@ -148,15 +148,15 @@ public interface BazaarProductSnapshotRepository
           select distinct on (product_id)
                  case
                    when weighted_two_percent_buy_price > weighted_two_percent_sell_price
-                   then (weighted_two_percent_buy_price - weighted_two_percent_sell_price) / weighted_two_percent_sell_price * 100
+                   then (weighted_two_percent_buy_price - weighted_two_percent_sell_price)
                    else 0
-                 end as spread_percentage
+                 end as spread_coins
           from bazaar_product_snapshot
           where weighted_two_percent_buy_price > 0
             and weighted_two_percent_sell_price > 0
           order by product_id, fetched_at desc
         )
-        select coalesce(avg(spread_percentage), 0.0) from latest where spread_percentage > 0
+        select coalesce(avg(spread_coins), 0.0) from latest where spread_coins > 0
         """, nativeQuery = true)
     Double calculateAverageProfitMargin();
 
@@ -221,8 +221,8 @@ public interface BazaarProductSnapshotRepository
     @Query("select count(s) from BazaarItemSnapshot s where s.fetchedAt < :cutoff")
     long countByFetchedAtBefore(@Param("cutoff") Instant cutoff);
 
-    // findAverageProfitMargin
-    @Query("select avg((s.weightedTwoPercentBuyPrice - s.weightedTwoPercentSellPrice) / s.weightedTwoPercentSellPrice * 100) " +
+    // findAverageProfitMargin - returns profit margin in coins, not percentage
+    @Query("select avg(s.weightedTwoPercentBuyPrice - s.weightedTwoPercentSellPrice) " +
            "from BazaarItemSnapshot s " +
            "where s.weightedTwoPercentBuyPrice > 0 and s.weightedTwoPercentSellPrice > 0")
     Optional<Double> findAverageProfitMargin();
