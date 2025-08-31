@@ -1,6 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { FeatureCard } from "@/components/feature-card"
 import { FlipOpportunity, FlippingQuery } from "@/types/strategies"
 import { OpportunitySkeletonCard } from "./opportunity-skeleton-card"
 import { OpportunityCard } from "./opportunity-card"
@@ -29,8 +30,8 @@ export function OpportunitiesGrid(props: OpportunitiesGridProps) {
   const { items, isLoading, isFetching, totalPages, currentPage, totalItems, query, limit, goToPreviousPage, goToNextPage, bazaarTaxRate, favs, toggleFav, expandedCard, setExpandedCard } = props
 
   return (
-    <Card>
-      <CardHeader>
+    <FeatureCard backgroundStyle="flat">
+      <CardHeader className="p-0 mb-4">
         <CardTitle>
           <div className="flex items-end">
             <span>Opportunities ({items.length})</span>
@@ -39,7 +40,7 @@ export function OpportunitiesGrid(props: OpportunitiesGridProps) {
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className={`transition-opacity duration-200 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
+      <div className={`transition-opacity duration-200 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
         {(totalPages > 1 || (isLoading && (query.page ?? 0) > 0)) && (
           <div className="mb-4"><PaginationControls currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} limit={limit} goToPreviousPageAction={goToPreviousPage} goToNextPageAction={goToNextPage} /></div>
         )}
@@ -70,7 +71,7 @@ export function OpportunitiesGrid(props: OpportunitiesGridProps) {
         {(totalPages > 1 || (isLoading && (query.page ?? 0) > 0)) && (
           <div className="mt-4"><PaginationControls currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} limit={limit} goToPreviousPageAction={goToPreviousPage} goToNextPageAction={goToNextPage} /></div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FeatureCard>
   )
 }

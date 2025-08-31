@@ -8,6 +8,8 @@ import { RefreshCw, Trophy, Zap, Mountain, Shuffle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { FeatureCard } from "@/components/feature-card"
+import { GradientSection } from "@/components/gradient-section"
 import type { FlipOpportunity, FlippingQuery, PagedResponse } from "@/types/strategies"
 import { buildQueryParams } from "@/lib/api"
 import { useBackendQuery } from "@/hooks/use-backend-query"
@@ -354,7 +356,7 @@ export default function FlippingPage() {
           filtersOpen={filtersOpen}
           setFiltersOpen={setFiltersOpen}
           pinFavoritesToTop={pinFavoritesToTop}
-            setPinFavoritesToTop={setPinFavoritesToTop}
+          setPinFavoritesToTop={setPinFavoritesToTop}
           favCount={favs.size}
           bazaarTaxRate={bazaarTaxRate}
           setBazaarTaxRate={setBazaarTaxRate}

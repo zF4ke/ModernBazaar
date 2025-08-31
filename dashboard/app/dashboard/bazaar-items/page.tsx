@@ -18,6 +18,7 @@ import type { BazaarItemLiveView, BazaarItemsQuery, BazaarItemsResponse } from "
 import { buildQueryParams } from "@/lib/api"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
+import { FeatureCard } from "@/components/feature-card"
 
 // Fetch handled by useBackendQuery (auth by default)
 
@@ -52,10 +53,6 @@ export default function BazaarItemsPage() {
     minSell: debouncedPriceFilters.minSell ? Number.parseFloat(debouncedPriceFilters.minSell) : undefined,
     maxSell: debouncedPriceFilters.maxSell ? Number.parseFloat(debouncedPriceFilters.maxSell) : undefined,
   }
-
-
-
-
 
   const params = buildQueryParams(finalQuery)
   const endpoint = `/api/bazaar/items?${params}`
@@ -160,8 +157,8 @@ export default function BazaarItemsPage() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader className="pb-4">
+      <FeatureCard backgroundStyle="flat">
+        <CardHeader className="pb-4 p-0 mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
@@ -187,7 +184,7 @@ export default function BazaarItemsPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <div className="space-y-6">
           {/* Always visible: Search and basic controls */}
           <div className="grid gap-4 md:grid-cols-4">
             <div className="md:col-span-2">
@@ -302,12 +299,12 @@ export default function BazaarItemsPage() {
               </div>
             </CollapsibleContent>
           </Collapsible>
-        </CardContent>
-      </Card>
+        </div>
+      </FeatureCard>
 
       {/* Bazaar Items Table */}
-      <Card>
-        <CardHeader>
+      <FeatureCard backgroundStyle="flat">
+        <CardHeader className="p-0 mb-4">
           <CardTitle>
             <div className="flex items-end">
               <span>
@@ -322,7 +319,7 @@ export default function BazaarItemsPage() {
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className={`transition-opacity duration-200 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
+        <div className={`transition-opacity duration-200 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
           {/* Top Pagination Controls */}
           {!isLoading && totalPages > 1 && (
             <div className="mb-4">
@@ -409,8 +406,8 @@ export default function BazaarItemsPage() {
               <PaginationControls />
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </FeatureCard>
     </div>
   )
 } 

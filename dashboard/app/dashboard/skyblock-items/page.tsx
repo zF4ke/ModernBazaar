@@ -14,6 +14,8 @@ import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { FeatureCard } from "@/components/feature-card"
+import { GradientSection } from "@/components/gradient-section"
 import type { SkyblockItem, SkyblockItemQuery, SkyblockItemsResponse } from "@/types/skyblock"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
@@ -141,8 +143,8 @@ export default function SkyblockItemsPage() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader className="pb-4">
+      <FeatureCard backgroundStyle="flat">
+        <CardHeader className="pb-4 p-0 mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Filter className="h-5 w-5" />
@@ -168,7 +170,7 @@ export default function SkyblockItemsPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <div className="space-y-6">
           {/* Always visible: Search and basic controls */}
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             <div className="sm:col-span-2">
@@ -333,12 +335,12 @@ export default function SkyblockItemsPage() {
               </div>
             </CollapsibleContent>
           </Collapsible>
-        </CardContent>
-      </Card>
+        </div>
+      </FeatureCard>
 
       {/* Skyblock Items Table */}
-      <Card>
-        <CardHeader>
+      <FeatureCard backgroundStyle="flat">
+        <CardHeader className="p-0 mb-4">
           <CardTitle>
             <div className="flex items-end">
               <span>
@@ -353,7 +355,7 @@ export default function SkyblockItemsPage() {
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className={`transition-opacity duration-200 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
+        <div className={`transition-opacity duration-200 ${isFetching ? 'opacity-75' : 'opacity-100'}`}>
           {/* Top Pagination Controls */}
           {!isLoading && totalPages > 1 && (
             <div className="mb-4">
@@ -412,8 +414,8 @@ export default function SkyblockItemsPage() {
               <PaginationControls />
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </FeatureCard>
     </div>
   )
 } 

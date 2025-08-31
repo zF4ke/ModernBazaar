@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { FeatureCard } from "@/components/feature-card"
 import { FlippingQuery } from "@/types/strategies"
 import {
   Search,
@@ -102,8 +103,8 @@ export function TradingSetup(props: TradingSetupProps) {
   }, [])
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
+    <FeatureCard backgroundStyle="flat">
+      <CardHeader className="pb-4 p-0 mb-4">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <CardTitle>Trading Setup</CardTitle>
@@ -140,7 +141,7 @@ export function TradingSetup(props: TradingSetupProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <div className="space-y-6">
         {/* Trading Preset Selector */}
         <div className="space-y-2">
           <Label className="text-sm font-medium flex items-center gap-2">
@@ -464,8 +465,8 @@ export function TradingSetup(props: TradingSetupProps) {
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </FeatureCard>
   )
 }
 

@@ -8,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { FeatureCard } from '@/components/feature-card'
+import { GradientSection } from '@/components/gradient-section'
 import {
   User,
   Settings,
@@ -46,15 +48,12 @@ export default function ProfilePage() {
           <h2 className="text-2xl font-bold">Profile</h2>
           <p className="text-muted-foreground">Please log in to view your profile.</p>
         </div>
-        <Card className="max-w-sm mx-auto backdrop-blur-sm" style={{
-          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.025) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 55%)',
-          backgroundColor: 'rgba(255,255,255,0.06)'
-        }}>
-          <CardContent className="p-6 text-center">
+        <FeatureCard backgroundStyle="glass" className="max-w-sm mx-auto">
+          <div className="text-center">
             <User className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Sign in to access your profile and settings.</p>
-          </CardContent>
-        </Card>
+          </div>
+        </FeatureCard>
       </div>
     )
   }
@@ -86,84 +85,72 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile Overview */}
-      <Card className="backdrop-blur-sm" style={{
-        background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 50%)'
-      }}>
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-6">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={user?.picture} alt={user?.name} />
-              <AvatarFallback className="text-xl">{userInitials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center gap-3">
-                <h3 className="text-2xl font-semibold">{user?.name || 'User'}</h3>
-                <Badge variant="secondary">
-                  <Crown className="h-3 w-3 mr-1" />
-                  {subscription?.planName || 'Free Plan'}
+      <GradientSection variant="hero" padding="md">
+        <div className="flex items-center space-x-6">
+          <Avatar className="h-20 w-20">
+            <AvatarImage src={user?.picture} alt={user?.name} />
+            <AvatarFallback className="text-xl">{userInitials}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-3">
+              <h3 className="text-2xl font-semibold">{user?.name || 'User'}</h3>
+              <Badge variant="secondary">
+                <Crown className="h-3 w-3 mr-1" />
+                {subscription?.planName || 'Free Plan'}
+              </Badge>
+              {user?.email_verified && (
+                <Badge variant="outline" className="border-emerald-500/20 text-emerald-300">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Verified
                 </Badge>
-                {user?.email_verified && (
-                  <Badge variant="outline" className="border-emerald-500/20 text-emerald-300">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Verified
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center space-x-2 text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>{user?.email}</span>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Last login: {user?.updated_at ? formatDate(user.updated_at) : 'Not available'}
-              </div>
+              )}
+            </div>
+            <div className="flex items-center space-x-2 text-muted-foreground">
+              <Mail className="h-4 w-4" />
+              <span>{user?.email}</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Last login: {user?.updated_at ? formatDate(user.updated_at) : 'Not available'}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </GradientSection>
 
       {/* Main Content Grid */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Account Information */}
-        <Card className="backdrop-blur-sm" style={{
-          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
-          backgroundColor: 'rgba(255,255,255,0.02)'
-        }}>
-          <CardHeader>
+        <FeatureCard backgroundStyle="subtle">
+          <CardHeader className="p-0 mb-4">
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
               Account Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-white/10">
-                <span className="text-sm text-muted-foreground">Full Name</span>
-                <span className="text-sm font-medium">{user?.name || 'Not provided'}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-white/10">
-                <span className="text-sm text-muted-foreground">Email</span>
-                <span className="text-sm font-medium">{user?.email || 'Not provided'}</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span className="text-sm text-muted-foreground">User ID</span>
-                <span className="text-sm font-mono text-muted-foreground">{user?.sub || 'Not available'}</span>
-              </div>
+          <div className="space-y-3">
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-sm text-muted-foreground">Full Name</span>
+              <span className="text-sm font-medium">{user?.name || 'Not provided'}</span>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex justify-between py-2 border-b border-white/10">
+              <span className="text-sm text-muted-foreground">Email</span>
+              <span className="text-sm font-medium">{user?.email || 'Not provided'}</span>
+            </div>
+            <div className="flex justify-between py-2">
+              <span className="text-sm text-muted-foreground">User ID</span>
+              <span className="text-sm font-mono text-muted-foreground">{user?.sub || 'Not available'}</span>
+            </div>
+          </div>
+        </FeatureCard>
 
-                {/* Subscription Details */}
-        <Card className="backdrop-blur-sm" style={{
-          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
-          backgroundColor: 'rgba(255,255,255,0.02)'
-        }}>
-          <CardHeader>
+        {/* Subscription Details */}
+        <FeatureCard backgroundStyle="subtle">
+          <CardHeader className="p-0 mb-4">
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
               Subscription
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <div className="space-y-4">
             {subscriptionLoading ? (
               <div className="space-y-2">
                 <div className="h-4 bg-white/10 rounded animate-pulse" />
@@ -178,9 +165,6 @@ export default function ProfilePage() {
                       {subscription?.status === 'active' ? 'Active subscription' : 'No active subscription'}
                     </p>
                   </div>
-                  {/* <Badge variant={subscription?.status === 'active' ? "default" : "secondary"}>
-                    {subscription?.status || 'Inactive'}
-                  </Badge> */}
                 </div>
 
                 {subscription?.currentPeriodStart && subscription?.currentPeriodEnd && (
@@ -225,83 +209,74 @@ export default function ProfilePage() {
                 </div>
               </>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </FeatureCard>
 
-         {/* Security & Settings */}
-         <Card className="backdrop-blur-sm" style={{
-           background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
-           backgroundColor: 'rgba(255,255,255,0.02)'
-         }}>
-           <CardHeader>
-             <CardTitle className="flex items-center gap-2">
-               <Shield className="h-5 w-5" />
-               Security & Settings
-             </CardTitle>
-           </CardHeader>
-           <CardContent className="space-y-4">
-             <div className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
-               <div>
-                 <p className="text-sm font-medium">Email Verification</p>
-                 <p className="text-xs text-muted-foreground">
-                   {user?.email_verified ? 'Your email is verified' : 'Please verify your email'}
-                 </p>
-               </div>
-               <Badge variant={user?.email_verified ? "default" : "destructive"} className='bg-white/10 text-white hover:bg-white/10 hover:text-white cursor-default'>
-                 {user?.email_verified ? '✓ Verified' : '✗ Unverified'}
-               </Badge>
-             </div>
+        {/* Security & Settings */}
+        <FeatureCard backgroundStyle="subtle">
+          <CardHeader className="p-0 mb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Security & Settings
+            </CardTitle>
+          </CardHeader>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
+              <div>
+                <p className="text-sm font-medium">Email Verification</p>
+                <p className="text-xs text-muted-foreground">
+                  {user?.email_verified ? 'Your email is verified' : 'Please verify your email'}
+                </p>
+              </div>
+              <Badge variant={user?.email_verified ? "default" : "destructive"} className='bg-white/10 text-white hover:bg-white/10 hover:text-white cursor-default'>
+                {user?.email_verified ? '✓ Verified' : '✗ Unverified'}
+              </Badge>
+            </div>
 
-             <div className="space-y-2">
-               <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10">
-                 <Key className="h-4 w-4 mr-2" />
-                 Change Password
-               </Button>
-               <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10 text-red-400 hover:text-red-300 border-red-500/20 hover:bg-red-500/10">
-                 <Shield className="h-4 w-4 mr-2" />
-                 Delete Account
-               </Button>
-             </div>
-           </CardContent>
-         </Card>
+            <div className="space-y-2">
+              <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10">
+                <Key className="h-4 w-4 mr-2" />
+                Change Password
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10 text-red-400 hover:text-red-300 border-red-500/20 hover:bg-red-500/10">
+                <Shield className="h-4 w-4 mr-2" />
+                Delete Account
+              </Button>
+            </div>
+          </div>
+        </FeatureCard>
 
         {/* Preferences */}
-        <Card className="backdrop-blur-sm opacity-60" style={{
-          background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.015) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.01) 0%, transparent 55%)',
-          backgroundColor: 'rgba(255,255,255,0.02)'
-        }}>
-          <CardHeader>
+        <FeatureCard backgroundStyle="subtle" className="opacity-60">
+          <CardHeader className="p-0 mb-4">
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
               Preferences
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-center py-8">
+          <div className="text-center py-8">
             <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-lg font-medium mb-2">Coming Soon</p>
             <p className="text-sm text-muted-foreground">Theme, language, and timezone preferences will be available soon.</p>
-          </CardContent>
-        </Card>
+          </div>
+        </FeatureCard>
       </div>
 
       {/* Notifications Section */}
-      <Card className="backdrop-blur-sm opacity-60" style={{
-        background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.015) 0%, transparent 55%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.01) 0%, transparent 55%)',
-        backgroundColor: 'rgba(255,255,255,0.02)'
-      }}>
-        <CardHeader>
+      <FeatureCard backgroundStyle="subtle" className="opacity-60">
+        <CardHeader className="p-0 mb-4">
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
             Notifications
           </CardTitle>
           <CardDescription>Configure how you receive notifications</CardDescription>
         </CardHeader>
-        <CardContent className="text-center py-8">
+        <div className="text-center py-8">
           <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-lg font-medium mb-2">Coming Soon</p>
           <p className="text-sm text-muted-foreground">Email notifications, price alerts, and market updates will be available soon.</p>
-        </CardContent>
-      </Card>
+        </div>
+      </FeatureCard>
     </div>
   )
 }
