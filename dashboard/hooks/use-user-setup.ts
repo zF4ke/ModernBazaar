@@ -102,32 +102,31 @@ export function useUserSetup() {
               markSetupDonePersistent()
               pageReloadedRef.current = true
               console.log('🔃 Permissões obtidas - setup concluído sem recarregar página')
-              // Disabled page reload to prevent logout issues on Vercel
-              // setTimeout(async () => {
-              //   try { 
-              //     // Tentar obter o token uma última vez para garantir que está persistido
-              //     await getAccessTokenSilently({ cacheMode: 'off' })
-              //     console.log('🔄 A recarregar página...')
-              //     window.location.reload() 
-              //   } catch (e) {
-              //       console.error('❌ Erro ao recarregar página:', e)
-              //       // Se falhar, tentar reload mesmo assim
-              //       try { window.location.reload() } catch {}
-              //     }
-              //   }, 1000) // Aumentado para 1s para dar tempo ao Auth0
-              // Re-enable a safe reload once permissions are present to ensure new token is used app-wide
+
               setTimeout(async () => {
-                try {
-                  await getAccessTokenSilently({ cacheMode: 'off' })
+                try { 
+                    // Tentar obter o token uma última vez para garantir que está persistido
+                    await getAccessTokenSilently({ cacheMode: 'off' })
+                    // console.log('🔄 A recarregar página...')
+                    // window.location.reload() 
                 } catch (e) {
-                  console.warn('? Falha a obter token fresco antes do reload:', e)
+                    console.error('❌ Erro ao recarregar página:', e)
+                    // Se falhar, tentar reload mesmo assim
+                    // try { window.location.reload() } catch {}
                 }
-                try {
-                  if (typeof window !== 'undefined' && window.self === window.top) {
-                    window.location.reload()
-                  }
-                } catch {}
-              }, 800)
+              }, 1000) // Aumentado para 1s para dar tempo ao Auth0
+              // setTimeout(async () => {
+              //   try {
+              //     await getAccessTokenSilently({ cacheMode: 'off' })
+              //   } catch (e) {
+              //     console.warn('? Falha a obter token fresco antes do reload:', e)
+              //   }
+              //   // try {
+              //   //   if (typeof window !== 'undefined' && window.self === window.top) {
+              //   //     // window.location.reload()
+              //   //   }
+              //   // } catch {}
+              // }, 800)
             }
           break
         }
