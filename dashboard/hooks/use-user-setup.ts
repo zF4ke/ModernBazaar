@@ -101,10 +101,20 @@ export function useUserSetup() {
             // marcar persistência ANTES do reload para não repetir
             markSetupDonePersistent()
             pageReloadedRef.current = true
-            console.log('🔃 A recarregar página para aplicar novas permissões...')
-            setTimeout(() => {
-              try { window.location.reload() } catch {}
-            }, 50)
+            console.log('🔃 A aguardar persistência e depois recarregar página para aplicar novas permissões...')
+            // Aguardar um pouco mais para garantir que Auth0 persiste o estado
+            setTimeout(async () => {
+              try { 
+                // Tentar obter o token uma última vez para garantir que está persistido
+                await getAccessTokenSilently({ cacheMode: 'off' })
+                console.log('🔄 A recarregar página...')
+                window.location.reload() 
+              } catch (e) {
+                console.error('❌ Erro ao recarregar página:', e)
+                // Se falhar, tentar reload mesmo assim
+                try { window.location.reload() } catch {}
+              }
+            }, 1000) // Aumentado para 1s para dar tempo ao Auth0
           }
           break
         }

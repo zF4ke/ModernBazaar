@@ -65,7 +65,7 @@ export default function Dashboard() {
                 Browse Market
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+            <Button asChild variant="outline" size="lg" className="transform transition-all duration-200">
               <Link href="/dashboard/skyblock-items">
                 <Layers className="h-4 w-4" />
                 Item Catalog
@@ -208,7 +208,7 @@ export default function Dashboard() {
                 <ArrowRightLeft className="h-4 w-4 text-emerald-500" />
                 <h3 className="text-base font-semibold">Bazaar Flipping</h3>
               </div>
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-300 border-emerald-500/20">Active</Badge>
+              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-300 border-emerald-500/20">Released</Badge>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Discover quick buy/sell opportunities with intelligent scoring and risk assessment.

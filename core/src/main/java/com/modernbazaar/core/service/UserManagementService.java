@@ -38,7 +38,7 @@ public class UserManagementService {
             boolean roleAssigned = auth0Service.assignFreeRole(userId);
             if (!roleAssigned) {
                 log.error("❌ Aborting user setup: failed to assign Auth0 Free role for user {}", userId);
-                throw new RuntimeException("Auth0 role assignment failed (create:user_roles scope missing?)");
+                throw new RuntimeException("Auth0 role assignment failed");
             }
             log.info("✅ Auth0 role assignment successful for user: {}", userId);
             UserSubscription subscription = subscriptionService.ensureFreePlan(userId);

@@ -7,17 +7,18 @@ import { useBackendHealthContext } from '@/components/backend-health-provider'
  * Returns a function that throws an error if backend is offline
  */
 export function useOfflineGuard() {
-  const { isOnline } = useBackendHealthContext()
+  const { isOnline, isIgnored } = useBackendHealthContext()
 
   const guard = () => {
-    if (!isOnline) {
+    if (!isOnline && !isIgnored) {
       throw new Error('Backend is offline. Please wait for the service to come back online.')
     }
   }
 
   return {
     guard,
-    isOnline
+    isOnline,
+    isIgnored
   }
 }
 
@@ -25,11 +26,12 @@ export function useOfflineGuard() {
  * Hook to conditionally disable components when backend is offline
  */
 export function useOfflineDisabled() {
-  const { isOnline } = useBackendHealthContext()
+  const { isOnline, isIgnored } = useBackendHealthContext()
 
   return {
-    disabled: !isOnline,
+    disabled: !isOnline && !isIgnored,
     isOnline,
+    isIgnored,
     offlineMessage: 'Backend is offline'
   }
 }

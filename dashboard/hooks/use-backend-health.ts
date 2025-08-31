@@ -7,6 +7,7 @@ interface BackendHealth {
   lastCheck: Date | null
   error: string | null
   isLoading: boolean
+  isIgnored: boolean
 }
 
 /**
@@ -18,7 +19,8 @@ export function useBackendHealth() {
     isOnline: true, // Start optimistic
     lastCheck: null,
     error: null,
-    isLoading: false
+    isLoading: false,
+    isIgnored: false
   })
 
   const checkHealth = useCallback(async () => {
@@ -44,7 +46,8 @@ export function useBackendHealth() {
           isOnline: true,
           lastCheck: new Date(),
           error: null,
-          isLoading: false
+          isLoading: false,
+          isIgnored: false // Reset ignore state when backend comes back online
         })
       } else {
         throw new Error(`Backend responded with status: ${response.status}`)
@@ -52,12 +55,13 @@ export function useBackendHealth() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.log('❌ Backend health check failed:', errorMessage)
-      setHealth({
+      setHealth(prev => ({
         isOnline: false,
         lastCheck: new Date(),
         error: errorMessage,
-        isLoading: false
-      })
+        isLoading: false,
+        isIgnored: prev.isIgnored // Keep ignore state when offline
+      }))
     }
   }, [])
 
@@ -77,8 +81,20 @@ export function useBackendHealth() {
     checkHealth()
   }, [checkHealth])
 
+  // Function to ignore offline state temporarily
+  const ignoreOffline = useCallback(() => {
+    setHealth(prev => ({ ...prev, isIgnored: true }))
+  }, [])
+
+  // Function to stop ignoring offline state
+  const stopIgnoring = useCallback(() => {
+    setHealth(prev => ({ ...prev, isIgnored: false }))
+  }, [])
+
   return {
     ...health,
-    refreshHealth
+    refreshHealth,
+    ignoreOffline,
+    stopIgnoring
   }
 }

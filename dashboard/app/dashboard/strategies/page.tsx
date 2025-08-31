@@ -27,7 +27,7 @@ const strategies = [
     title: "Bazaar Flipping",
     description: "Discover quick buy/sell opportunities with intelligent scoring and risk assessment.",
     icon: ArrowRightLeft,
-    status: "active",
+    status: "released",
     href: "/dashboard/strategies/flipping",
     features: ["Real-time opportunities", "Risk scoring", "Profit calculations", "ETA predictions"],
     color: "emerald"
@@ -87,7 +87,7 @@ export default function StrategiesLandingPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {strategies.map((strategy) => {
           const IconComponent = strategy.icon
-          const isActive = strategy.status === "active"
+          const isActive = strategy.status === "released"
           const isComingSoon = strategy.status === "coming-soon"
           const isPlanned = strategy.status === "planned"
           
@@ -134,7 +134,7 @@ export default function StrategiesLandingPage() {
                       {isActive && (
                         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-300 border-emerald-500/20">
                           <Zap className="h-3 w-3 mr-1" />
-                          Active
+                          Released
                         </Badge>
                       )}
                       {isComingSoon && (

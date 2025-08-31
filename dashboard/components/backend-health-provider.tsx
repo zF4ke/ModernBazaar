@@ -8,7 +8,10 @@ interface BackendHealthContextType {
   isLoading: boolean
   error: string | null
   lastCheck: Date | null
+  isIgnored: boolean
   refreshHealth: () => void
+  ignoreOffline: () => void
+  stopIgnoring: () => void
 }
 
 const BackendHealthContext = createContext<BackendHealthContextType | undefined>(undefined)

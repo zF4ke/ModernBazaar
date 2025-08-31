@@ -2,7 +2,7 @@
 
 import { useBackendHealthContext } from '@/components/backend-health-provider'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, RefreshCw, Wifi, WifiOff } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Wifi, WifiOff, X } from 'lucide-react'
 import { useEffect } from 'react'
 
 /**
@@ -10,11 +10,11 @@ import { useEffect } from 'react'
  * This component should be placed at the top level of the dashboard layout
  */
 export function OfflineOverlay() {
-  const { isOnline, isLoading, error, lastCheck, refreshHealth } = useBackendHealthContext()
+  const { isOnline, isLoading, error, lastCheck, isIgnored, refreshHealth, ignoreOffline } = useBackendHealthContext()
 
   // Disable page scrolling when backend is offline
   useEffect(() => {
-    if (!isOnline) {
+    if (!isOnline && !isIgnored) {
       // Disable scrolling
       document.body.style.overflow = 'hidden'
       document.documentElement.style.overflow = 'hidden'
@@ -29,10 +29,10 @@ export function OfflineOverlay() {
       document.body.style.overflow = 'unset'
       document.documentElement.style.overflow = 'unset'
     }
-  }, [isOnline])
+  }, [isOnline, isIgnored])
 
-  // Don't show anything if backend is online
-  if (isOnline) {
+  // Don't show anything if backend is online or if offline state is ignored
+  if (isOnline || isIgnored) {
     return null
   }
 
@@ -68,11 +68,11 @@ export function OfflineOverlay() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button 
               onClick={refreshHealth} 
               disabled={isLoading}
-              className="flex items-center gap-2 `shadow`-sm"
+              className="flex items-center gap-2 shadow-sm"
             >
               {isLoading ? (
                 <RefreshCw className="h-4 w-4 animate-spin" />
@@ -80,6 +80,15 @@ export function OfflineOverlay() {
                 <RefreshCw className="h-4 w-4" />
               )}
               {isLoading ? 'Checking...' : 'Refresh Status'}
+            </Button>
+            
+            <Button 
+              onClick={ignoreOffline}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <X className="h-4 w-4" />
+              Ignore for Now
             </Button>
           </div>
 
@@ -95,6 +104,9 @@ export function OfflineOverlay() {
                   <li>• Authentication may not work properly</li>
                   <li>• Please wait for the service to come back online</li>
                 </ul>
+                <p className="mt-2 text-xs text-amber-600">
+                  <strong>Note:</strong> You can ignore this warning temporarily, but features will remain unavailable until the backend is restored.
+                </p>
               </div>
             </div>
           </div>
