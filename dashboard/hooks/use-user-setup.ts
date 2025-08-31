@@ -10,7 +10,7 @@ import { useOfflineGuard } from './use-offline-guard'
  * Agora o controlo de tentativa é apenas em memória e isolado por userId (sub).
  */
 export function useUserSetup() {
-  const { user, isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0()
+  const { user, isAuthenticated, getAccessTokenSilently, loginWithRedirect, logout } = useAuth0()
   const [isSetupComplete, setIsSetupComplete] = useState(false)
   const [isSettingUp, setIsSettingUp] = useState(false)
   const [isRefreshingToken, setIsRefreshingToken] = useState(false)
@@ -143,15 +143,18 @@ export function useUserSetup() {
           tokenRefreshDoneRef.current = false
           
           // Force token refresh to get new permissions immediately
-          // Add delay in production to allow refresh token to be established
+          // Use local logout + silent login to properly establish session
           try {
-            // Wait for refresh token to be fully established (especially important in production)
-            console.log('Aguardando refresh token ser estabelecido...')
-            await new Promise(resolve => setTimeout(resolve, 5000)) // 2 second delay
+            // First, do a local logout to clear any cached state
+            console.log('Fazendo logout local para limpar cache...')
+            await logout({ openUrl: false })
             
-            const token = await getAccessTokenSilently({
-              cacheMode: 'off'
-            })
+            // Wait a moment for logout to complete
+            await new Promise(resolve => setTimeout(resolve, 500))
+            
+            // Now get a fresh token which will have the new permissions
+            console.log('Obtendo token fresco com novas permissões...')
+            const token = await getAccessTokenSilently()
             console.log('Token refresh após setup concluído com sucesso')
           } catch (refreshError: any) {
             console.error('Erro no refresh do token após setup:', refreshError)
