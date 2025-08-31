@@ -26,24 +26,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       domain={domain}
       clientId={clientId}
       authorizationParams={{
-        audience,
+        audience: audience,
         redirect_uri: redirectUri,
         scope: 'openid profile email offline_access'
       }}
       cacheLocation="localstorage"
       useRefreshTokens
-      onRedirectCallback={(appState) => {
-        // Skip navigation when running in the silent-auth iframe
-        if (typeof window !== 'undefined' && window.self !== window.top) return
-        const target = appState?.returnTo || '/dashboard'
-        // Use full navigation to ensure route updates reliably on all hosts
-        try {
-          window.location.replace(target)
-        } catch {
-          // As a last resort
-          window.location.href = target
-        }
-      }}
+      useRefreshTokensFallback
+      // We manually handle callbacks in pages; prevent double-handling here
+      skipRedirectCallback
+      // Force single audience configuration
+      // Remove onRedirectCallback to avoid conflicts with manual handling
+      // The callback pages will handle the redirect manually
     >
       {children}
     </Auth0Provider>

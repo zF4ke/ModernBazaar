@@ -6,7 +6,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
-  const { isLoading, isAuthenticated } = useAuth0()
+  const { isLoading, isAuthenticated, handleRedirectCallback } = useAuth0()
 
   const inIframe = useMemo(() => {
     try {
@@ -24,29 +24,30 @@ export default function AuthCallbackPage() {
     const hasAuthParams = search.has('code') && search.has('state')
     const target = '/dashboard'
 
-    // Primary path: when SDK finishes processing, navigate away
-    if (!isLoading) {
-      window.location.replace(target)
+    // Handle the redirect callback first - this is CRITICAL for refresh tokens
+    if (hasAuthParams) {
+      // Add a small delay to ensure Auth0 SDK is ready
+      setTimeout(() => {
+        handleRedirectCallback()
+          .then((appState) => {
+            // Navigate to the intended destination
+            const returnTo = (appState as any)?.returnTo || target
+            window.location.replace(returnTo)
+          })
+          .catch((error: any) => {
+            console.error('Failed to handle Auth0 redirect callback:', error)
+            // On error, still try to navigate to dashboard
+            window.location.replace(target)
+          })
+      }, 100)
       return
     }
 
-    // Secondary path: poll for URL cleanup (SDK typically clears code/state)
-    let attempts = 0
-    const id = window.setInterval(() => {
-      attempts++
-      const sp = new URLSearchParams(window.location.search)
-      const cleared = !sp.has('code') && !sp.has('state')
-      if (cleared) {
-        window.clearInterval(id)
-        window.location.replace(target)
-      } else if (attempts >= 80) { // ~20s failsafe
-        window.clearInterval(id)
-        // As a last resort, do nothing else; staying preserves the URL for SDK
-      }
-    }, 250)
-
-    return () => window.clearInterval(id)
-  }, [inIframe, isLoading])
+    // If no auth params, just navigate to dashboard
+    if (!isLoading) {
+      window.location.replace(target)
+    }
+  }, [inIframe, isLoading, handleRedirectCallback])
 
   return (
     <div className="min-h-screen flex items-center justify-center">

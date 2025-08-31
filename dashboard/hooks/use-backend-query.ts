@@ -64,7 +64,7 @@ export function useBackendQuery<T>(
       let token: string | undefined
       if (requireAuth) {
         if (!isAuthenticated) throw new Error('Not authenticated')
-        token = await getAccessTokenSilently({})
+        token = await getAccessTokenSilently()
       }
       const response = await fetchWithBackendUrl(endpoint, {}, token)
       if (!response.ok) {

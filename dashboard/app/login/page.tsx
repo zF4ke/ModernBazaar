@@ -19,7 +19,10 @@ export default function CustomLoginPage() {
     try {
       await loginWithRedirect({
         authorizationParams: {
-          connection
+          connection,
+          // Explicitly include audience so Auth0 issues a Refresh Token
+          audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+          scope: 'openid profile email offline_access'
         },
         appState: { returnTo: '/dashboard' }
       })
@@ -78,7 +81,7 @@ export default function CustomLoginPage() {
                 disabled={isLoading}
                 variant="outline"
                 size="sm"
-                className="h-11 border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 active:scale-[0.98] bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400 shadow-md hover:shadow-lg"
+                className="h-11 border-gray-300 text-gray-700 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200 active:scale-[0.98] bg-white hover:border-gray-400 shadow-md hover:shadow-lg"
               >
                 <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

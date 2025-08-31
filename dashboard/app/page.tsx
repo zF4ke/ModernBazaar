@@ -2,36 +2,39 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth0 } from '@auth0/auth0-react'
 
 export default function RootPage() {
   const router = useRouter()
+  const { handleRedirectCallback } = useAuth0()
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const hasAuthParams = params.has('code') && params.has('state')
     const inIframe = window.self !== window.top
+    
     // If inside silent-auth iframe, never redirect
     if (inIframe) return
 
     if (hasAuthParams) {
-      // Wait for Auth0 SDK to clear callback params, then navigate
-      let attempts = 0
-      const maxAttempts = 50 // ~5s
-      const id = window.setInterval(() => {
-        attempts++
-        const sp = new URLSearchParams(window.location.search)
-        const cleared = !sp.has('code') && !sp.has('state')
-        if (cleared || attempts >= maxAttempts) {
-          window.clearInterval(id)
+      // Handle the redirect callback first - this is CRITICAL for refresh tokens
+      handleRedirectCallback()
+        .then((appState) => {
+          // Navigate to the intended destination
+          const returnTo = (appState as any)?.returnTo || '/dashboard'
+          router.replace(returnTo)
+        })
+        .catch((error: any) => {
+          console.error('Failed to handle Auth0 redirect callback on main page:', error)
+          // On error, still try to navigate to dashboard
           router.replace('/dashboard')
-        }
-      }, 100)
-      return () => window.clearInterval(id)
+        })
+      return
     }
 
     router.replace('/dashboard')
-  }, [router])
+  }, [router, handleRedirectCallback])
 
   return (
     <div className="min-h-screen flex items-center justify-center">

@@ -10,7 +10,7 @@ import { useOfflineGuard } from './use-offline-guard'
  * Agora o controlo de tentativa é apenas em memória e isolado por userId (sub).
  */
 export function useUserSetup() {
-  const { user, isAuthenticated, getAccessTokenSilently } = useAuth0()
+  const { user, isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0()
   const [isSetupComplete, setIsSetupComplete] = useState(false)
   const [isSettingUp, setIsSettingUp] = useState(false)
   const [isRefreshingToken, setIsRefreshingToken] = useState(false)
@@ -32,6 +32,48 @@ export function useUserSetup() {
       return JSON.parse(json)
     } catch {
       return null
+    }
+  }
+
+  // Minimal token refresh: single attempt; if missing RT, redirect once to mint it
+  const refreshTokenSimple = async (force?: boolean) => {
+    const doForce = force ?? false
+    if (!doForce && tokenRefreshDoneRef.current) return
+    tokenRefreshDoneRef.current = true
+    setIsRefreshingToken(true)
+    try {
+      // Use default getAccessTokenSilently without custom params to avoid conflicts
+      const freshToken = await getAccessTokenSilently()
+      const payload = decodeJwtPayload(freshToken)
+      const permissions = payload?.permissions as string[] | undefined
+      if (!permissions || permissions.length === 0) {
+        console.log('Permissions not present in fresh token yet.')
+        tokenRefreshDoneRef.current = false
+      } else {
+        markSetupDonePersistent()
+        tokenRefreshDoneRef.current = true
+      }
+    } catch (err: any) {
+      const code = err?.error || err?.code || ''
+      const desc = err?.error_description || err?.message || ''
+      if (String(code).includes('missing_refresh_token') || String(desc).includes('Missing Refresh Token')) {
+        console.log('Missing refresh token — redirecting once to mint RT')
+        if (typeof window !== 'undefined' && window.self === window.top) {
+          try {
+            await loginWithRedirect({
+              appState: { returnTo: '/dashboard' }
+              // Remove custom authorizationParams - let Auth0Provider handle it
+            })
+          } catch (e) {
+            console.error('Login redirect failed:', e)
+          }
+        }
+      } else {
+        console.log('Token refresh failed:', code || err)
+      }
+      tokenRefreshDoneRef.current = false
+    } finally {
+      setIsRefreshingToken(false)
     }
   }
 
@@ -62,103 +104,6 @@ export function useUserSetup() {
     } catch {}
   }, [user?.sub])
 
-  const refreshTokenWithPolling = async (opts?: { maxAttempts?: number; intervalMs?: number; force?: boolean }) => {
-    const maxAttempts = opts?.maxAttempts ?? 10
-    const intervalMs = opts?.intervalMs ?? 2000
-    const force = opts?.force ?? false
-    if (!force && tokenRefreshDoneRef.current) return
-    tokenRefreshDoneRef.current = true
-    setIsRefreshingToken(true)
-    console.log(`🔄 A tentar obter novo access token com novas permissões (até ${maxAttempts} tentativas)...`) // debug header
-
-    let permissionsFound: string[] | null = null
-    let lastError: any = null
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      console.log(`⏳ Tentativa ${attempt}/${maxAttempts}...`)
-      const hangWarningTimer = setTimeout(() => {
-        console.log(`⌛ Ainda a aguardar resposta do Auth0 na tentativa ${attempt}... (verifica Allowed Web Origins e cookies de terceiros)`) // hang debug
-      }, 4000)
-      try {
-        const start = performance.now()
-        const freshToken = await getAccessTokenSilently({
-          cacheMode: 'off',
-          detailedResponse: false,
-          timeoutInSeconds: 20,
-          authorizationParams: {
-            audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
-            scope: 'openid profile email offline_access'
-          }
-        })
-        const elapsed = Math.round(performance.now() - start)
-        clearTimeout(hangWarningTimer)
-        const payload = decodeJwtPayload(freshToken)
-        const aud = payload?.aud
-        const permissions = payload?.permissions as string[] | undefined
-        const scope = payload?.scope
-        console.log(`🔁 Tentativa ${attempt}: tempo=${elapsed}ms aud=${aud} scopes=${scope || '—'} perms=${permissions?.length || 0}`)
-        if (permissions && permissions.length) {
-          console.log('✅ Permissions obtidas:', permissions)
-          permissionsFound = permissions
-          if (!pageReloadedRef.current) {
-              // marcar persistência ANTES do reload para não repetir
-              markSetupDonePersistent()
-              pageReloadedRef.current = true
-              console.log('🔃 Permissões obtidas - setup concluído sem recarregar página')
-
-              setTimeout(async () => {
-                try { 
-                    // Tentar obter o token uma última vez para garantir que está persistido
-                    await getAccessTokenSilently({ cacheMode: 'off' })
-                    // console.log('🔄 A recarregar página...')
-                    // window.location.reload() 
-                } catch (e) {
-                    console.error('❌ Erro ao recarregar página:', e)
-                    // Se falhar, tentar reload mesmo assim
-                    // try { window.location.reload() } catch {}
-                }
-              }, 1000) // Aumentado para 1s para dar tempo ao Auth0
-              // setTimeout(async () => {
-              //   try {
-              //     await getAccessTokenSilently({ cacheMode: 'off' })
-              //   } catch (e) {
-              //     console.warn('? Falha a obter token fresco antes do reload:', e)
-              //   }
-              //   // try {
-              //   //   if (typeof window !== 'undefined' && window.self === window.top) {
-              //   //     // window.location.reload()
-              //   //   }
-              //   // } catch {}
-              // }, 800)
-            }
-          break
-        }
-      } catch (err: any) {
-        clearTimeout(hangWarningTimer)
-        lastError = err
-        console.warn(`⚠️ Erro na tentativa ${attempt}:`, err?.error || err?.message || err)
-        if (err?.error && err?.error_description) {
-          console.warn('ℹ️ Detalhe Auth0:', err.error, '-', err.error_description)
-        }
-      }
-      if (!permissionsFound && attempt < maxAttempts) {
-        await new Promise(r => setTimeout(r, intervalMs))
-      }
-    }
-
-    if (!permissionsFound) {
-      if (lastError) {
-        console.warn('❗ Polling terminou sem permissions. Último erro:', lastError)
-      } else {
-        console.warn('❗ Polling terminou sem permissions e sem erros explícitos (possível cache ou RBAC não refletido ainda).')
-      }
-      // permitir forçar outra ronda manual mais tarde
-      tokenRefreshDoneRef.current = false
-    }
-
-    setIsRefreshingToken(false)
-  }
-
   function markSetupDonePersistent() {
     if (!user?.sub) return
     const key = `mb_user_setup_done_${user.sub}`
@@ -177,7 +122,7 @@ export function useUserSetup() {
         const isNewUser = (user.loginsCount === 1 || user.loginsCount === undefined) && !persistedDone
         if (isNewUser) {
           setupAttemptedRef.current = true
-          const token = await getAccessTokenSilently().catch(e => { console.warn('⚠️ Falha token inicial:', e); return null })
+          const token = await getAccessTokenSilently().catch(e => { console.log('⚠️ Falha token inicial:', e); return null })
           guard()
           await new Promise(r => setTimeout(r, 200))
           const response = await fetch('/api/me/setup', {
@@ -185,7 +130,7 @@ export function useUserSetup() {
             headers: token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' }
           })
           if (!response.ok) {
-            console.warn('⚠️ Setup backend falhou:', response.status)
+            console.log('⚠️ Setup backend falhou:', response.status)
             setIsSetupComplete(false)
             tokenRefreshDoneRef.current = false // permitir nova tentativa futura
             return
@@ -193,10 +138,21 @@ export function useUserSetup() {
           // console.log('✅ Setup concluído, a refrescar token...')
           // markSetupDonePersistent() // marcar logo após setup backend
           // tokenRefreshDoneRef.current = false // garantir polling mesmo se corrida anterior marcou
-          console.log('?? Setup concluído, a refrescar token...')
+          console.log('Setup concluído, a refrescar token...')
           markSetupDonePersistent()
           tokenRefreshDoneRef.current = false
-          await refreshTokenWithPolling({ maxAttempts: 6, intervalMs: 1200, force: true })
+          
+          // Force token refresh to get new permissions immediately (same as Force Token Refresh button)
+          try {
+            const token = await getAccessTokenSilently({
+              cacheMode: 'off'
+            })
+            console.log('Token refresh após setup concluído com sucesso')
+          } catch (refreshError) {
+            console.error('Erro no refresh do token após setup:', refreshError)
+            // Continue anyway - the setup was successful
+          }
+          
           setIsSetupComplete(true)
         } else {
           console.log('👤 Utilizador existente; skip setup')
@@ -212,27 +168,11 @@ export function useUserSetup() {
     ensureUserSetup()
   }, [user, isAuthenticated, getAccessTokenSilently, isSetupComplete, isSettingUp])
 
-  // Expor debug manual no browser
-  if (typeof window !== 'undefined') {
-    ;(window as any).__userSetupDebug = {
-      forceRefresh: (options?: { maxAttempts?: number; intervalMs?: number }) => refreshTokenWithPolling({ ...options, force: true }),
-      state: () => ({
-        userSub: user?.sub,
-        isSetupComplete,
-        isSettingUp,
-        isRefreshingToken,
-        setupAttempted: setupAttemptedRef.current,
-        tokenRefreshDone: tokenRefreshDoneRef.current,
-        pageReloaded: pageReloadedRef.current
-      })
-    }
-  }
-
   return {
     isSetupComplete,
     isSettingUp,
     isRefreshingToken,
     needsSetup: (user?.loginsCount === 1 || user?.loginsCount === undefined) && !isSetupComplete && !persistedDone,
-    refreshToken: (options?: { maxAttempts?: number; intervalMs?: number; force?: boolean }) => refreshTokenWithPolling(options)
+    refreshToken: () => refreshTokenSimple(true)
   }
 }
