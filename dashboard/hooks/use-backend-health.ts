@@ -25,7 +25,7 @@ export function useBackendHealth() {
     try {
       setHealth(prev => ({ ...prev, isLoading: true, error: null }))
       
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8080'
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080'
       console.log('🔍 Checking backend health at:', backendUrl)
 
       console.log(`${backendUrl}/actuator/health`)
