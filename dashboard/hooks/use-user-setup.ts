@@ -188,10 +188,10 @@ export function useUserSetup() {
             tokenRefreshDoneRef.current = false // permitir nova tentativa futura
             return
           }
-          console.log('✅ Setup concluído, a refrescar token...')
-          markSetupDonePersistent() // marcar logo após setup backend
-          tokenRefreshDoneRef.current = false // garantir polling mesmo se corrida anterior marcou
-          await refreshTokenWithPolling()
+          // console.log('✅ Setup concluído, a refrescar token...')
+          // markSetupDonePersistent() // marcar logo após setup backend
+          // tokenRefreshDoneRef.current = false // garantir polling mesmo se corrida anterior marcou
+          // await refreshTokenWithPolling()
           setIsSetupComplete(true)
         } else {
           console.log('👤 Utilizador existente; skip setup')
