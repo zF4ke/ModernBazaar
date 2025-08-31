@@ -408,7 +408,7 @@ export default function Dashboard() {
       </GradientSection>
 
       {/* Token Test Section - Remove this after debugging */}
-      <section className="space-y-6">
+      {/* <section className="space-y-6">
         <div className="space-y-1">
           <h2 className="text-xl md:text-2xl font-semibold">Debug: Token Refresh Test</h2>
           <p className="text-muted-foreground text-sm">
@@ -416,7 +416,7 @@ export default function Dashboard() {
           </p>
         </div>
         <TokenTest />
-      </section>
+      </section> */}
     </div>
    )
  }
