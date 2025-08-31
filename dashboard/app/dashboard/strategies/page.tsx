@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -202,10 +202,11 @@ const getFAQData = (strategyId: string) => {
   }
 }
 
-export default function TradingStrategiesPage() {
+// Component that uses useSearchParams
+function TradingStrategiesContent() {
   const [activeStrategy, setActiveStrategy] = useState("bazaar-flipping")
-  const searchParams = useSearchParams()
   const [showVideoPopup, setShowVideoPopup] = useState(false)
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     const strategyId = searchParams.get("tab") || "bazaar-flipping"
@@ -253,22 +254,22 @@ export default function TradingStrategiesPage() {
               <span className="text-sm font-medium">{strategy.title}</span>
                 {isReleased && (
                  <Badge className="ml-1 bg-green-500/20 text-green-400 border-green-500/40 text-xs pointer-events-none">
-                          <Zap className="h-3 w-3 mr-1" />
+                   <Zap className="h-3 w-3 mr-1" />
                    Live
-                        </Badge>
-                      )}
-                      {isComingSoon && (
+                 </Badge>
+               )}
+               {isComingSoon && (
                  <Badge className="ml-1 bg-muted text-muted-foreground border-border text-xs pointer-events-none">
-                          <Clock className="h-3 w-3 mr-1" />
+                   <Clock className="h-3 w-3 mr-1" />
                    Soon
-                        </Badge>
-                      )}
-                      {isPlanned && (
+                 </Badge>
+               )}
+               {isPlanned && (
                  <Badge className="ml-1 bg-muted text-muted-foreground border-border text-xs pointer-events-none">
-                          <Info className="h-3 w-3 mr-1" />
-                          Planned
-                        </Badge>
-                      )}
+                   <Info className="h-3 w-3 mr-1" />
+                   Planned
+                 </Badge>
+               )}
             </button>
           )
         })}
@@ -292,7 +293,7 @@ export default function TradingStrategiesPage() {
                   </div>
                 </div>
               </CardHeader>
-              
+               
               <CardContent className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-4">How It Works</h3>
@@ -314,7 +315,7 @@ export default function TradingStrategiesPage() {
                     </p>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-lg font-semibold mb-4">How to Use It</h3>
                   <div className="space-y-3">
@@ -337,9 +338,7 @@ export default function TradingStrategiesPage() {
                 </div>
               </CardContent>
             </Card>
-
-
-
+              
             {/* Getting Started Section */}
             <Card className="border">
               <CardHeader className="pb-4">
@@ -350,12 +349,12 @@ export default function TradingStrategiesPage() {
                     <CardTitle>Getting Started</CardTitle>
                   </div>
               </CardHeader>
-              
+               
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-4">
                   <Link href="/dashboard/strategies/flipping" className="block">
                      <Button className="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30 hover:border-emerald-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-                       <Target className="h-4 w-4 mr-2" />
+                       <Shuffle className="h-4 w-4 mr-2" />
                        Try Bazaar Flipping
                        <ArrowRight className="h-4 w-4 ml-2" />
                      </Button>
@@ -438,7 +437,7 @@ export default function TradingStrategiesPage() {
                          </div>
                        </div>
                      ))}
-    </div>
+                   </div>
                  </CardContent>
                </Card>
              )}
@@ -480,5 +479,23 @@ export default function TradingStrategiesPage() {
         </div>
       </div>
     )}
-</div>
-)}
+  </div>
+  )
+}
+
+// Main component wrapped in Suspense
+export default function TradingStrategiesPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-8">
+        <div className="animate-pulse">
+          <div className="h-32 bg-muted rounded-lg mb-8"></div>
+          <div className="h-8 bg-muted rounded w-48 mb-4"></div>
+          <div className="h-64 bg-muted rounded-lg"></div>
+        </div>
+      </div>
+    }>
+      <TradingStrategiesContent />
+    </Suspense>
+  )
+}
