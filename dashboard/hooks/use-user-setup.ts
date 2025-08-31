@@ -115,6 +115,19 @@ export function useUserSetup() {
               //       try { window.location.reload() } catch {}
               //     }
               //   }, 1000) // Aumentado para 1s para dar tempo ao Auth0
+              // Re-enable a safe reload once permissions are present to ensure new token is used app-wide
+              setTimeout(async () => {
+                try {
+                  await getAccessTokenSilently({ cacheMode: 'off' })
+                } catch (e) {
+                  console.warn('? Falha a obter token fresco antes do reload:', e)
+                }
+                try {
+                  if (typeof window !== 'undefined' && window.self === window.top) {
+                    window.location.reload()
+                  }
+                } catch {}
+              }, 800)
             }
           break
         }

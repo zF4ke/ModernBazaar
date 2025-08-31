@@ -21,7 +21,7 @@ export default function CustomLoginPage() {
         authorizationParams: {
           connection
         },
-        appState: { returnTo: window.location.origin }
+        appState: { returnTo: '/dashboard' }
       })
     } catch (error) {
       console.error('Login error:', error)
