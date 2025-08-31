@@ -219,7 +219,7 @@ export default function Dashboard() {
                 <Link href="/dashboard/strategies/flipping">Open Strategy</Link>
               </Button>
               <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white">
-                <Link href="/dashboard/strategies/flipping">Learn More</Link>
+                <Link href="/dashboard/strategies?tab=bazaar-flipping">Learn More</Link>
               </Button>
             </div>
           </FeatureCard>
@@ -239,8 +239,8 @@ export default function Dashboard() {
               <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
                 Coming Soon
               </Button>
-              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                Learn More
+              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                <Link href="/dashboard/strategies?tab=craft-flipping">Learn More</Link>
               </Button>
             </div>
           </FeatureCard>
@@ -260,8 +260,8 @@ export default function Dashboard() {
               <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
                 Coming Soon
               </Button>
-              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                Learn More
+              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                <Link href="/dashboard/strategies?tab=npc-flipping">Learn More</Link>
               </Button>
             </div>
           </FeatureCard>
@@ -281,8 +281,8 @@ export default function Dashboard() {
               <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
                 In Planning
               </Button>
-              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                Learn More
+              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                <Link href="/dashboard/strategies?tab=bazaar-manipulation">Learn More</Link>
               </Button>
             </div>
           </FeatureCard>
@@ -302,8 +302,8 @@ export default function Dashboard() {
               <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
                 In Planning
               </Button>
-              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                Learn More
+              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                <Link href="/dashboard/strategies?tab=budget-planner">Learn More</Link>
               </Button>
             </div>
           </FeatureCard>
@@ -323,8 +323,8 @@ export default function Dashboard() {
               <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
                 Considering
               </Button>
-              <Button variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                Learn More
+              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
+                <Link href="/dashboard/strategies?tab=auction-house">Learn More</Link>
               </Button>
             </div>
           </FeatureCard>

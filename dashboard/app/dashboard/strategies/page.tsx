@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,7 +32,8 @@ import {
   TrendingDown,
   Settings,
   Eye,
-  Shuffle
+  Shuffle,
+  Rocket
 } from "lucide-react"
 import Link from "next/link"
 import { GradientSection } from '@/components/gradient-section'
@@ -111,11 +113,11 @@ const IconTextSection = ({
     <div className={`flex-shrink-0 w-8 h-8 rounded-full ${iconBgColor} flex items-center justify-center`}>
       <Icon className={`h-4 w-4 ${iconColor}`} />
     </div>
-    <div>
+            <div>
       <h4 className="font-medium">{title}</h4>
       <p className="text-sm text-muted-foreground">{description}</p>
-    </div>
-  </div>
+            </div>
+          </div>
 )
 
 // FAQ data for different strategies
@@ -124,20 +126,20 @@ const getFAQData = (strategyId: string) => {
     case "bazaar-flipping":
       return [
         {
-          question: "What's the minimum investment for Bazaar flipping?",
-          answer: "You can start with as little as 1,000 coins, but we recommend at least 10,000 coins for meaningful profits. Start small and scale up as you gain experience."
+          question: "How does the scoring system work?",
+          answer: "Our scoring formula starts with profit per hour, then applies small penalties for risk (volatile prices, suspicious jumps) and competition (how many people are flipping the same item). The system also considers demand/supply per hour and order creation rates. We can't reveal all the formula details to maintain our competitive edge, but this gives you the key concepts."
         },
         {
-          question: "How often should I check for opportunities?",
-          answer: "For active flipping, check every 15-30 minutes. For long-term investments, daily monitoring is sufficient. Use our real-time alerts to stay informed without constant checking."
+          question: "What do the risk percentages mean?",
+          answer: "Risk percentages show how much the scoring system reduces an item's score due to price volatility. Higher percentages mean the system thinks prices are jumping around, look manipulated, or have thin order books. You can toggle off risk penalties if you're comfortable with volatility."
         },
         {
-          question: "What are the best items to flip?",
-          answer: "High-volume items like enchanted materials, potion ingredients, and common drops tend to have consistent spreads. Avoid low-liquidity items that are hard to sell quickly."
+          question: "How do I interpret competition levels?",
+          answer: "Competition per hour shows how busy an item is. Lower numbers mean fewer people are trying to flip it, which usually means better opportunities. Higher competition means more people competing for the same profits."
         },
         {
-          question: "How do I manage risk?",
-          answer: "Never invest more than you can afford to lose, diversify across multiple items, and monitor market conditions. Start with small amounts until you understand the market better."
+          question: "What's the difference between the trading presets?",
+          answer: "Fast (30min) maximizes profit per hour and disables risk penalties. Default (1h) balances profit with safety. Stable (6h) focuses on items with stable prices so you can hold them longer and be confident the prices won't change much, ensuring you still make profit even after several hours."
         }
       ]
     case "craft-flipping":
@@ -202,6 +204,13 @@ const getFAQData = (strategyId: string) => {
 
 export default function TradingStrategiesPage() {
   const [activeStrategy, setActiveStrategy] = useState("bazaar-flipping")
+  const searchParams = useSearchParams()
+  const [showVideoPopup, setShowVideoPopup] = useState(false)
+
+  useEffect(() => {
+    const strategyId = searchParams.get("tab") || "bazaar-flipping"
+    setActiveStrategy(strategyId)
+  }, [searchParams])
 
   return (
     <div className="space-y-8">
@@ -244,22 +253,22 @@ export default function TradingStrategiesPage() {
               <span className="text-sm font-medium">{strategy.title}</span>
                 {isReleased && (
                  <Badge className="ml-1 bg-green-500/20 text-green-400 border-green-500/40 text-xs pointer-events-none">
-                   <Zap className="h-3 w-3 mr-1" />
+                          <Zap className="h-3 w-3 mr-1" />
                    Live
-                 </Badge>
-               )}
-               {isComingSoon && (
+                        </Badge>
+                      )}
+                      {isComingSoon && (
                  <Badge className="ml-1 bg-muted text-muted-foreground border-border text-xs pointer-events-none">
-                   <Clock className="h-3 w-3 mr-1" />
+                          <Clock className="h-3 w-3 mr-1" />
                    Soon
-                 </Badge>
-               )}
-               {isPlanned && (
+                        </Badge>
+                      )}
+                      {isPlanned && (
                  <Badge className="ml-1 bg-muted text-muted-foreground border-border text-xs pointer-events-none">
-                   <Info className="h-3 w-3 mr-1" />
-                   Planned
-                 </Badge>
-               )}
+                          <Info className="h-3 w-3 mr-1" />
+                          Planned
+                        </Badge>
+                      )}
             </button>
           )
         })}
@@ -285,120 +294,73 @@ export default function TradingStrategiesPage() {
               </CardHeader>
               
               <CardContent className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                                         <h3 className="text-lg font-semibold mb-3">How It Works</h3>
-                     <div className="space-y-3">
-                       <IconTextSection
-                         icon={DollarSign}
-                         title="Find Opportunities"
-                         description="Identify items with significant buy/sell spreads"
-                       />
-                       <IconTextSection
-                         icon={Zap}
-                         title="Execute Trades"
-                         description="Buy at lowest sell price, sell at highest buy price"
-                       />
-                       <IconTextSection
-                         icon={TrendingUp}
-                         title="Profit"
-                         description="Earn the difference minus Bazaar fees"
-                       />
-                     </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">How It Works</h3>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      We built this to watch Bazaar prices and see how things are moving, then turn it into useful information. We look at <span className="text-emerald-300 font-medium">48 hours</span>, <span className="text-emerald-300 font-medium">6 hours</span>, and <span className="text-emerald-300 font-medium">1 hour</span> periods to understand what's normal and spot when something unusual happens.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      The score starts with <span className="text-emerald-300 font-medium">how much you'll make per hour</span> (after taxes), then we reduce it slightly for <span className="text-emerald-300 font-medium">risk factors</span> and when <span className="text-emerald-300 font-medium">too many people are competing</span>. Risk means prices that jump around, look suspicious, or have thin order books. Competition means how busy that item is.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Beyond the spread, we also check <span className="text-emerald-300 font-medium">how much people want to buy</span> and <span className="text-emerald-300 font-medium">how much people want to sell</span> per hour, so you know the flips will actually happen. We also watch <span className="text-emerald-300 font-medium">when orders get created</span> to see the busy times and slow times during the day.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      We suggest <span className="text-emerald-300 font-medium">how much to buy per hour</span> based on your budget and how fast things move, and we estimate how long it'll take to buy and sell everything so your 30-minute, 1-hour, or 6-hour plans make sense. You can turn off the risk or competition penalties on the flipping page if you just want to sort by pure profit.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Keep in mind: we won't always get it right. Big orders move prices around, and maintenance or events can affect the data. These are estimates to help you decide. You still need to place and manage the orders yourself. We can't reveal all the details of our scoring formula to maintain our competitive edge, but what we've shared gives you a solid understanding of how the system works.
+                    </p>
                   </div>
-                  
-                                     <div>
-                     <h3 className="text-lg font-semibold mb-3">Key Features</h3>
-                     <div className="space-y-2">
-                       <div className="flex items-center gap-2 text-sm">
-                         <CheckCircle className="h-4 w-4 text-emerald-400" />
-                         Live Bazaar price monitoring with buy/sell spreads
-                       </div>
-                       <div className="flex items-center gap-2 text-sm">
-                         <CheckCircle className="h-4 w-4 text-emerald-400" />
-                         Profit calculation including 1% Bazaar fees
-                       </div>
-                       <div className="flex items-center gap-2 text-sm">
-                         <CheckCircle className="h-4 w-4 text-emerald-400" />
-                         Item volume and liquidity indicators
-                       </div>
-                       <div className="flex items-center gap-2 text-sm">
-                         <CheckCircle className="h-4 w-4 text-emerald-400" />
-                         Quick buy/sell execution tools
-                       </div>
-                       <div className="flex items-center gap-2 text-sm">
-                         <CheckCircle className="h-4 w-4 text-emerald-400" />
-                         Market trend analysis and insights
-                       </div>
-                     </div>
-                   </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">How to Use It</h3>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Start by setting your <span className="text-emerald-300 font-medium">budget</span> and <span className="text-emerald-300 font-medium">time horizon</span> (15 minutes to 1 week). The time horizon tells the system how long you plan to hold items, which affects the scoring, profit calculations, and helps estimate realistic completion times for your orders.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      You can use the trading presets for quick setup, or configure everything manually if you're into that. The presets are just shortcuts, you can always adjust the settings later. Manual configuration lets you fine-tune exactly how much risk and competition you're comfortable with.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      The results show <span className="text-emerald-300 font-medium">profit per hour</span>, <span className="text-emerald-300 font-medium">risk scores</span>, and <span className="text-emerald-300 font-medium">competition levels</span>. Use <span className="text-emerald-300 font-medium">recommended score</span> for balanced opportunities that consider risk and competition. Switch to <span className="text-emerald-300 font-medium">profit per hour</span> when you want to see raw profit potential regardless of risk.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Use the search to find specific items or filter by trading volume and risk. Lower volume items might have better spreads but take longer to fill. Toggle off <span className="text-emerald-300 font-medium">risk penalties</span> if you're comfortable with volatile prices and want to see maximum profit potential. Turn off <span className="text-emerald-300 font-medium">competition penalties</span> when you want to focus on profit rather than how many other people are flipping the same item.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Set your Bazaar tax rate (1.0% to 1.25%) for accurate profit calculations. The system automatically adjusts all the numbers based on your tax setting.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Risk Management Section */}
-            <Card className="border">
-              <CardHeader className="pb-4">
-                                 <div className="flex items-center gap-3">
-                   <div className="p-2 rounded-lg bg-muted border">
-                     <Shield className="h-6 w-6 text-muted-foreground" />
-                   </div>
-                   <CardTitle>Risk Management</CardTitle>
-                 </div>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="grid md:grid-cols-2 gap-6">
-                                     <div className="space-y-3">
-                     <div className="p-3 rounded-lg bg-muted/50 border">
-                       <h4 className="font-medium text-foreground mb-2">Investment Limits</h4>
-                       <p className="text-sm text-muted-foreground">Never invest more than you can afford to lose. Start small and scale up as you gain experience.</p>
-                     </div>
-                     <div className="p-3 rounded-lg bg-muted/50 border">
-                       <h4 className="font-medium text-foreground mb-2">Diversification</h4>
-                       <p className="text-sm text-muted-foreground">Spread your investments across multiple items to reduce risk and increase stability.</p>
-                     </div>
-                   </div>
-                   
-                   <div className="space-y-3">
-                     <div className="p-3 rounded-lg bg-muted/50 border">
-                       <h4 className="font-medium text-foreground mb-2">Market Monitoring</h4>
-                       <p className="text-sm text-muted-foreground">Stay informed about market conditions and adjust your strategies accordingly.</p>
-                     </div>
-                     <div className="p-3 rounded-lg bg-muted/50 border">
-                       <h4 className="font-medium text-foreground mb-2">Fee Awareness</h4>
-                       <p className="text-sm text-muted-foreground">Remember that Bazaar charges 1% on all transactions, which affects your profit margins.</p>
-                     </div>
-                   </div>
-                </div>
-              </CardContent>
-            </Card>
+
 
             {/* Getting Started Section */}
             <Card className="border">
               <CardHeader className="pb-4">
-                                 <div className="flex items-center gap-3">
-                   <div className="p-2 rounded-lg bg-muted border">
-                     <BookOpen className="h-6 w-6 text-muted-foreground" />
-                   </div>
-                   <CardTitle>Getting Started</CardTitle>
-                 </div>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-muted border">
+                      <Rocket className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <CardTitle>Getting Started</CardTitle>
+                  </div>
               </CardHeader>
               
               <CardContent>
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <Link href="/dashboard/strategies/flipping" className="block">
-                    <Button className="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30 hover:border-emerald-500/50">
-                      <Target className="h-4 w-4 mr-2" />
-                      Try Bazaar Flipping
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
+                     <Button className="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30 hover:border-emerald-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                       <Target className="h-4 w-4 mr-2" />
+                       Try Bazaar Flipping
+                       <ArrowRight className="h-4 w-4 ml-2" />
+                     </Button>
                       </Link>
-                  <Button variant="outline" className="w-full">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Documentation
-                    </Button>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" title="Video tutorials coming soon! We're working on creating helpful guides to get you started with Bazaar flipping." onClick={() => setShowVideoPopup(true)}>
                     <Play className="h-4 w-4 mr-2" />
                     Video Tutorial
                     </Button>
@@ -411,89 +373,10 @@ export default function TradingStrategiesPage() {
         {/* Craft Flipping Content */}
         {activeStrategy === "craft-flipping" && (
           <Card className="border">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-muted border">
-                  <Hammer className="h-6 w-6 text-blue-400" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl">Craft Flipping</CardTitle>
-                  <CardDescription>Profit from crafting items by analyzing material costs vs. final product prices</CardDescription>
-                </div>
-                <Badge className="ml-auto bg-muted text-muted-foreground border-border pointer-events-none">
-                  <Clock className="h-3 w-3 mr-1" />
-                  Coming Soon
-                </Badge>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                                     <h3 className="text-lg font-semibold mb-3">How It Works</h3>
-                   <div className="space-y-3">
-                     <IconTextSection
-                       icon={BarChart}
-                       title="Recipe Analysis"
-                       description="Calculate total material costs for any craftable item"
-                       iconBgColor="bg-blue-500/20"
-                       iconColor="text-blue-400"
-                     />
-                     <IconTextSection
-                       icon={DollarSign}
-                       title="Profit Calculation"
-                       description="Compare material costs vs. final product market price"
-                       iconBgColor="bg-blue-500/20"
-                       iconColor="text-blue-400"
-                     />
-                     <IconTextSection
-                       icon={Settings}
-                       title="Optimization"
-                       description="Find the most profitable crafting opportunities"
-                       iconBgColor="bg-blue-500/20"
-                       iconColor="text-blue-400"
-                     />
-                   </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Planned Features</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-blue-400" />
-                      Recipe database with all craftable items
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-blue-400" />
-                      Real-time material price tracking
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-blue-400" />
-                      Profit margin calculations
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-blue-400" />
-                      Crafting time optimization
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-blue-400" />
-                      Bulk crafting analysis
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-4 rounded-lg bg-muted/50 border">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-blue-400 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-blue-200">Coming Soon</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Craft Flipping tools are currently in development. This will include comprehensive recipe analysis, 
-                      material cost tracking, and profit optimization features to help you maximize your crafting profits.
-                    </p>
-                  </div>
-                </div>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold mb-2">Coming Soon</h2>
+                <p className="text-muted-foreground">This strategy is currently in development. Check back later for updates.</p>
               </div>
             </CardContent>
           </Card>
@@ -502,89 +385,10 @@ export default function TradingStrategiesPage() {
         {/* NPC Flipping Content */}
         {activeStrategy === "npc-flipping" && (
           <Card className="border">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-muted border">
-                  <Coins className="h-6 w-6 text-amber-400" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl">NPC Flipping</CardTitle>
-                  <CardDescription>Maximize profits from the 200M daily NPC limit by finding the highest margin items</CardDescription>
-                </div>
-                <Badge className="ml-auto bg-muted text-muted-foreground border-border pointer-events-none">
-                  <Clock className="h-3 w-3 mr-1" />
-                  Coming Soon
-                </Badge>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                                     <h3 className="text-lg font-semibold mb-3">How It Works</h3>
-                   <div className="space-y-3">
-                     <IconTextSection
-                       icon={Eye}
-                       title="NPC Price Tracking"
-                       description="Monitor fixed NPC buy prices for all items"
-                       iconBgColor="bg-amber-500/20"
-                       iconColor="text-amber-400"
-                     />
-                     <IconTextSection
-                       icon={BarChart}
-                       title="Margin Analysis"
-                       description="Calculate profit margins vs. market prices"
-                       iconBgColor="bg-amber-500/20"
-                       iconColor="text-amber-400"
-                     />
-                     <IconTextSection
-                       icon={Users}
-                       title="Daily Limit Management"
-                       description="Track and optimize your 200M daily limit usage"
-                       iconBgColor="bg-amber-500/20"
-                       iconColor="text-amber-400"
-                     />
-                   </div>
-                </div>
-                
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Planned Features</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-amber-400" />
-                      Real-time NPC price monitoring
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-amber-400" />
-                      Profit margin calculations
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-amber-400" />
-                      Daily limit tracking
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-amber-400" />
-                      Market price comparisons
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="h-4 w-4 text-amber-400" />
-                      Automated profit alerts
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-4 rounded-lg bg-muted/50 border">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-amber-400 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-amber-200">Coming Soon</h4>
-                    <p className="text-sm text-muted-foreground">
-                      NPC Flipping tools are currently in development. This will help you maximize your daily NPC limit 
-                      by identifying the most profitable items to sell to NPCs based on current market conditions.
-                    </p>
-                  </div>
-                </div>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold mb-2">Coming Soon</h2>
+                <p className="text-muted-foreground">This strategy is currently in development. Check back later for updates.</p>
               </div>
             </CardContent>
           </Card>
@@ -603,40 +407,78 @@ export default function TradingStrategiesPage() {
         )}
       </div>
 
-             {/* FAQ Section */}
-       <Card className="border">
-         <CardHeader className="pb-4">
-           <div className="flex items-center gap-3">
-             <div className="p-2 rounded-lg bg-muted border">
-               <Lightbulb className="h-6 w-6 text-muted-foreground" />
-             </div>
-             <CardTitle>Frequently Asked Questions</CardTitle>
-           </div>
-         </CardHeader>
-         
-         <CardContent>
-           <div className="grid md:grid-cols-2 gap-6">
-             {getFAQData(activeStrategy).slice(0, 2).map((faq, index) => (
-               <div key={index} className="space-y-4">
-                 <div className="p-4 rounded-lg bg-muted/50 border">
-                   <h4 className="font-medium mb-2">{faq.question}</h4>
-                   <p className="text-sm text-muted-foreground">{faq.answer}</p>
-                 </div>
-               </div>
-             ))}
-             
-             {getFAQData(activeStrategy).slice(2, 4).map((faq, index) => (
-               <div key={index + 2} className="space-y-4">
-                 <div className="p-4 rounded-lg bg-muted/50 border">
-                   <h4 className="font-medium mb-2">{faq.question}</h4>
-                   <p className="text-sm text-muted-foreground">{faq.answer}</p>
-                 </div>
-               </div>
-             ))}
-           </div>
-         </CardContent>
-       </Card>
+             {/* FAQ Section - Only show for Bazaar Flipping */}
+             {activeStrategy === "bazaar-flipping" && (
+               <Card className="border">
+                 <CardHeader className="pb-4">
+                   <div className="flex items-center gap-3">
+                     <div className="p-2 rounded-lg bg-muted border">
+                       <Lightbulb className="h-6 w-6 text-muted-foreground" />
+                     </div>
+                     <CardTitle>Frequently Asked Questions</CardTitle>
+                   </div>
+                 </CardHeader>
+                 
+                 <CardContent>
+                   <div className="grid md:grid-cols-2 gap-6">
+                     {getFAQData(activeStrategy).slice(0, 2).map((faq, index) => (
+                       <div key={index} className="space-y-4">
+                         <div className="p-4 rounded-lg bg-muted/50 border">
+                           <h4 className="font-medium mb-2">{faq.question}</h4>
+                           <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                         </div>
+                       </div>
+                     ))}
+                     
+                     {getFAQData(activeStrategy).slice(2, 4).map((faq, index) => (
+                       <div key={index + 2} className="space-y-4">
+                         <div className="p-4 rounded-lg bg-muted/50 border">
+                           <h4 className="font-medium mb-2">{faq.question}</h4>
+                           <p className="text-sm text-muted-foreground">{faq.answer}</p>
+                         </div>
+                       </div>
+                     ))}
     </div>
-  )
-}
+                 </CardContent>
+               </Card>
+             )}
 
+             
+    {/* Video Tutorial Popup */}
+    {showVideoPopup && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-card border rounded-lg p-6 max-w-md mx-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 rounded-lg bg-muted border">
+              <Play className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold">Video Tutorials</h3>
+          </div>
+          <p className="text-muted-foreground mb-6">
+            We're working on creating helpful video guides to get you started with Bazaar flipping. 
+            For now, check out the "How It Works" and "How to Use It" sections above, or jump 
+            straight into the flipping tool to explore the features yourself.
+          </p>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowVideoPopup(false)}
+              className="flex-1"
+            >
+              Close
+            </Button>
+            <Button 
+              onClick={() => {
+                setShowVideoPopup(false)
+                window.location.href = '/dashboard/strategies/flipping'
+              }}
+              className="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/30 hover:border-emerald-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 text-sm"
+            >
+              Try It Now
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+</div>
+)}
