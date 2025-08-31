@@ -149,9 +149,9 @@ export function useUserSetup() {
           
           const attemptTokenRefresh = async () => {
             try {
-              const token = await getAccessTokenSilently({
-                cacheMode: 'off'
-              })
+              // const token = await getAccessTokenSilently({
+              //   cacheMode: 'off'
+              // })
               console.log('Token refresh após setup concluído com sucesso')
               return true
             } catch (refreshError: any) {
