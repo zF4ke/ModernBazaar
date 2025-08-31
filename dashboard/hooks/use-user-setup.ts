@@ -10,7 +10,7 @@ import { useOfflineGuard } from './use-offline-guard'
  * Agora o controlo de tentativa é apenas em memória e isolado por userId (sub).
  */
 export function useUserSetup() {
-  const { user, isAuthenticated, getAccessTokenSilently, loginWithRedirect, logout } = useAuth0()
+  const { user, isAuthenticated, getAccessTokenSilently, loginWithRedirect, logout, handleRedirectCallback } = useAuth0()
   const [isSetupComplete, setIsSetupComplete] = useState(false)
   const [isSettingUp, setIsSettingUp] = useState(false)
   const [isRefreshingToken, setIsRefreshingToken] = useState(false)
@@ -107,7 +107,7 @@ export function useUserSetup() {
   function markSetupDonePersistent() {
     if (!user?.sub) return
     const key = `mb_user_setup_done_${user.sub}`
-    try { localStorage.setItem(key, '1') } catch {}
+    // try { localStorage.setItem(key, '1') } catch {}
     setPersistedDone(true)
   }
 
@@ -143,17 +143,24 @@ export function useUserSetup() {
           tokenRefreshDoneRef.current = false
           
           // Force token refresh to get new permissions immediately
-          // Use local logout + silent login to properly establish session
+          // Use handleRedirectCallback to properly establish the session
           try {
-            // First, do a local logout to clear any cached state
-            console.log('Fazendo logout local para limpar cache...')
-            await logout({ openUrl: false })
+            console.log('Estabelecendo sessão com handleRedirectCallback...')
             
-            // Wait a moment for logout to complete
-            await new Promise(resolve => setTimeout(resolve, 500))
+            // Check if we have auth parameters in the URL
+            const urlParams = new URLSearchParams(window.location.search)
+            const hasAuthParams = urlParams.has('code') && urlParams.has('state')
             
-            // Now get a fresh token which will have the new permissions
-            console.log('Obtendo token fresco com novas permissões...')
+            if (hasAuthParams) {
+              // Complete the authentication flow to establish the session
+              await handleRedirectCallback()
+              console.log('Sessão estabelecida com sucesso')
+            } else {
+              // If no auth params, the session should already be established
+              console.log('Sessão já estabelecida, obtendo token...')
+            }
+            
+            // Now get a fresh token with new permissions
             const token = await getAccessTokenSilently()
             console.log('Token refresh após setup concluído com sucesso')
           } catch (refreshError: any) {
