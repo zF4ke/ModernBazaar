@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusCard } from "@/components/status-card"
 import { MarketInsightCard } from "@/components/market-trend-chart"
-import { TrendingUp, Boxes, Layers, Sparkles, BarChart3, DollarSign, Target, Activity, ArrowRight, Zap, Timer, Users, LineChart, Server, Lightbulb, Hammer, Coins, ArrowRightLeft, Shield } from "lucide-react"
+import { TrendingUp, Boxes, Layers, Sparkles, BarChart3, DollarSign, Target, Activity, ArrowRight, Zap, Timer, Users, LineChart, Server, Lightbulb, Hammer, Coins, ArrowRightLeft, Shield, Shuffle } from "lucide-react"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import type { SystemMetrics } from "@/types/metrics"
 import type { BazaarItemsResponse } from "@/types/bazaar"
@@ -206,10 +206,10 @@ export default function Dashboard() {
           <FeatureCard backgroundStyle="glass">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <ArrowRightLeft className="h-4 w-4 text-emerald-500" />
+                <Shuffle className="h-4 w-4 text-emerald-500" />
                 <h3 className="text-base font-semibold">Bazaar Flipping</h3>
               </div>
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-300 border-emerald-500/20">Released</Badge>
+                              <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/40">Released</Badge>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               Discover quick buy/sell opportunities with intelligent scoring and risk assessment.
