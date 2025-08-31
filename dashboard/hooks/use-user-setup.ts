@@ -63,7 +63,7 @@ export function useUserSetup() {
   }, [user?.sub])
 
   const refreshTokenWithPolling = async (opts?: { maxAttempts?: number; intervalMs?: number; force?: boolean }) => {
-    const maxAttempts = opts?.maxAttempts ?? 12
+    const maxAttempts = opts?.maxAttempts ?? 4
     const intervalMs = opts?.intervalMs ?? 1500
     const force = opts?.force ?? false
     if (!force && tokenRefreshDoneRef.current) return

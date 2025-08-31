@@ -106,7 +106,7 @@ skyblock:
         enabled: true
     retention:
       enabled: true
-      interval-days: 45 # 45 days
+      interval-days: 30 # 30 days
     finance:
       metrics:
         enabled: true

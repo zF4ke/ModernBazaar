@@ -2,7 +2,8 @@ export const auth0Config = {
   domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || '',
   clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || '',
   authorizationParams: {
-    redirect_uri: typeof window !== 'undefined' ? window.location.origin : '',
+    redirect_uri: process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI || 
+                  (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : ''),
     audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || '',
     scope: 'openid profile email'
   },
