@@ -371,15 +371,15 @@ export default function Dashboard() {
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-2">
                   <li className="flex items-start gap-2">
-                    <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                    <span className="h-1 rounded-full bg-primary mt-2 shrink-0" />
                     Java/Spring Boot backend with PostgreSQL storage
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                    <span className="h-1 rounded-full bg-primary mt-2 shrink-0" />
                     Next.js dashboard with real-time charts and analytics
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                    <span className="h-1 rounded-full bg-primary mt-2 shrink-0" />
                     Dockerized infrastructure with monitoring (Prometheus, Grafana)
                   </li>
                 </ul>
