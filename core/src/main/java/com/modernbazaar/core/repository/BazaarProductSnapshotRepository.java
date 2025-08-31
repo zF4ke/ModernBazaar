@@ -220,4 +220,10 @@ public interface BazaarProductSnapshotRepository
      */
     @Query("select count(s) from BazaarItemSnapshot s where s.fetchedAt < :cutoff")
     long countByFetchedAtBefore(@Param("cutoff") Instant cutoff);
+
+    // findAverageProfitMargin
+    @Query("select avg((s.weightedTwoPercentBuyPrice - s.weightedTwoPercentSellPrice) / s.weightedTwoPercentSellPrice * 100) " +
+           "from BazaarItemSnapshot s " +
+           "where s.weightedTwoPercentBuyPrice > 0 and s.weightedTwoPercentSellPrice > 0")
+    Optional<Double> findAverageProfitMargin();
 }

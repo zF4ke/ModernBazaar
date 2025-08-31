@@ -30,7 +30,10 @@ public class SubscriptionService {
     public UserSubscription ensureFreePlan(String userId) {
         try {
             var existing = findCurrentForUser(userId);
-            if (existing.isPresent()) return existing.get();
+            if (existing.isPresent()) {
+                log.debug("User {} already has subscription: {}", userId, existing.get().getPlanSlug());
+                return existing.get();
+            }
             
             // garante existência do plano free
             var freePlan = planRepository.findBySlug("free").orElseGet(() -> {
@@ -62,7 +65,7 @@ public class SubscriptionService {
                     .currentPeriodEnd(null)
                     .build();
             sub = userSubscriptionRepository.save(sub);
-            log.debug("Criada assinatura free para user={}", userId);
+            log.info("✅ Automatically created FREE plan subscription for new user: {}", userId);
             return sub;
         } catch (Exception e) {
             log.error("Failed to ensure free plan for user={}", userId, e);

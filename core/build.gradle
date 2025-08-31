@@ -75,6 +75,9 @@ dependencies {
     // Stripe Billing
     implementation 'com.stripe:stripe-java:24.0.0'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // Auth0 Management API
+    implementation 'com.auth0:auth0:2.24.0'
 }
 
 // ────────────────────────────────────────────────────────────────────────────

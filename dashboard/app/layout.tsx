@@ -4,6 +4,9 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { QueryProvider } from "@/components/query-provider"
 import { AuthProvider } from '@/components/auth-provider'
+import { UserSetupWrapper } from '@/components/user-setup-wrapper'
+import { BackendHealthProvider } from '@/components/backend-health-provider'
+import { OfflineOverlay } from '@/components/offline-overlay'
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -29,7 +32,12 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <QueryProvider>
-              {children}
+              <BackendHealthProvider>
+                <UserSetupWrapper>
+                  {children}
+                  <OfflineOverlay />
+                </UserSetupWrapper>
+              </BackendHealthProvider>
             </QueryProvider>
           </ThemeProvider>
         </AuthProvider>

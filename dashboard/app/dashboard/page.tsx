@@ -11,7 +11,7 @@ import { MarketInsightCard } from "@/components/market-trend-chart"
 import { TrendingUp, Boxes, Layers, Sparkles, BarChart3, DollarSign, Target, Activity, ArrowRight, Zap, Timer, Users, LineChart, Server, Lightbulb, Hammer, Coins, ArrowRightLeft, Shield } from "lucide-react"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import type { SystemMetrics } from "@/types/metrics"
-//
+import type { BazaarItemsResponse } from "@/types/bazaar"
 
 export default function Dashboard() {
   const { user } = useAuth0()
@@ -27,7 +27,15 @@ export default function Dashboard() {
     }
   )
 
-  //
+  // Fetch bazaar items data once for market insights
+  const { data: bazaarItemsData, isLoading: bazaarItemsLoading } = useBackendQuery<BazaarItemsResponse>(
+    '/api/bazaar/items?limit=10&sort=spreaddesc',
+    {
+      refetchInterval: 300000, // Refresh every 5 minutes
+      queryKey: ['market-insights'],
+      requireAuth: true
+    }
+  )
 
   const formatPercentage = (value: number) => `${value.toFixed(2)}%`
   const formatCurrency = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 2 })
@@ -78,13 +86,11 @@ export default function Dashboard() {
 
       {/* Market Overview */}
       <section className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="space-y-1">
           <h2 className="text-xl md:text-2xl font-semibold">Market Overview</h2>
-          {/* <Button variant="outline" size="sm" asChild className="text-foreground">
-            <Link href="/dashboard/settings">
-              View Details <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
-          </Button> */}
+          <p className="text-muted-foreground text-sm">
+            Get a quick snapshot of the Hypixel SkyBlock Bazaar market
+          </p>
         </div>
         
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -121,7 +127,7 @@ export default function Dashboard() {
               <StatusCard
                 title="Avg. Profit Margin"
                 icon={DollarSign}
-                value={metrics?.avgProfitMargin === 0 ? "Premium Feature" : formatPercentage(metrics?.avgProfitMargin || 0)}
+                value={formatPercentage(metrics?.avgProfitMargin || 0)}
                 iconColorClass="text-amber-600 dark:text-amber-400"
                 bgColorClass="bg-amber-100 dark:bg-amber-900/20"
               />
@@ -138,21 +144,49 @@ export default function Dashboard() {
 
         {/* Market Insight Cards */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <MarketInsightCard
-            title="Market Activity"
-            description="Average active orders across top items"
-            metric="activity"
-          />
-          <MarketInsightCard
-            title="Price Volatility"
-            description="Current market price spread analysis"
-            metric="volatility"
-          />
-          <MarketInsightCard
-            title="Opportunities"
-            description="Items with profitable trading potential"
-            metric="opportunities"
-          />
+          {bazaarItemsLoading ? (
+            // Show loading skeletons
+            Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="backdrop-blur-sm">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <div className="space-y-1">
+                      <Skeleton className="h-8 w-16" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          ) : bazaarItemsData ? (
+            <>
+              <MarketInsightCard
+                title="Market Activity"
+                description="Average active orders across top items"
+                metric="activity"
+                itemsData={bazaarItemsData}
+                isLoading={bazaarItemsLoading}
+              />
+              <MarketInsightCard
+                title="Price Volatility"
+                description="Current market price spread analysis"
+                metric="volatility"
+                itemsData={bazaarItemsData}
+                isLoading={bazaarItemsLoading}
+              />
+              <MarketInsightCard
+                title="Opportunities"
+                description="Items with profitable trading potential"
+                metric="opportunities"
+                itemsData={bazaarItemsData}
+                isLoading={bazaarItemsLoading}
+              />
+            </>
+          ) : null}
         </div>
       </section>
 
@@ -355,81 +389,81 @@ export default function Dashboard() {
        <section className="space-y-6">
          <h2 className="text-xl md:text-2xl font-semibold">Why I Built This</h2>
                  <Card 
-          style={{
-            background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 50%)'
-          }}
-        >
-          <CardHeader className="space-y-3">
-            <CardTitle className="text-xl font-semibold text-primary">
-              Building a SkyBlock Bazaar analytics tool
-            </CardTitle>
-            <CardDescription className="text-base leading-relaxed">
-              What started as a simple Bazaar data collector has grown into a market analysis tool. Built to learn modern development practices while solving a real problem.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-3">
-                <p className="text-sm font-medium flex items-center gap-2">
-                  <LineChart className="h-4 w-4 text-primary" />
-                  What this does
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Fetches Hypixel Bazaar data every few minutes and stores it intelligently
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Analyzes price patterns and identifies profitable trading opportunities
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Provides tools and strategies for different trading approaches
-                  </li>
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm font-medium flex items-center gap-2">
-                  <Server className="h-4 w-4 text-primary" />
-                  Technical stack
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Java/Spring Boot backend with PostgreSQL storage
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Next.js dashboard with real-time charts and analytics
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="w-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Dockerized infrastructure with monitoring (Prometheus, Grafana)
-                  </li>
-                </ul>
-              </div>
-            </div>
-            
-            <div className="rounded-lg bg-muted/50 p-4 border-l-4 border-primary">
-              <div className="flex items-start gap-3">
-                <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Currently working on</p>
-                  <p className="text-sm text-muted-foreground">
-                    Improving the flipping strategy algorithms, adding more sophisticated risk assessment, 
-                    and planning ML-based price prediction features. Always learning something new!
-                  </p>
-                </div>
-              </div>
-            </div>
+           style={{
+             background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 50%)'
+           }}
+         >
+           <CardHeader className="space-y-3">
+             <CardTitle className="text-xl font-semibold text-primary">
+               Building a SkyBlock Bazaar analytics tool
+             </CardTitle>
+             <CardDescription className="text-base leading-relaxed">
+               What started as a simple Bazaar data collector has grown into a market analysis tool. Built to learn modern development practices while solving a real problem.
+             </CardDescription>
+           </CardHeader>
+           <CardContent className="space-y-5">
+             <div className="grid gap-4 md:grid-cols-2">
+               <div className="space-y-3">
+                 <p className="text-sm font-medium flex items-center gap-2">
+                   <LineChart className="h-4 w-4 text-primary" />
+                   What this does
+                 </p>
+                 <ul className="text-sm text-muted-foreground space-y-2">
+                   <li className="flex items-start gap-2">
+                     <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                     Fetches Hypixel Bazaar data every few minutes and stores it intelligently
+                   </li>
+                   <li className="flex items-start gap-2">
+                     <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                     Analyzes price patterns and identifies profitable trading opportunities
+                   </li>
+                   <li className="flex items-start gap-2">
+                     <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                     Provides tools and strategies for different trading approaches
+                   </li>
+                 </ul>
+               </div>
+               <div className="space-y-3">
+                 <p className="text-sm font-medium flex items-center gap-2">
+                   <Server className="h-4 w-4 text-primary" />
+                   Technical stack
+                 </p>
+                 <ul className="text-sm text-muted-foreground space-y-2">
+                   <li className="flex items-start gap-2">
+                     <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                     Java/Spring Boot backend with PostgreSQL storage
+                   </li>
+                   <li className="flex items-start gap-2">
+                     <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                     Next.js dashboard with real-time charts and analytics
+                   </li>
+                   <li className="flex items-start gap-2">
+                     <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
+                     Dockerized infrastructure with monitoring (Prometheus, Grafana)
+                   </li>
+                 </ul>
+               </div>
+             </div>
+             
+             <div className="rounded-lg bg-muted/50 p-4 border-l-4 border-primary">
+               <div className="flex items-start gap-3">
+                 <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                 <div className="space-y-2">
+                   <p className="text-sm font-medium">Currently working on</p>
+                   <p className="text-sm text-muted-foreground">
+                     Improving the flipping strategy algorithms, adding more sophisticated risk assessment, 
+                     and planning ML-based price prediction features. Always learning something new!
+                   </p>
+                 </div>
+               </div>
+             </div>
 
-            <div className="pt-2 border-t text-xs text-muted-foreground">
-              <p>Personal project • Not affiliated with Hypixel • Built for learning and fun 💜</p>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-    </div>
-  )
-}
+             <div className="pt-2 border-t text-xs text-muted-foreground">
+               <p>Personal project • Not affiliated with Hypixel • Built for learning and fun 💜</p>
+             </div>
+           </CardContent>
+         </Card>
+       </section>
+     </div>
+   )
+ }

@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Shield } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import type { Plan } from '@/types/subscription'
 import { useAdminAccess } from '@/hooks/use-admin-access'
@@ -174,7 +175,13 @@ export default function AdminPlansPage() {
   if (authLoading) {
     return (
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Admin - Plans</h2>
+        <div className="flex items-center gap-3">
+          <Shield className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
+            <p className="text-muted-foreground">Manage subscription plans and their features</p>
+          </div>
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
@@ -195,7 +202,13 @@ export default function AdminPlansPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Admin - Plans</h2>
+        <div className="flex items-center gap-3">
+          <Shield className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
+            <p className="text-muted-foreground">Manage subscription plans and their features</p>
+          </div>
+        </div>
         <div className="space-y-4">
           <p>You need to login to access this page.</p>
           {auth0Error && (
@@ -222,7 +235,13 @@ export default function AdminPlansPage() {
   if (error) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Admin - Plans</h2>
+        <div className="flex items-center gap-3">
+          <Shield className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
+            <p className="text-muted-foreground">Manage subscription plans and their features</p>
+          </div>
+        </div>
         <p className="text-red-500">Error: {error}</p>
       </div>
     )
@@ -232,7 +251,13 @@ export default function AdminPlansPage() {
   if (adminLoading || (!hasAdminAccess && !error)) {
     return (
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Admin - Plans</h2>
+        <div className="flex items-center gap-3">
+          <Shield className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
+            <p className="text-muted-foreground">Manage subscription plans and their features</p>
+          </div>
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i}>
@@ -254,7 +279,13 @@ export default function AdminPlansPage() {
   if (!hasAdminAccess && error) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Admin - Plans</h2>
+        <div className="flex items-center gap-3">
+          <Shield className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
+            <p className="text-muted-foreground">Manage subscription plans and their features</p>
+          </div>
+        </div>
         <p className="text-red-500">Access denied. You don't have admin permissions.</p>
       </div>
     )
@@ -262,9 +293,12 @@ export default function AdminPlansPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Admin - Plans</h2>
-        <p className="text-muted-foreground">Manage subscription plans and their features.</p>
+      <div className="flex items-center gap-3">
+        <Shield className="h-8 w-8 text-muted-foreground" />
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
+          <p className="text-muted-foreground">Manage subscription plans and their features</p>
+        </div>
       </div>
 
       {/* Create Plan Form */}

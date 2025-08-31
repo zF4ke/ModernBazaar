@@ -29,3 +29,4 @@ export const socialConnections = [
 ] as const
 
 export type SocialConnection = typeof socialConnections[number]
+

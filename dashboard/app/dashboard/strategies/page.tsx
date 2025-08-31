@@ -14,7 +14,8 @@ import {
   Star,
   Info,
   Activity,
-  Shield
+  Shield,
+  Compass
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -66,16 +67,18 @@ export default function StrategiesLandingPage() {
       {/* Header */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">Trading Strategies</h1>
+          <div className="flex items-center gap-3">
+            <Compass className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Trading Strategies</h1>
+              <p className="text-muted-foreground">Discover profitable trading opportunities with data-driven strategies</p>
+            </div>
+          </div>
           <Badge variant="outline" className="px-3 py-1">
             <Activity className="h-3 w-3 mr-1" />
             Live Market Data
           </Badge>
         </div>
-        <p className="text-xl text-muted-foreground max-w-3xl">
-          Discover profitable trading opportunities with data-driven strategies. 
-          Each method uses real-time market analysis to maximize your returns.
-        </p>
       </div>
 
 

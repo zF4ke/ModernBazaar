@@ -47,9 +47,9 @@ public class MetricsService {
         double profitableRatio = totalItems > 0 ? (double) actualProfitableItems / totalItems : 0.0;
         double freshnessScore = latest != null ? Math.min(1.0, (double) java.time.Duration.between(latest, Instant.now()).toHours() / 24.0) : 0.0;
         double marketActivityScore = (profitableRatio * 0.7 + (1.0 - freshnessScore) * 0.3) * 100.0;
-        
-        // Don't expose exact profit margins to free users - keep it general
-        double avgProfitMargin = 0.0; // Set to 0 for free users
+
+        // allowed to even for free users
+        double avgProfitMargin = snapshotRepository.findAverageProfitMargin().orElse(0.0);
 
         return new MetricsResponseDTO(
                 lastFetch,

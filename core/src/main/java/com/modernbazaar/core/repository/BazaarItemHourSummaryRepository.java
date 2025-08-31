@@ -122,4 +122,10 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
      */
     @Query("select count(hs) from BazaarItemHourSummary hs where hs.hourStart < :cutoff")
     long countByHourStartBefore(@Param("cutoff") Instant cutoff);
+
+    /**
+     * Find the oldest hour start time for retention purposes
+     */
+    @Query("select min(hs.hourStart) from BazaarItemHourSummary hs")
+    Instant findOldestHourStart();
 }

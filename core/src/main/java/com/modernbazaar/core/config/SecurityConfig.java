@@ -3,6 +3,7 @@ package com.modernbazaar.core.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -15,10 +16,14 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 /**
@@ -164,9 +169,11 @@ public class SecurityConfig {
         log.info("Market data endpoints: {}", Arrays.toString(getMarketDataEndpoints()));
         
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(reg -> reg
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // libera preflight
                         .requestMatchers(getPublicEndpoints()).permitAll()
                         .requestMatchers(getAdminEndpoints()).hasAuthority(SCOPE_MANAGE_PLANS)
                         .requestMatchers(getStrategyEndpoints()).hasAnyAuthority(TIER_PERMISSIONS)
@@ -207,6 +214,36 @@ public class SecurityConfig {
         return (AccessDeniedHandler) apiSecurityExceptionHandler();
     }
 
+    /**
+     * CORS configuration source for the security chain.
+     * This ensures CORS is handled before security checks.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
+        if (allowedOrigins == null || allowedOrigins.isBlank()) {
+            allowedOrigins = "http://localhost:3000,http://localhost:3001,https://localhost:3001,http://modern-bazaar.vercel.app,https://modern-bazaar.vercel.app";
+        }
+        String allowedMethods = System.getenv("CORS_ALLOWED_METHODS");
+        if (allowedMethods == null || allowedMethods.isBlank()) {
+            allowedMethods = "GET,POST,PUT,DELETE,OPTIONS,PATCH";
+        }
+        System.out.println("🔧 Security CORS Configuration:");
+        System.out.println("   Allowed Origins: " + allowedOrigins);
+        System.out.println("   Allowed Methods: " + allowedMethods);
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        configuration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
+        configuration.setAllowedHeaders(List.of("*")); // wildcard para preflight genérico
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        System.out.println("   ✅ CORS configured for all endpoints in security chain");
+        return source;
+    }
+
     // ============================================================================
     // Endpoint Configuration Methods
     // ============================================================================
@@ -218,14 +255,15 @@ public class SecurityConfig {
      */
     private String[] getPublicEndpoints() {
         return new String[]{
-                "/actuator/health",
-                "/actuator/prometheus",
-                "/v3/api-docs/**",
-                "/swagger-ui.html",
-                "/swagger-ui/**",
-                "/api/v1/billing/webhook/stripe",
-                "/api/plans",
-                "/api/metrics/**"
+            "/actuator/health",
+            "/actuator/prometheus",
+            "/v3/api-docs/**",
+            "/swagger-ui.html",
+            "/swagger-ui/**",
+            "/api/v1/billing/webhook/stripe",
+            "/api/plans",
+            "/api/metrics/**",
+            "/api/me/setup" // corrigido para incluir barra inicial
         };
     }
     
@@ -258,7 +296,7 @@ public class SecurityConfig {
      */
     private String[] getReadOnlyEndpoints() {
         return new String[]{
-                // Plans endpoint moved to public endpoints
+                "/api/plans/**"
         };
     }
     
@@ -269,7 +307,7 @@ public class SecurityConfig {
      */
     private String[] getSubscriptionEndpoints() {
         return new String[]{
-                "/api/me/**"
+                "/api/me/subscription",
         };
     }
     

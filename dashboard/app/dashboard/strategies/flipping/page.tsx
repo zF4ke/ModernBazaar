@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 // Removed unused Link and many icons; keep only those needed here (refresh + preset icons)
-import { RefreshCw, Trophy, Zap, Mountain } from "lucide-react"
+import { RefreshCw, Trophy, Zap, Mountain, Shuffle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -328,12 +328,18 @@ export default function FlippingPage() {
     <TooltipProvider>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
-        <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-          {isFetching ? 'Refreshing…' : 'Refresh'}
-        </Button>
-      </div>
+          <div className="flex items-center gap-3">
+            <Shuffle className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
+              <p className="text-muted-foreground">Find profitable buy/sell opportunities with intelligent scoring</p>
+            </div>
+          </div>
+          <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? 'Refreshing…' : 'Refresh'}
+          </Button>
+        </div>
 
       {/* Trading Setup */}
         <TradingSetup

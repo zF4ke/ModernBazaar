@@ -48,7 +48,6 @@ export function AppSidebar() {
       label: "Account",
       items: [
         { title: "Profile", url: "/dashboard/profile", icon: User },
-        { title: "Settings", url: "/dashboard/settings", icon: Settings },
       ],
     },
     // Only show Admin section if user has admin access
@@ -57,6 +56,7 @@ export function AppSidebar() {
       items: [
         { title: "Plans", url: "/dashboard/admin/plans", icon: Shield },
         { title: "Endpoints", url: "/dashboard/admin/endpoints", icon: Code },
+        { title: "Settings", url: "/dashboard/admin/settings", icon: Settings },
       ],
     }] : []),
   ]

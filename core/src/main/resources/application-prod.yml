@@ -90,6 +90,10 @@ resilience4j.ratelimiter:
       limitForPeriod: 100    # calls
       limitRefreshPeriod: 1m  # per minute
       timeoutDuration: 0      # reject immediately when full
+    userSetupEndpoint:
+      limitForPeriod: 10      # calls
+      limitRefreshPeriod: 1m  # per minute
+      timeoutDuration: 0      # reject immediately when full
 
 # disable swagger in prod
 springdoc:
@@ -99,6 +103,6 @@ springdoc:
     path: /v3/api-docs    # you could even disable this in prod
 
 # tighten CORS: only your dashboard domain
-#cors:
-#  allowed-origins: https://localhost:3001,https://bazaar.example.com
-#  allowed-methods: GET,POST,PUT,DELETE
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3001,http://modern-bazaar.vercel.app,https://modern-bazaar.vercel.app
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH

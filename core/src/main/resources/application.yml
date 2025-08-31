@@ -82,6 +82,13 @@ auth:
   issuer-uri: ${AUTH_ISSUER_URI:}
   audience: ${AUTH_AUDIENCE:}
 
+# Auth0 Management API - for automatic role assignment
+auth0:
+  domain: ${AUTH_ISSUER_URI:}
+  management:
+    client-id: ${AUTH_MANAGEMENT_CLIENT_ID:}
+    client-secret: ${AUTH_MANAGEMENT_CLIENT_SECRET:}
+
 # Stripe
 stripe:
   webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
@@ -119,6 +126,10 @@ resilience4j.ratelimiter:
       limitForPeriod: 100    # calls
       limitRefreshPeriod: 1m  # per minute
       timeoutDuration: 0      # reject immediately when full
+    userSetupEndpoint:
+      limitForPeriod: 10      # calls
+      limitRefreshPeriod: 1m  # per minute
+      timeoutDuration: 0      # reject immediately when full
 
 springdoc:
   api-docs:
@@ -127,5 +138,5 @@ springdoc:
     path: /swagger-ui.html
 
 cors:
-  allowed-origins: https://localhost:3001,https://bazaar.example.com
-  allowed-methods: GET,POST,PUT,DELETE
+  allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3001,http://modern-bazaar.vercel.app,https://modern-bazaar.vercel.app
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH

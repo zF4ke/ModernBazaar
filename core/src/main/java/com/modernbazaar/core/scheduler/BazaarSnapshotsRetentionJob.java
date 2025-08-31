@@ -60,18 +60,18 @@ public class BazaarSnapshotsRetentionJob {
         hourSummaryRepo.deleteByHourStartBefore(cutoff);
         repo.cascadeDeleteByFetchedAtBefore(cutoff);
         
-        // Show retention status - oldest remaining snapshot and days left
+        // Show retention status - oldest remaining hour summary and days left
         try {
-            Instant oldestSnapshot = repo.findOldestFetchedAt();
-            if (oldestSnapshot != null) {
-                long daysUntilDeletion = ChronoUnit.DAYS.between(oldestSnapshot, cutoff);
-                log.info("Retention status - Oldest snapshot: {} ({} days ago), will be deleted in {} days", 
-                        oldestSnapshot, 
-                        ChronoUnit.DAYS.between(oldestSnapshot, Instant.now()),
+            Instant oldestHourSummary = hourSummaryRepo.findOldestHourStart();
+            if (oldestHourSummary != null) {
+                long daysUntilDeletion = ChronoUnit.DAYS.between(oldestHourSummary, cutoff);
+                log.info("Retention status - Oldest hour summary: {} ({} days ago), will be deleted in {} days", 
+                        oldestHourSummary, 
+                        ChronoUnit.DAYS.between(oldestHourSummary, Instant.now()),
                         daysUntilDeletion);
             }
         } catch (Exception e) {
-            log.warn("Could not determine oldest snapshot date: {}", e.getMessage());
+            log.warn("Could not determine oldest hour summary date: {}", e.getMessage());
         }
         
         log.info("Purged Bazaar data older than {} days - Deleted {} records", 

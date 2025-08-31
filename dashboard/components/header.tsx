@@ -1,8 +1,11 @@
 "use client"
 
-import { Moon, Sun, LogIn, LogOut, User, Settings, ChevronDown } from "lucide-react"
+import { Moon, Sun, LogIn, LogOut, User, Settings, ChevronDown, Wifi, WifiOff } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useAuth0 } from '@auth0/auth0-react'
+import { useBackendHealthContext } from '@/components/backend-health-provider'
+import { useAdminAccess } from '@/hooks/use-admin-access'
+import { Shield } from 'lucide-react'
 
 import { Button } from "@/components/ui/button"
 import {
@@ -15,6 +18,13 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 import { usePathname, useRouter } from "next/navigation"
 import {
   DropdownMenu,
@@ -29,6 +39,8 @@ export function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const { loginWithRedirect, logout, isAuthenticated, user, isLoading } = useAuth0()
+  const { isOnline } = useBackendHealthContext()
+  const { hasAdminAccess } = useAdminAccess()
 
   const getBreadcrumbs = () => {
     const segments = pathname.split("/").filter(Boolean)
@@ -85,6 +97,52 @@ export function Header() {
         </BreadcrumbList>
       </Breadcrumb>
       <div className="ml-auto flex items-center gap-2">
+        {/* Backend Health Indicator with Tooltip */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-muted/50 cursor-help transition-all duration-200 hover:bg-muted/70">
+                {isOnline ? (
+                  <Wifi className="h-3 w-3 text-green-500" />
+                ) : (
+                  <WifiOff className="h-3 w-3 text-red-500" />
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {isOnline ? 'Online' : 'Offline'}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent 
+              side="bottom" 
+              className="max-w-xs p-3 bg-gradient-to-br from-background to-muted border-border shadow-lg"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  {isOnline ? (
+                    <Wifi className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className="font-medium">
+                    {isOnline ? 'Backend Connected' : 'Backend Disconnected'}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {isOnline 
+                    ? 'Your Modern Bazaar backend is running smoothly and responding to requests. All features are available.'
+                    : 'Unable to connect to the Modern Bazaar backend. Some features may be limited. Please check your connection or try again later.'
+                  }
+                </p>
+                {!isOnline && (
+                  <div className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
+                    💡 Tip: Check your internet connection or contact support if the issue persists.
+                  </div>
+                )}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
         {isLoading && <span className="text-xs text-muted-foreground">...</span>}
         {!isLoading && !isAuthenticated && (
           <Button size="sm" variant="outline" onClick={() => window.location.href = '/login'}> <LogIn className="h-4 w-4 mr-1"/> Login</Button>
@@ -112,11 +170,20 @@ export function Header() {
               </DropdownMenuItem>
               <DropdownMenuItem 
                 className="cursor-pointer hover:bg-accent focus:bg-accent"
-                onClick={() => router.push('/dashboard/settings')}
+                onClick={() => router.push('/dashboard/profile')}
               >
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </DropdownMenuItem>
+              {hasAdminAccess && (
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-accent focus:bg-accent"
+                  onClick={() => router.push('/dashboard/admin/settings')}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Admin Settings
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem 
                 className="cursor-pointer text-red-400 hover:text-red-300 focus:text-red-300 hover:bg-accent focus:bg-accent"

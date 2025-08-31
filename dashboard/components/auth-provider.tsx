@@ -17,6 +17,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       'Missing required Auth0 environment variables. Please set NEXT_PUBLIC_AUTH0_DOMAIN, NEXT_PUBLIC_AUTH0_CLIENT_ID, NEXT_PUBLIC_AUTH0_AUDIENCE, and NEXT_PUBLIC_AUTH0_REDIRECT_URI.'
     )
   }
+
   return (
     <Auth0Provider
       domain={domain}
@@ -24,10 +25,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       authorizationParams={{
         audience,
         redirect_uri: redirectUri,
-        scope: 'openid profile email'
+        scope: 'openid profile email offline_access'
       }}
       cacheLocation="localstorage"
       useRefreshTokens
+      useRefreshTokensFallback
       onRedirectCallback={(appState) => {
         // Handle redirect callback
         if (appState?.returnTo) {

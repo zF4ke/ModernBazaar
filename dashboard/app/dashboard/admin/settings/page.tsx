@@ -10,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { RefreshCw, Database, Clock, Trash2, Server, Wifi, Activity } from "lucide-react"
+import { RefreshCw, Database, Clock, Trash2, Server, Wifi, Activity, Settings } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { StatusCard } from "@/components/status-card"
 import { fetchWithBackendUrl } from "@/lib/api"
 import type { SystemHealth, SystemMetrics } from "@/types/metrics"
+import { useAdminAccess } from "@/hooks/use-admin-access"
 
 // Custom hook for Skyblock manual refresh
 const useSkyblockManualRefresh = () => {
@@ -45,7 +46,7 @@ const useSkyblockRefreshIfStale = (days: number) => {
   })
 }
 
-export default function SettingsPage() {
+export default function AdminSettingsPage() {
   const { toast } = useToast()
   const [pruningEnabled, setPruningEnabled] = useState(true)
   const [pruningDays, setPruningDays] = useState("30")
@@ -67,6 +68,9 @@ export default function SettingsPage() {
     "/api/metrics", 
     { refetchInterval: 30000, requireAuth: true }
   )
+
+  // Use the admin access hook
+  const { hasAdminAccess, loading: adminLoading, error } = useAdminAccess()
 
   const handleSaveSettings = () => {
     // Store API endpoint in localStorage
@@ -112,10 +116,73 @@ export default function SettingsPage() {
 
   const isSkyblockRefreshing = manualRefreshQuery.isFetching || refreshIfStaleQuery.isFetching
 
+  // Show loading state while checking admin access
+  if (adminLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+            <p className="text-muted-foreground">System configuration and management</p>
+          </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-6 w-32 bg-muted animate-pulse rounded mb-2" />
+                <div className="h-4 w-full bg-muted animate-pulse rounded" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+            <p className="text-muted-foreground">System configuration and management</p>
+          </div>
+        </div>
+        <p className="text-red-500">Error: {error}</p>
+      </div>
+    )
+  }
+
+  // Only show access denied if we're sure the user doesn't have access
+  if (!hasAdminAccess && error) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+            <p className="text-muted-foreground">System configuration and management</p>
+          </div>
+        </div>
+        <p className="text-red-500">Access denied. You don't have admin permissions.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+      <div className="flex items-center gap-3">
+        <Settings className="h-8 w-8 text-muted-foreground" />
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+          <p className="text-muted-foreground">System configuration and management</p>
+        </div>
       </div>
 
       {/* System Status */}
@@ -207,84 +274,6 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Data Pruning */}
-      {/* <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trash2 className="h-5 w-5" />
-            Data Pruning
-          </CardTitle>
-          <CardDescription>Configure automatic cleanup of old data</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="pruning-enabled">Enable Data Pruning</Label>
-              <p className="text-sm text-muted-foreground">Automatically remove old historical data</p>
-            </div>
-            <Switch id="pruning-enabled" checked={pruningEnabled} onCheckedChange={setPruningEnabled} />
-          </div>
-
-          {pruningEnabled && (
-            <div className="space-y-2">
-              <Label htmlFor="pruning-days">Retention Period (days)</Label>
-              <Input
-                id="pruning-days"
-                type="number"
-                value={pruningDays}
-                onChange={(e) => setPruningDays(e.target.value)}
-                placeholder="30"
-                className="w-full"
-              />
-              <p className="text-sm text-muted-foreground">Data older than this will be automatically deleted</p>
-            </div>
-          )}
-        </CardContent>
-      </Card> */}
-
-      {/* Performance Settings */}
-      {/* <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Performance Settings
-          </CardTitle>
-          <CardDescription>Configure caching and performance options</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="cache-ttl">Cache TTL (seconds)</Label>
-              <Input id="cache-ttl" type="number" defaultValue="300" placeholder="300" />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="max-connections">Max Connections</Label>
-              <Input id="max-connections" type="number" defaultValue="100" placeholder="100" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="api-endpoint">API Endpoint</Label>
-            <Input
-              id="api-endpoint"
-              defaultValue="https://api.modernbazaar.com"
-              placeholder="https://api.modernbazaar.com"
-            />
-          </div>
-        </CardContent>
-      </Card> */}
-
-      {/* Save Settings */}
-      {/* <div className="flex justify-end">
-        <Button onClick={handleSaveSettings} className="w-full md:w-auto">
-          Save Settings
-        </Button>
-      </div> */}
-
-
-      
 
       {/* Data Pruning */}
       <Card className="opacity-60">

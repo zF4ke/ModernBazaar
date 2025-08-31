@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
-import { Search, Filter, RefreshCw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown } from "lucide-react"
+import { Search, Filter, RefreshCw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Boxes } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -146,7 +146,13 @@ export default function BazaarItemsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Bazaar Items</h2>
+        <div className="flex items-center gap-3">
+          <Boxes className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Bazaar Items</h2>
+            <p className="text-muted-foreground">Browse and analyze Hypixel SkyBlock bazaar items</p>
+          </div>
+        </div>
         <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
           <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
           {isFetching ? 'Refreshing...' : 'Refresh'}

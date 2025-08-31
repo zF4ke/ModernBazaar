@@ -5,7 +5,6 @@ import ReactECharts from "echarts-for-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, BarChart3, DollarSign, Activity, Target } from "lucide-react"
-import { useBackendQuery } from "@/hooks/use-backend-query"
 import type { BazaarItemsResponse } from "@/types/bazaar"
 
 interface MarketInsightCardProps {
@@ -13,21 +12,15 @@ interface MarketInsightCardProps {
   description?: string
   className?: string
   metric: 'activity' | 'opportunities' | 'volatility'
+  itemsData?: BazaarItemsResponse
+  isLoading?: boolean
 }
 
-export function MarketInsightCard({ title, description, className, metric }: MarketInsightCardProps) {
-  // Get real data - top items sorted by spread for opportunities
-  const { data: itemsData, isLoading } = useBackendQuery<BazaarItemsResponse>(
-    '/api/bazaar/items?limit=10&sort=spreaddesc',
-    {
-      refetchInterval: 300000, // Refresh every 5 minutes
-      queryKey: ['market-insights', metric],
-      requireAuth: true
-    }
-  )
+export function MarketInsightCard({ title, description, className, metric, itemsData, isLoading }: MarketInsightCardProps) {
+  // Use data passed from parent component instead of making separate API calls
 
   const insightData = useMemo(() => {
-    if (!itemsData?.items?.length) return null
+    if (!itemsData?.items || !Array.isArray(itemsData.items) || itemsData.items.length === 0) return null
 
     const items = itemsData.items.slice(0, 10)
     
@@ -104,8 +97,8 @@ export function MarketInsightCard({ title, description, className, metric }: Mar
     }
   }, [itemsData, metric])
 
-  if (isLoading || !insightData) {
-    return null // Don't show anything if no data
+  if (isLoading || !insightData || !itemsData) {
+    return null // Don't show anything if no data or still loading
   }
 
   const TrendIcon = insightData.trend === 'up' ? TrendingUp : insightData.trend === 'down' ? TrendingDown : Activity

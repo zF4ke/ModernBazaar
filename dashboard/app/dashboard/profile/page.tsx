@@ -72,7 +72,13 @@ export default function ProfilePage() {
     <div className="space-y-6">
       {/* Header with Sign Out */}
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Profile</h2>
+        <div className="flex items-center gap-3">
+          <User className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Profile</h2>
+            <p className="text-muted-foreground">Manage your account settings and preferences</p>
+          </div>
+        </div>
         <Button variant="outline" size="sm" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out

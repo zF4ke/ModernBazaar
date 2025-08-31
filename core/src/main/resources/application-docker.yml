@@ -1,10 +1,10 @@
 server:
   port: 8080
-#  ssl:
-#    key-store: file:/config/keystore.p12
-#    key-store-password: ${KEYSTORE_PASSWORD}
-#    key-store-type: PKCS12
-#    key-alias: tomcat
+  #  ssl:
+  #    key-store: file:/config/keystore.p12
+  #    key-store-password: ${KEYSTORE_PASSWORD}
+  #    key-store-type: PKCS12
+  #    key-alias: tomcat
   compression:
     enabled: true
     min-response-size: 2KB
@@ -16,11 +16,11 @@ spring:
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     hikari:
-      maximumPoolSize: 20   # default is 10
+      maximumPoolSize: 15   # default is 10
       minimumIdle: 5        # optional: keep a warm floor
   jpa:
     hibernate:
-      ddl-auto: update      # use Hibernate auto-update, not Flyway
+      ddl-auto: update      # still auto-update schema during container development
     open-in-view: false
     properties:
       #            hibernate.cache.use_second_level_cache: false
@@ -34,11 +34,13 @@ spring:
       #        show-sql: true
       show-sql: false
   flyway:
-    enabled: false          # disable Flyway, use Hibernate instead
+    enabled: false
+    baseline-on-migrate: true
+    baseline-version: 1
   task:
     execution:
       pool:
-        max-size: 12     # example: double the default on 2 cores
+        max-size: 8     # example: double the default on 2 cores
         core-size: 4    # optional: keep some threads always alive
 #  security:
 #    user:
@@ -68,6 +70,30 @@ management:
     health:
       show-details: when_authorized
 
+# --- Feature Flags / Toggles ---
+# Controle explícito para evitar ativação não intencional em ambientes novos.
+billing:
+  enabled: false   # habilitar somente quando Stripe configurado
+
+# Auth (resource server) - configurar em runtime
+auth:
+  mock-enabled: false  # true: usa decoder stub quando jwks-uri ausente
+  jwks-uri: ${AUTH_JWKS_URI:}
+  issuer-uri: ${AUTH_ISSUER_URI:}
+  audience: ${AUTH_AUDIENCE:}
+
+# Auth0 Management API - for automatic role assignment
+auth0:
+  domain: ${AUTH_ISSUER_URI:}
+  management:
+    client-id: ${AUTH_MANAGEMENT_CLIENT_ID:}
+    client-secret: ${AUTH_MANAGEMENT_CLIENT_SECRET:}
+
+# Stripe
+stripe:
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+
+
 skyblock:
   bazaar:
     poll:
@@ -80,7 +106,7 @@ skyblock:
         enabled: true
     retention:
       enabled: true
-      interval-days: 30 # 30 days
+      interval-days: 45 # 45 days
     finance:
       metrics:
         enabled: true
@@ -100,8 +126,8 @@ resilience4j.ratelimiter:
       limitForPeriod: 100    # calls
       limitRefreshPeriod: 1m  # per minute
       timeoutDuration: 0      # reject immediately when full
-    subscriptionEndpoint:
-      limitForPeriod: 50     # calls
+    userSetupEndpoint:
+      limitForPeriod: 10      # calls
       limitRefreshPeriod: 1m  # per minute
       timeoutDuration: 0      # reject immediately when full
 
@@ -112,32 +138,5 @@ springdoc:
     path: /swagger-ui.html
 
 cors:
-  allowed-origins: https://localhost:3001,https://bazaar.example.com
-
-# --- Feature Flags / Toggles ---
-# Controle explícito para evitar ativação não intencional em ambientes novos.
-billing:
-  enabled: false   # habilitar somente quando Stripe configurado
-
-# Auth (resource server) - configurar em runtime
-# COMO PREENCHER (Auth0):
-#   Domain Auth0           -> modern-bazaar.eu.auth0.com (exemplo)
-#   issuer-uri (iss)       -> https://<Domain>/   (ATENÇÃO: barra final)
-#   jwks-uri               -> https://<Domain>/.well-known/jwks.json
-#   audience (Identifier)  -> criar em Auth0: Applications > APIs > Create API
-#                              Identifier exemplo: https://modern-bazaar.api
-# FRONTEND deve pedir token com esse audience senão aud não bate.
-# Client ID / Client Secret NÃO entram aqui; só usados pelo frontend para obter o token.
-# Se ainda não criou a API em Auth0, crie antes de definir AUTH_AUDIENCE.
-# Para desenvolvimento sem Auth0 real defina: auth.mock-enabled=true e deixe os outros vazios.
-auth:
-  mock-enabled: false  # true: usa decoder stub quando jwks-uri ausente
-  jwks-uri: ${AUTH_JWKS_URI:}
-  issuer-uri: ${AUTH_ISSUER_URI:}
-  audience: ${AUTH_AUDIENCE:}
-
-# Stripe
-#   STRIPE_WEBHOOK_SECRET = signing secret do endpoint de webhook (Dashboard > Developers > Webhooks)
-#   Para implementar checkout depois adicionar também STRIPE_API_KEY.
-stripe:
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3001,http://modern-bazaar.vercel.app,https://modern-bazaar.vercel.app
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS,PATCH

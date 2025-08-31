@@ -57,6 +57,7 @@ export function useBackendQuery<T>(
   const apiEndpoint = typeof window !== 'undefined'
     ? localStorage.getItem('apiEndpoint') || 'default'
     : 'default'
+  
   return useQuery<T>({
     queryKey: [endpoint, apiEndpoint, requireAuth ? 'auth' : 'anon', ...queryKey],
     queryFn: async () => {
@@ -75,6 +76,37 @@ export function useBackendQuery<T>(
       return response.json()
     },
     enabled: enabled && (!requireAuth || isAuthenticated),
+    // Smart retry logic - don't retry on permission errors
+    retry: (failureCount, error) => {
+      // Don't retry on permission errors (401, 403) - these won't change
+      if ((error as any).status === 401 || (error as any).status === 403) {
+        console.log(`🚫 Permission error (${(error as any).status}) for ${endpoint} - not retrying`)
+        return false
+      }
+      
+      // Don't retry on 404 - resource doesn't exist
+      if ((error as any).status === 404) {
+        console.log(`🚫 Resource not found (404) for ${endpoint} - not retrying`)
+        return false
+      }
+      
+      // Don't retry on 422 - validation errors won't change
+      if ((error as any).status === 422) {
+        console.log(`🚫 Validation error (422) for ${endpoint} - not retrying`)
+        return false
+      }
+      
+      // Retry up to 2 times for other errors (network issues, 500s, etc.)
+      if (failureCount < 2) {
+        console.log(`🔄 Retrying ${endpoint} (attempt ${failureCount + 1}/3)`)
+        return true
+      }
+      
+      console.log(`❌ Max retries reached for ${endpoint}`)
+      return false
+    },
+    // Longer retry delay to avoid spamming
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // 1s, 2s, 4s, 8s, 10s max
     ...queryOptions,
   })
 }

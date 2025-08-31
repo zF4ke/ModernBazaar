@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Header } from "@/components/header"
+import { OfflineOverlay } from "@/components/offline-overlay"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -26,6 +27,7 @@ export default function DashboardLayout({
           <main className="flex-1 space-y-4 p-4 md:p-8 pt-6">{children}</main>
         </SidebarInset>
       </SidebarProvider>
+      <OfflineOverlay />
     </div>
   )
 }

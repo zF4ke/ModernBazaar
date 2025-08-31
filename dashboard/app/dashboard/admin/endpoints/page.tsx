@@ -845,6 +845,7 @@ const ENDPOINTS: EndpointInfo[] = [
   
   // User endpoints
   { path: '/api/me/subscription', method: 'GET', description: 'Get user subscription info', category: 'User', requiresAuth: true },
+  { path: '/api/me/setup', method: 'POST', description: 'Setup new user with free plan and role', category: 'User', requiresAuth: true },
   
   // Plans endpoints
   { path: '/api/plans', method: 'GET', description: 'List available plans', category: 'Plans', requiresAuth: false },
@@ -1194,7 +1195,13 @@ export default function AdminEndpointsPage() {
   if (authLoading) {
     return (
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Admin - API Endpoints</h2>
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">API Endpoints</h2>
+            <p className="text-muted-foreground">Test permissions, validate access, and debug API endpoints</p>
+          </div>
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
@@ -1215,7 +1222,13 @@ export default function AdminEndpointsPage() {
   if (!isAuthenticated) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Admin - API Endpoints</h2>
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">API Endpoints</h2>
+            <p className="text-muted-foreground">Test permissions, validate access, and debug API endpoints</p>
+          </div>
+        </div>
         <div className="space-y-4">
           <p>You need to login to access this page.</p>
           {auth0Error && (
@@ -1240,7 +1253,13 @@ export default function AdminEndpointsPage() {
   if (error) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Admin - API Endpoints</h2>
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">API Endpoints</h2>
+            <p className="text-muted-foreground">Test permissions, validate access, and debug API endpoints</p>
+          </div>
+        </div>
         <p className="text-red-500">Error: {error}</p>
       </div>
     )
@@ -1250,7 +1269,13 @@ export default function AdminEndpointsPage() {
   if (adminLoading || (!hasAdminAccess && !error)) {
     return (
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold tracking-tight">Admin - API Endpoints</h2>
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">API Endpoints</h2>
+            <p className="text-muted-foreground">Test permissions, validate access, and debug API endpoints</p>
+          </div>
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
@@ -1272,7 +1297,13 @@ export default function AdminEndpointsPage() {
   if (!hasAdminAccess && error) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold">Admin - API Endpoints</h2>
+        <div className="flex items-center gap-3">
+          <Settings className="h-8 w-8 text-muted-foreground" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">API Endpoints</h2>
+            <p className="text-muted-foreground">Test permissions, validate access, and debug API endpoints</p>
+          </div>
+        </div>
         <p className="text-red-500">Access denied. You don't have admin permissions.</p>
       </div>
     )
