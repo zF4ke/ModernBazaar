@@ -2,20 +2,23 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { FeatureCard } from "@/components/feature-card"
+import { ExpandableFeatureCard, Accent, ExpandableFeatureGrid } from "@/components/expandable-feature-card"
 import { GradientSection } from "@/components/gradient-section"
-import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, ArrowRightLeft, Wifi, WifiOff } from "lucide-react"
+import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Target, DollarSign, Activity } from "lucide-react"
 import { useBackendHealthContext } from '@/components/backend-health-provider'
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const { isOnline } = useBackendHealthContext()
+  const tiltRef = useRef<HTMLDivElement | null>(null)
+  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({})
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 0)
@@ -24,6 +27,26 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  const handleTiltMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = tiltRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const px = (x / rect.width) * 2 - 1 // -1 to 1
+    const py = (y / rect.height) * 2 - 1
+    const maxRotate = 6 // degrees
+    const rx = (-py) * maxRotate
+    const ry = (px) * maxRotate
+    setTiltStyle({
+      transform: `rotateX(${rx}deg) rotateY(${ry}deg) translateZ(0) scale(1.04)`,
+    })
+  }
+
+  const handleTiltLeave = () => {
+    setTiltStyle({ transform: 'rotateX(0deg) rotateY(0deg) translateZ(0) scale(1.02)' })
+  }
+
   return (
     <div className="min-h-screen" style={{
       background: 'radial-gradient(ellipse at top left, rgba(255,255,255,0.03) 0%, transparent 50%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.02) 0%, transparent 50%)'
@@ -31,7 +54,7 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className={cn(
         "sticky top-0 z-50 bg-background/30 backdrop-blur supports-[backdrop-filter]:bg-background/20 border-b",
-        scrolled ? "border-border/40" : "border-transparent"
+        scrolled ? "border-border" : "border-transparent"
       )}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -44,9 +67,9 @@ export default function LandingPage() {
             <Button variant="ghost" asChild>
               <Link href="/dashboard">Dashboard</Link>
             </Button>
-            <Button variant="ghost" asChild>
+            {/* <Button variant="ghost" asChild>
               <Link href="/dashboard/strategies">Strategies</Link>
-            </Button>
+            </Button> */}
             <Button asChild>
               <Link href="/dashboard">Get Started</Link>
             </Button>
@@ -70,7 +93,7 @@ export default function LandingPage() {
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto md:mx-0">
-                Handcrafted tools and real-time pricing to help you flip confidently with empirical data, not guesses.
+                Handcrafted tools with real-time pricing and clear, budget-aware scores so you can flip with confidence.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start items-center pt-1">
                 <Button asChild size="lg" className="px-8 py-3 text-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all">
@@ -103,84 +126,168 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="relative">
-              <div className="relative rounded-xl border bg-background/60 backdrop-blur overflow-hidden shadow-sm">
-                <Image
-                  src="/hero-preview.png"
-                  alt="Modern Bazaar dashboard preview"
-                  width={1120}
-                  height={720}
-                  className="w-full h-auto"
-                  priority
-                />
+              <div
+                ref={tiltRef}
+                onMouseMove={handleTiltMove}
+                onMouseLeave={handleTiltLeave}
+                className="relative rounded-xl border bg-background/60 backdrop-blur overflow-hidden shadow-sm group"
+                style={{ perspective: '1000px' }}
+              >
+                <div
+                  className="transform-gpu transition-transform duration-150 ease-out will-change-transform"
+                  style={tiltStyle}
+                >
+                  <div className="relative aspect-[16/10]">
+                    <Image
+                      src="/hero-preview.png"
+                      alt="Modern Bazaar dashboard preview"
+                      fill
+                      sizes="(min-width: 1920px) 560px, 100vw"
+                      className="object-cover select-none pointer-events-none"
+                      priority
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </GradientSection>
 
-      {/* Highlights */}
-      <section className="py-12 px-4">
+      {/* What You Get */}
+      <section className="py-12 px-4 cursor-default">
         <div className="container mx-auto max-w-6xl">
           <div className="text-center space-y-3 mb-10">
             <h2 className="text-2xl md:text-3xl font-bold">What You Get</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Clear tools that help you trade. Fine-tunable, trustworthy, and easy to understand.</p>
+            <p className="text-muted-foreground max-w-2xl mx-auto">An explainable scoring system that adapts to your budget, competition, and fill times.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <FeatureCard>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <ArrowRightLeft className="h-4 w-4 text-emerald-500" />
-                  <h3 className="text-base font-semibold">Flip finder</h3>
+          <ExpandableFeatureGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Core features */}
+            <ExpandableFeatureCard
+              id="bazaar"
+              accent="emerald"
+              icon={<Shuffle className="h-4 w-4 text-emerald-500" />}
+              title="Bazaar Flipping"
+              status="released"
+              summary={<span>Discover quick flips with budget-aware, competition and fill-time scoring.</span>}
+              details={
+                <div className="space-y-2">
+                  <p>Your copilot for day-to-day flips: it tells you what to do, when to do it, and why.</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><Accent>Position sizing</Accent>: exactly how much to buy/sell for your budget.</li>
+                    <li><Accent>Projected P/L</Accent>: expected coins and downside with clear risk flags.</li>
+                    <li><Accent>Manipulation shields</Accent>: detects spoofing/spreads and limits exposure.</li>
+                    <li><Accent>Fill-time ETA</Accent>: realistic time windows for buys and sells to complete.</li>
+                  </ul>
                 </div>
-                <p className="text-sm text-muted-foreground">Buy/sell gap scoring with volume, fill-rate, and fees in mind.</p>
-              </div>
-            </FeatureCard>
-            <FeatureCard>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-amber-500" />
-                  <h3 className="text-base font-semibold">Historical trends</h3>
+              }
+            />
+            
+            
+
+            {/* Coming soon */}
+            <ExpandableFeatureCard
+              id="craft"
+              className="opacity-90"
+              accent="blue"
+              icon={<Hammer className="h-4 w-4 text-blue-500" />}
+              title="Craft Flipping"
+              status="coming"
+              summary={<span>Profit from crafting by scoring material baskets against sale prices, factoring in demand and fill time.</span>}
+              details={
+                <div className="space-y-2">
+                  <p>Choose recipes with confidence: the copilot balances cost, demand, and your coin limits.</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><Accent>Smart materials</Accent>: optimizes basket sources and warns on inflated inputs.</li>
+                    <li><Accent>Exact quantities</Accent>: tells you how many to craft for your budget and risk.</li>
+                    <li><Accent>Profit clarity</Accent>: net-after-fees estimates and sensitivity to price swings.</li>
+                    <li><Accent>Time-aware</Accent>: expected sell-through times factored into your plan.</li>
+                  </ul>
                 </div>
-                <p className="text-sm text-muted-foreground">Price history and volatility to see stability, not just spikes.</p>
-              </div>
-            </FeatureCard>
-            <FeatureCard>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-rose-500" />
-                  <h3 className="text-base font-semibold">Favorites & pin</h3>
+              }
+            />
+            
+            <ExpandableFeatureCard
+              id="npc"
+              className="opacity-90"
+              accent="amber"
+              icon={<Coins className="h-4 w-4 text-amber-500" />}
+              title="NPC Flipping"
+              status="coming"
+              summary={<span>Maximize daily-limit profits with budget-aware scoring that targets the highest NPC margins.</span>}
+              details={
+                <div className="space-y-2">
+                  <p>Plan your caps like a pro: the assistant sequences buys/sells to squeeze the most from limits.</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><Accent>Route planning</Accent>: prioritized items based on margin, availability, and limits.</li>
+                    <li><Accent>Budget fit</Accent>: allocates coins across items for best risk-adjusted return.</li>
+                    <li><Accent>Risk callouts</Accent>: flags manipulation and volatile windows to avoid.</li>
+                    <li><Accent>Timing</Accent>: clear expectations for how long each step takes.</li>
+                  </ul>
                 </div>
-                <p className="text-sm text-muted-foreground">Star the best picks and pin them to the top of lists.</p>
-              </div>
-            </FeatureCard>
-            <FeatureCard>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-blue-500" />
-                  <h3 className="text-base font-semibold">Real-time pricing</h3>
+              }
+            />
+            
+            <ExpandableFeatureCard
+              id="manipulation"
+              className="opacity-90"
+              accent="purple"
+              icon={<Shield className="h-4 w-4 text-purple-500" />}
+              title="Bazaar Manipulation"
+              status="planned"
+              summary={<span>Set prices and shape supply with risk controls and timeline-aware execution.</span>}
+              details={
+                <div className="space-y-2">
+                  <p>Model scenarios before you act: understand liquidity needs, risk, and expected payoff over time.</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><Accent>Playbook guidance</Accent>: step-by-step "what, when, how much".</li>
+                    <li><Accent>Guardrails</Accent>: exposure caps, stop conditions, and anomaly detection.</li>
+                    <li><Accent>Timeline</Accent>: staged orders with fill-time windows and unwind paths.</li>
+                  </ul>
                 </div>
-                <p className="text-sm text-muted-foreground">Live prices and spreads across tracked items.</p>
-              </div>
-            </FeatureCard>
-            <FeatureCard>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-purple-500" />
-                  <h3 className="text-base font-semibold">Explainable scoring</h3>
+              }
+            />
+
+            <ExpandableFeatureCard
+              id="budget"
+              className="opacity-90"
+              accent="emerald"
+              icon={<DollarSign className="h-4 w-4 text-emerald-500" />}
+              title="Budget Planner"
+              status="planned"
+              summary={<span>Allocate coins across strategies using risk-adjusted, fill-time-aware projections.</span>}
+              details={
+                <div className="space-y-2">
+                  <p>Personal to your constraints: the copilot tunes ideas to your coins and preferences.</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><Accent>Allocation advice</Accent>: how much to place in each strategy right now.</li>
+                    <li><Accent>Risk fit</Accent>: respects your max drawdown, concentration, and cooldown settings.</li>
+                    <li><Accent>Cashflow timing</Accent>: when coins unlock based on fill-time expectations.</li>
+                  </ul>
                 </div>
-                <p className="text-sm text-muted-foreground">See why a pick ranks: spread, volume, and risk.</p>
-              </div>
-            </FeatureCard>
-            <FeatureCard>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="h-4 w-4 text-rose-500" />
-                  <h3 className="text-base font-semibold">Filters & tuning</h3>
+              }
+            />
+
+            <ExpandableFeatureCard
+              id="ah"
+              className="opacity-90"
+              accent="rose"
+              icon={<ArrowRightLeft className="h-4 w-4 text-rose-500" />}
+              title="Auction House"
+              status="planned"
+              summary={<span>Snipe and flip using live listings and history, scored by budget, competition, and time to sell.</span>}
+              details={
+                <div className="space-y-2">
+                  <p>Turn signals into action: the assistant calls the trades and sizes them for your wallet.</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><Accent>Entry timing</Accent>: when to place the bid or buyout.</li>
+                    <li><Accent>Size + price</Accent>: how many and at what price is reasonable.</li>
+                    <li><Accent>Outcome preview</Accent>: expected profit, risk, and sell-through time.</li>
+                  </ul>
                 </div>
-                <p className="text-sm text-muted-foreground">Set min volume, margin, and risk to fit your style.</p>
-              </div>
-            </FeatureCard>
-          </div>
+              }
+            />
+          </ExpandableFeatureGrid>
         </div>
       </section>
 
@@ -191,19 +298,26 @@ export default function LandingPage() {
       </div>
 
       {/* Pricing Plans */}
-      <section className="py-16 px-4">
+      <section id="pricing" className="py-16 px-4 cursor-default">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center space-y-4 mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold">Fair, simple pricing</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">Start free. Upgrade only if it's genuinely useful for you.</p>
+          <div className="space-y-3 mb-6">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+              <h2 className="text-2xl md:text-3xl font-bold">Fair, simple pricing</h2>
+              <div className="flex justify-center md:justify-end">
+                <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground">
+                  <Link href="/pricing/compare">Compare plans</Link>
+                </Button>
+              </div>
+            </div>
+            <p className="text-muted-foreground max-w-2xl">Choose your plan. Upgrade anytime.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Starter Plan */}
-            <Card className="relative border-2 hover:border-primary/50 transition-all duration-200 hover:shadow-lg">
+            <Card className="relative h-full flex flex-col border-2 hover:border-yellow-500/60 transition-all duration-200 hover:shadow-lg">
               <CardHeader className="text-center space-y-4">
-                <div className="mx-auto w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                  <Boxes className="h-6 w-6 text-blue-500" />
+                <div className="mx-auto w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                  <Boxes className="h-6 w-6 text-yellow-500" />
                 </div>
                 <div>
                   <CardTitle className="text-xl">Starter</CardTitle>
@@ -214,8 +328,8 @@ export default function LandingPage() {
                   <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-3">
+              <CardContent className="space-y-4 flex-1 flex flex-col">
+                <ul className="space-y-3 flex-1">
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
                     <span className="text-sm">Flip finder (core features)</span>
@@ -237,21 +351,106 @@ export default function LandingPage() {
                     <span className="text-sm">Favorites & pin</span>
                   </li>
                 </ul>
-                <Button asChild className="w-full" variant="outline">
+                <Button asChild className="mt-4 w-full border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10" variant="outline">
                   <Link href="/dashboard">Choose Starter</Link>
                 </Button>
               </CardContent>
             </Card>
 
             {/* Flipper Plan */}
-            <Card className="relative border-2 border-primary shadow-lg scale-105">
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground px-3 py-1">
-                  <Star className="h-3 w-3 mr-1" />
+            <Card className="relative h-full flex flex-col border-2 border-primary shadow-lg scale-105">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
+                <Badge className="bg-primary text-foreground px-3 py-1 shadow-lg">
+                  <Star className="h-3 w-3 mr-1 fill-current" fill="currentColor" />
                   Most Popular
                 </Badge>
               </div>
-              <CardHeader className="text-center space-y-4">
+                {/* Trading Icons Background - diagonal lines with subtle glow */}
+                <div className="absolute inset-0 pointer-events-none opacity-20">
+                  {(() => {
+                    const icons = [
+                      { icon: TrendingUp, size: 'h-6 w-6', color: 'text-blue-400/60' },
+                      { icon: BarChart3, size: 'h-6 w-6', color: 'text-blue-400/60' },
+                      { icon: LineChart, size: 'h-6 w-6', color: 'text-blue-400/60' },
+                      { icon: Activity,  size: 'h-6 w-6', color: 'text-blue-400/60' },
+                      { icon: Target,    size: 'h-6 w-6', color: 'text-blue-400/60' },
+                      { icon: Zap,       size: 'h-6 w-6', color: 'text-blue-400/60' }
+                    ];
+
+                    // Parallel diagonal lines (slash direction) across full card
+                    const lineCount = 7;
+                    const itemsPerLine = 7;
+                    const cMin = -10;   // TL border
+                    const cMax = 199; // BR border
+                    const cStep = (cMax - cMin) / (lineCount - 1);
+
+                    const positions: Array<{ top: string; left: string; iconIndex: number }> = [];
+
+                                         // Keep main content area clear (icon, title, text)
+                     const excludeZones = [
+                        { top: 5, bottom: 45, left: 25, right: 70 },
+                        { top: 45, bottom: 90, left: 5, right: 60 },
+                        { top: 90, bottom: 96, left: 5, right: 80 },
+                     ]
+
+                    for (let li = 0; li < lineCount; li++) {
+                      const c = cMin + li * cStep;
+                      const xMin = -14;
+                      const xMax = 114;
+                      const xStep = (xMax - xMin) / (itemsPerLine + 1);
+
+                                             for (let k = 1; k <= itemsPerLine; k++) {
+                         const x = xMin + k * xStep;
+                         const y = -x + c; // y = -x + c (45°)
+                         if (x < 0 || x > 100 || y < 0 || y > 100) continue;
+                        //  if (y >= exclude.top && y <= exclude.bottom && x >= exclude.left && x <= exclude.right) continue;
+                        //  if (y >= excludeBottom.top && y <= excludeBottom.bottom && x >= excludeBottom.left && x <= excludeBottom.right) continue;
+                        let excluded = false;
+                        for (const exclude of excludeZones) {
+                          if (y >= exclude.top && y <= exclude.bottom && x >= exclude.left && x <= exclude.right) {
+                            excluded = true;
+                          }
+                        }
+                        if (excluded) continue;
+
+                        // Mix icon types along each line deterministically
+                        const iconIndex = (li * 2 + k) % icons.length;
+                        positions.push({ top: `${y}%`, left: `${x}%`, iconIndex });
+                      }
+                    }
+
+                    return positions.map((pos, index) => {
+                      const iconData = icons[pos.iconIndex];
+                      const IconComponent = iconData.icon;
+
+                      return (
+                        <div
+                          key={index}
+                          className={`absolute ${iconData.size}`}
+                          style={{
+                            top: pos.top,
+                            left: pos.left,
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                        >
+                          <IconComponent className={`${iconData.color} drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] filter blur-[0.5px]`} />
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                
+                {/* Background gradient overlays */}
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.01) 0%, rgba(59, 130, 246, 0.01) 40%, transparent 70%)'
+                }}></div>
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  background: 'radial-gradient(ellipse at top right, rgba(59, 130, 246, 0.01) 0%, rgba(59, 130, 246, 0.0) 40%, transparent 70%)'
+                }}></div>
+                <div className="absolute inset-0 pointer-events-none" style={{
+                  background: 'radial-gradient(ellipse at top left, rgba(59, 130, 246, 0.0) 0%, rgba(59, 130, 246, 0.0) 40%, transparent 70%)'
+                }}></div>
+              <CardHeader className="text-center space-y-4 py-8 relative z-10">
                 <div className="mx-auto w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-primary" />
                 </div>
@@ -260,13 +459,16 @@ export default function LandingPage() {
                   <CardDescription>For serious traders</CardDescription>
                 </div>
                 <div className="space-y-1">
-                  <div className="text-sm text-muted-foreground line-through">$12.99</div>
-                  <div className="text-3xl font-bold">$9.99</div>
-                  <div className="text-xs text-green-500">limited-time discount</div>
+                  <div className="text-sm"></div>
+                  <div className="text-center text-3xl flex justify-center items-center">
+                    <span className="font-bold">$9.99</span>
+                    <span className="line-through text-muted-foreground/80 text-sm ml-1">$12.99</span>
+                  </div>
+                  <div className="inline-flex items-center gap-2 text-xs text-green-400">Save 23%</div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-3">
+              <CardContent className="space-y-4 flex-1 flex flex-col relative z-10">
+                <ul className="space-y-3 flex-1">
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
                     <span className="text-sm">Everything in Starter</span>
@@ -292,14 +494,14 @@ export default function LandingPage() {
                     <span className="text-sm">Explainable scoring details</span>
                   </li>
                 </ul>
-                <Button asChild className="w-full">
+                <Button asChild className="w-full border-primary/30 text-primary hover:bg-primary/10" variant="outline">
                   <Link href="/dashboard">Choose Flipper</Link>
                 </Button>
               </CardContent>
             </Card>
 
             {/* Elite Plan */}
-            <Card className="relative border-2 hover:border-primary/50 transition-all duration-200 hover:shadow-lg">
+            <Card className="relative h-full flex flex-col border-2 hover:border-purple-500/60 transition-all duration-200 hover:shadow-lg">
               <CardHeader className="text-center space-y-4">
                 <div className="mx-auto w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
                   <Zap className="h-6 w-6 text-purple-500" />
@@ -313,8 +515,8 @@ export default function LandingPage() {
                   <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-3">
+              <CardContent className="space-y-4 flex-1 flex flex-col">
+                <ul className="space-y-3 flex-1">
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
                     <span className="text-sm">Everything in Flipper</span>
@@ -336,16 +538,11 @@ export default function LandingPage() {
                     <span className="text-sm">Priority support</span>
                   </li>
                 </ul>
-                <Button asChild className="w-full" variant="outline">
+                <Button asChild className="mt-4 w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10" variant="outline">
                   <Link href="/dashboard">Choose Elite</Link>
                 </Button>
               </CardContent>
             </Card>
-          </div>
-          <div className="text-center mt-8">
-            <Button asChild variant="ghost">
-              <Link href="/pricing/compare">Compare plans</Link>
-            </Button>
           </div>
         </div>
       </section>
@@ -364,7 +561,7 @@ export default function LandingPage() {
           </div>
           <Card>
             <CardContent className="p-6">
-              <Accordion type="multiple" defaultValue={["what-it-is","what-it-isnt","privacy","how-it-ranks","data-refresh","getting-started","roadmap"]}>
+              <Accordion type="multiple">
                 <AccordionItem value="what-it-is">
                   <AccordionTrigger>What this is</AccordionTrigger>
                   <AccordionContent>
@@ -420,33 +617,44 @@ export default function LandingPage() {
         <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent"></div>
       </div>
 
-      {/* Simple CTA (near the end) */}
-      <section className="text-center space-y-6 mx-4 mb-8 p-8 md:p-12">
-        <h2 className="text-2xl md:text-3xl font-bold">Ready to Start Trading?</h2>
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-          Flip confidently with tools that explain the why.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <Button asChild size="lg" className="transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 px-8 py-3 text-lg bg-primary hover:bg-primary/90">
-            <Link href="/dashboard">
-              <Zap className="h-5 w-5 mr-2" />
-              Launch Dashboard
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 px-8 py-3 text-lg">
-            <Link href="/dashboard/strategies">
-              <TrendingUp className="h-5 w-5 mr-2" />
-              Explore Strategies
-            </Link>
-          </Button>
+      {/* CTA (simple) */}
+      <section className="px-4 py-12 mb-12">
+        <div className="container mx-auto max-w-3xl text-center">
+          <h2 className="text-2xl md:text-3xl font-bold">Ready to flip with confidence?</h2>
+          <p className="text-muted-foreground mt-2">
+            See spread, volume, and risk at a glance. Understand the why, then execute.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-5">
+            <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg px-8 py-3 text-base font-medium">
+              <Link href="/dashboard">
+                <Zap className="h-5 w-5 mr-2" />
+                Launch Dashboard
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="border-primary/40 text-primary hover:bg-primary/10 px-8 py-3 text-base">
+              <Link href="#pricing" onClick={(e) => { 
+                e.preventDefault(); 
+                const pricingElement = document.getElementById('pricing');
+                if (pricingElement) {
+                  pricingElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'start',
+                    inline: 'nearest'
+                  });
+                }
+              }}>
+                <TrendingUp className="h-5 w-5 mr-2" />
+                View Plans
+              </Link>
+            </Button>
+          </div>
         </div>
-        <div aria-hidden className="text-xl">💜</div>
       </section>
 
       {/* Footer */}
       <footer className="border-t">
         <div className="container mx-auto px-4 py-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm text-muted-foreground">© 2025 Modern Bazaar. All rights reserved.</div>
+          <div className="text-sm text-muted-foreground">© 2025 Modern Bazaar. All rights reserved. 💜</div>
           <div className="flex items-center gap-4 text-sm">
             <Link href="/terms" className="hover:underline">Terms of Service</Link>
             <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
