@@ -19,6 +19,7 @@ import { GradientSection } from "@/components/gradient-section"
 import type { SkyblockItem, SkyblockItemQuery, SkyblockItemsResponse } from "@/types/skyblock"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
+import { LoginCheck } from "@/components/login-check"
 
 // Fetch handled by useBackendQuery (auth by default)
 
@@ -127,8 +128,13 @@ export default function SkyblockItemsPage() {
   )
 
   return (
-    <div className="space-y-4 w-full max-w-full overflow-hidden">
-      <div className="flex items-center justify-between">
+    <LoginCheck
+      featureName="Skyblock Items"
+      featureDescription="Browse and search Hypixel SkyBlock item catalog"
+      icon={<Layers className="h-8 w-8 text-muted-foreground" />}
+    >
+      <div className="space-y-4 w-full max-w-full overflow-hidden">
+        <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Layers className="h-8 w-8 text-muted-foreground" />
           <div>
@@ -416,6 +422,7 @@ export default function SkyblockItemsPage() {
           )}
         </div>
       </FeatureCard>
-    </div>
+        </div>
+      </LoginCheck>
   )
 } 

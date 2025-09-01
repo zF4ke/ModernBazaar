@@ -37,6 +37,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { GradientSection } from '@/components/gradient-section'
+import { LoginCheck } from '@/components/login-check'
 
 const strategies = [
   {
@@ -486,16 +487,22 @@ function TradingStrategiesContent() {
 // Main component wrapped in Suspense
 export default function TradingStrategiesPage() {
   return (
-    <Suspense fallback={
-      <div className="space-y-8">
-        <div className="animate-pulse">
-          <div className="h-32 bg-muted rounded-lg mb-8"></div>
-          <div className="h-8 bg-muted rounded w-48 mb-4"></div>
-          <div className="h-64 bg-muted rounded-lg"></div>
+    <LoginCheck
+      featureName="Trading Strategies"
+      featureDescription="Professional tools to help you profit in the Hypixel SkyBlock market"
+      icon={<TrendingUp className="h-8 w-8 text-muted-foreground" />}
+    >
+      <Suspense fallback={
+        <div className="space-y-8">
+          <div className="animate-pulse">
+            <div className="h-32 bg-muted rounded-lg mb-8"></div>
+            <div className="h-8 bg-muted rounded w-48 mb-4"></div>
+            <div className="h-64 bg-muted rounded-lg"></div>
+          </div>
         </div>
-      </div>
-    }>
-      <TradingStrategiesContent />
-    </Suspense>
+      }>
+        <TradingStrategiesContent />
+      </Suspense>
+    </LoginCheck>
   )
 }

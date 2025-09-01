@@ -27,6 +27,7 @@ import {
   Rocket
 } from 'lucide-react'
 import { useBackendQuery } from '@/hooks/use-backend-query'
+import { LoginCheck } from '@/components/login-check'
 
 export default function ProfilePage() {
   const { user, logout, isAuthenticated } = useAuth0()
@@ -42,22 +43,7 @@ export default function ProfilePage() {
     requireAuth: true
   })
 
-  if (!isAuthenticated) {
-    return (
-      <div className="space-y-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold">Profile</h2>
-          <p className="text-muted-foreground">Please log in to view your profile.</p>
-        </div>
-        <FeatureCard backgroundStyle="glass" className="max-w-sm mx-auto">
-          <div className="text-center">
-            <User className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Sign in to access your profile and settings.</p>
-          </div>
-        </FeatureCard>
-      </div>
-    )
-  }
+
 
   const userInitials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'
   const formatDate = (dateString: string) => {
@@ -69,9 +55,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with Sign Out */}
-      <div className="flex items-center justify-between">
+    <LoginCheck
+      featureName="Profile"
+      featureDescription="Manage your account settings and preferences"
+      icon={<User className="h-8 w-8 text-muted-foreground" />}
+    >
+      <div className="space-y-6">
+        {/* Header with Sign Out */}
+        <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <User className="h-8 w-8 text-muted-foreground" />
           <div>
@@ -278,6 +269,7 @@ export default function ProfilePage() {
           <p className="text-sm text-muted-foreground">Email notifications, price alerts, and market updates will be available soon.</p>
         </div>
       </FeatureCard>
-    </div>
+        </div>
+      </LoginCheck>
   )
 }

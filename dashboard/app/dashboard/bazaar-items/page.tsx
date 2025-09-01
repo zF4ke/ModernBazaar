@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import Link from "next/link"
-import { Search, Filter, RefreshCw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Boxes } from "lucide-react"
+import { Search, Filter, RefreshCw, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Package } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,6 +19,7 @@ import { buildQueryParams } from "@/lib/api"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import { FeatureCard } from "@/components/feature-card"
+import { LoginCheck } from "@/components/login-check"
 
 // Fetch handled by useBackendQuery (auth by default)
 
@@ -141,10 +142,15 @@ export default function BazaarItemsPage() {
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <LoginCheck
+      featureName="Bazaar Items"
+      featureDescription="Browse and analyze Hypixel SkyBlock bazaar items"
+      icon={<Package className="h-8 w-8 text-muted-foreground" />}
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Boxes className="h-8 w-8 text-muted-foreground" />
+          <Package className="h-8 w-8 text-muted-foreground" />
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Bazaar Items</h2>
             <p className="text-muted-foreground">Browse and analyze Hypixel SkyBlock bazaar items</p>
@@ -408,6 +414,7 @@ export default function BazaarItemsPage() {
           )}
         </div>
       </FeatureCard>
-    </div>
+        </div>
+      </LoginCheck>
   )
 } 

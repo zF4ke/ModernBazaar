@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User } from "lucide-react"
+import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User, Boxes } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAdminAccess } from "@/hooks/use-admin-access"

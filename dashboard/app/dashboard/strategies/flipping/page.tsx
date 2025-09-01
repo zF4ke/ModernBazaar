@@ -18,6 +18,7 @@ import { TradingSetup } from "./_components/trading-setup"
 import { OpportunitiesGrid } from "./_components/opportunities-grid"
 import { useHasPermission } from "@/hooks/use-has-permission"
 import { PermissionCheck } from "@/components/permission-check"
+import { LoginCheck } from "@/components/login-check"
 import { PERMISSIONS } from "@/constants/permissions"
 
 // Fetch handled by useBackendQuery (auth by default)
@@ -334,23 +335,28 @@ export default function FlippingPage() {
   const { hasPermission, hasAdminAccess, loading: permissionLoading } = useHasPermission(PERMISSIONS.USE_BAZAAR_FLIPPING)
 
   return (
-    <PermissionCheck
-      requiredPermission={PERMISSIONS.USE_BAZAAR_FLIPPING}
+    <LoginCheck
       featureName="Bazaar Flipping"
       featureDescription="Find profitable buy/sell opportunities with intelligent scoring"
       icon={<Shuffle className="h-8 w-8 text-muted-foreground" />}
-      // hasAdminAccess={hasAdminAccess}
-      hasPermission={hasPermission}
-      loading={permissionLoading}
-      upgradeMessage="Unlock Bazaar Flipping to access our advanced trading algorithms, real-time market analysis, and intelligent opportunity scoring. This premium feature helps you identify the most profitable items to flip with confidence."
-      adminErrorDetails={
-        <div className="space-y-2 text-sm">
-          <p>• User lacks the <code className="bg-muted px-1 rounded">use:bazaar-flipping</code> permission</p>
-          <p>• This may be due to subscription plan restrictions</p>
-          <p>• Check user's current plan and permissions in the admin panel</p>
-        </div>
-      }
     >
+      <PermissionCheck
+        requiredPermission={PERMISSIONS.USE_BAZAAR_FLIPPING}
+        featureName="Bazaar Flipping"
+        featureDescription="Find profitable buy/sell opportunities with intelligent scoring"
+        icon={<Shuffle className="h-8 w-8 text-muted-foreground" />}
+        // hasAdminAccess={hasAdminAccess}
+        hasPermission={hasPermission}
+        loading={permissionLoading}
+        upgradeMessage="Unlock Bazaar Flipping to access our advanced trading algorithms, real-time market analysis, and intelligent opportunity scoring. This premium feature helps you identify the most profitable items to flip with confidence."
+        adminErrorDetails={
+          <div className="space-y-2 text-sm">
+            <p>• User lacks the <code className="bg-muted px-1 rounded">use:bazaar-flipping</code> permission</p>
+            <p>• This may be due to subscription plan restrictions</p>
+            <p>• Check user's current plan and permissions in the admin panel</p>
+          </div>
+        }
+      >
       <TooltipProvider>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -409,6 +415,7 @@ export default function FlippingPage() {
           />
       </div>
       </TooltipProvider>
-    </PermissionCheck>
+        </PermissionCheck>
+      </LoginCheck>
   )
 }
