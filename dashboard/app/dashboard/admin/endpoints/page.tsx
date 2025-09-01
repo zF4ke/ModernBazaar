@@ -859,7 +859,7 @@ const ENDPOINTS: EndpointInfo[] = [
   { path: '/api/skyblock/items', method: 'GET', description: 'Get skyblock items', category: 'Skyblock', requiresAuth: true },
   
   // Strategies endpoints
-  { path: '/api/strategies/flipping', method: 'GET', description: 'Get flipping strategies', category: 'Strategies', requiresAuth: false }
+  { path: '/api/strategies/flipping', method: 'GET', description: 'Get flipping strategies', category: 'Strategies', requiresAuth: true }
 ]
 
 export default function AdminEndpointsPage() {

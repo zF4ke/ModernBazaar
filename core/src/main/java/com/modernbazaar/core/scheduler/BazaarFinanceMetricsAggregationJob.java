@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.event.EventListener;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -25,10 +26,17 @@ public class BazaarFinanceMetricsAggregationJob {
     private final BazaarFinanceMetricsAggregationService service;
     private final BazaarFinanceMetricsRepository metricsRepo;
     private static final Object LOCK = new Object();
+    private volatile boolean shuttingDown = false;
 
     // Executa a cada N minutos (interval-minutes). Usa SpEL para multiplicar por 60000 (ms)
     @Scheduled(fixedDelayString = "#{${skyblock.bazaar.finance.metrics.interval-minutes:60} * 60000}")
-    public void scheduledRun() { runInternal(false); }
+    public void scheduledRun() {
+        if (shuttingDown) {
+            log.warn("Skipping finance metrics aggregation - application is shutting down");
+            return;
+        }
+        runInternal(false);
+    }
 
     @EventListener(ApplicationReadyEvent.class)
     public void onStartup() {
@@ -47,5 +55,11 @@ public class BazaarFinanceMetricsAggregationJob {
                 log.error("Finance metrics aggregation failed (startup={})", startup, ex);
             }
         }
+    }
+
+    @EventListener(ContextClosedEvent.class)
+    public void onContextClosed() {
+        shuttingDown = true;
+        log.info("Context closing - finance metrics aggregation job will stop scheduling work");
     }
 }

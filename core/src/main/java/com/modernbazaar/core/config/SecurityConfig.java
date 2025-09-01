@@ -40,9 +40,10 @@ import java.util.stream.Collectors;
  * - read:subscription — View user subscription
  * - read:market_data — Access bazaar/skyblock data
  * - manage:plans — Admin: manage subscription plans
- * - use:starter — Basic tier features
- * - use:flipper — Flipper tier features
- * - use:elite — Elite tier features
+ * - use:starter - Basic tier features
+ * - use:flipper - Flipper tier features
+ * - use:elite - Elite tier features
+ * - use:bazaar-flipping - Bazaar Flipping strategy access
  */
 @Configuration
 @EnableMethodSecurity
@@ -82,11 +83,17 @@ public class SecurityConfig {
      * Permission to use flipper tier features.
      */
     public static final String SCOPE_USE_FLIPPER = "SCOPE_use:flipper";
-    
+
     /**
      * Permission to use elite tier features.
      */
     public static final String SCOPE_USE_ELITE = "SCOPE_use:elite";
+
+    /**
+     * Permission to use Bazaar Flipping strategy features.
+     * More granular than tier-based permissions.
+     */
+    public static final String SCOPE_USE_BAZAAR_FLIPPING = "SCOPE_use:bazaar-flipping";
     
     /**
      * Array of all tier-based permissions for easy validation.
@@ -108,10 +115,31 @@ public class SecurityConfig {
             SCOPE_READ_SUBSCRIPTION,
             SCOPE_READ_MARKET_DATA,
             SCOPE_MANAGE_PLANS,
+            SCOPE_USE_BAZAAR_FLIPPING,
             SCOPE_USE_STARTER,
             SCOPE_USE_FLIPPER,
             SCOPE_USE_ELITE
         };
+    }
+
+    /**
+     * Build a space-separated OAuth2 scope string from our authority constants
+     * by stripping the "SCOPE_" prefix.
+     */
+    private static String defaultScopeString() {
+        return Arrays.stream(getAllScopes())
+                .map(s -> s.replaceFirst("^SCOPE_", ""))
+                .collect(Collectors.joining(" "));
+    }
+
+    /**
+     * Build a list of permission strings (Auth0 RBAC style) from our authority
+     * constants by stripping the "SCOPE_" prefix.
+     */
+    private static List<String> defaultPermissionsList() {
+        return Arrays.stream(getAllScopes())
+                .map(s -> s.replaceFirst("^SCOPE_", ""))
+                .collect(Collectors.toList());
     }
 
     // ============================================================================
@@ -175,7 +203,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // libera preflight
                         .requestMatchers(getPublicEndpoints()).permitAll()
+                        // Strategy-specific permissions: require feature scopes
+                        .requestMatchers("/api/strategies/flipping", "/api/strategies/flipping/**").hasAuthority(SCOPE_USE_BAZAAR_FLIPPING)
                         .requestMatchers(getAdminEndpoints()).hasAuthority(SCOPE_MANAGE_PLANS)
+                        // Fallback for other strategy endpoints (legacy tier-based gating)
                         .requestMatchers(getStrategyEndpoints()).hasAnyAuthority(TIER_PERMISSIONS)
                         .requestMatchers(getReadOnlyEndpoints()).hasAuthority(SCOPE_READ_PLANS)
                         .requestMatchers(getSubscriptionEndpoints()).hasAuthority(SCOPE_READ_SUBSCRIPTION)
@@ -389,12 +420,12 @@ public class SecurityConfig {
                         .headers(h -> h.putAll(realJwt.getHeaders()))
                         .claims(c -> {
                             c.putAll(realJwt.getClaims());
-                            // Add test permissions if not present
+                            // Add test permissions if not present (derived from constants)
                             if (!c.containsKey("scope")) {
-                                c.put("scope", "read:plans read:subscription read:market_data manage:plans use:starter use:flipper use:elite");
+                                c.put("scope", defaultScopeString());
                             }
                             if (!c.containsKey("permissions")) {
-                                c.put("permissions", List.of("read:plans", "read:subscription", "read:market_data", "manage:plans", "use:starter", "use:flipper", "use:elite"));
+                                c.put("permissions", defaultPermissionsList());
                             }
                         })
                         .issuedAt(realJwt.getIssuedAt())
@@ -407,8 +438,8 @@ public class SecurityConfig {
                         .header("alg", "none")
                         .claims(c -> {
                             c.put("sub", "test-user");
-                            c.put("scope", "read:plans read:subscription read:market_data manage:plans use:starter use:flipper use:elite");
-                            c.put("permissions", List.of("read:plans", "read:subscription", "read:market_data", "manage:plans", "use:starter", "use:flipper", "use:elite"));
+                            c.put("scope", defaultScopeString());
+                            c.put("permissions", defaultPermissionsList());
                         })
                         .issuedAt(Instant.now())
                         .expiresAt(Instant.now().plusSeconds(3600))
@@ -523,7 +554,11 @@ public class SecurityConfig {
             }
         }
 
-        // Strategy endpoints: ANY of the tier permissions
+        // Strategy endpoints: granular feature permissions first
+        if (matchesEndpoint(endpoint, "/api/strategies/flipping") || matchesEndpoint(endpoint, "/api/strategies/flipping/**")) {
+            return List.of(SCOPE_USE_BAZAAR_FLIPPING);
+        }
+        // Fallback for other strategy endpoints: ANY of the tier permissions
         for (String strategyEndpoint : getStrategyEndpoints()) {
             if (matchesEndpoint(endpoint, strategyEndpoint)) {
                 return Arrays.asList(TIER_PERMISSIONS);

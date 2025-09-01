@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +30,13 @@ public class BazaarSnapshotsRetentionJob {
     @Value("${skyblock.bazaar.retention.interval-days:30}")
     private long retentionDays;
 
+    private volatile boolean shuttingDown = false;
+
     /**
      * Runs on application startup to purge old data immediately
      */
     @EventListener(ApplicationReadyEvent.class)
+    @Transactional
     public void onStartup() {
         log.info("Application started, running initial Bazaar data retention cleanup...");
         purgeOld();
@@ -45,6 +49,10 @@ public class BazaarSnapshotsRetentionJob {
     @Scheduled(cron = "0 0 3 * * *") // runs daily at 03:00
     @Transactional
     public void purgeOld() {
+        if (shuttingDown) {
+            log.warn("Skipping Bazaar retention purge - application is shutting down");
+            return;
+        }
         Instant cutoff = Instant.now().minus(retentionDays, ChronoUnit.DAYS);
         
         // Quick count of records to be deleted (single query per table)
@@ -76,5 +84,11 @@ public class BazaarSnapshotsRetentionJob {
         
         log.info("Purged Bazaar data older than {} days - Deleted {} records", 
                 retentionDays, snapshotsToDelete + hourSummariesToDelete + hourPointsToDelete);
+    }
+
+    @EventListener(ContextClosedEvent.class)
+    public void onContextClosed() {
+        shuttingDown = true;
+        log.info("Context closing - retention job will stop scheduling work");
     }
 }

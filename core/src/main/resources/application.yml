@@ -42,6 +42,10 @@ spring:
       pool:
         max-size: 8     # example: double the default on 2 cores
         core-size: 4    # optional: keep some threads always alive
+    scheduling:
+      shutdown:
+        await-termination: true
+        await-termination-period: 30s
 #  security:
 #    user:
 #      name: ${ADMIN_USER:admin}
@@ -106,7 +110,7 @@ skyblock:
         enabled: true
     retention:
       enabled: true
-      interval-days: 45 # 45 days
+      interval-days: 30 # 30 days
     finance:
       metrics:
         enabled: true

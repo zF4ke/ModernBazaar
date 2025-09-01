@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 // Removed unused Link and many icons; keep only those needed here (refresh + preset icons)
-import { RefreshCw, Trophy, Zap, Mountain, Shuffle } from "lucide-react"
+import { RefreshCw, Trophy, Zap, Mountain, Shuffle, AlertTriangle } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,6 +16,9 @@ import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import { TradingSetup } from "./_components/trading-setup"
 import { OpportunitiesGrid } from "./_components/opportunities-grid"
+import { useHasPermission } from "@/hooks/use-has-permission"
+import { PermissionCheck } from "@/components/permission-check"
+import { PERMISSIONS } from "@/constants/permissions"
 
 // Fetch handled by useBackendQuery (auth by default)
 
@@ -283,7 +286,7 @@ export default function FlippingPage() {
 
   const params = buildQueryParams(finalQuery as Record<string, any>)
   const endpoint = `/api/strategies/flipping?${params}`
-  const { data: response, isLoading, isFetching, refetch } = useBackendQuery<PagedResponse<FlipOpportunity>>(endpoint, {
+  const { data: response, isLoading, isFetching, refetch, error } = useBackendQuery<PagedResponse<FlipOpportunity>>(endpoint, {
     staleTime: 30000,
     refetchOnWindowFocus: false,
   })
@@ -326,64 +329,86 @@ export default function FlippingPage() {
     setCurrentPreset("default")
   }
 
+  // Permission check using the new component
+  // You can also check multiple permissions: useHasPermission([PERMISSIONS.USE_BAZAAR_FLIPPING, PERMISSIONS.USE_FLIPPER])
+  const { hasPermission, hasAdminAccess, loading: permissionLoading } = useHasPermission(PERMISSIONS.USE_BAZAAR_FLIPPING)
+
   return (
-    <TooltipProvider>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Shuffle className="h-8 w-8 text-muted-foreground" />
-            <div>
-              <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
-              <p className="text-muted-foreground">Find profitable buy/sell opportunities with intelligent scoring</p>
-            </div>
-          </div>
-          <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-            {isFetching ? 'Refreshing…' : 'Refresh'}
-          </Button>
+    <PermissionCheck
+      requiredPermission={PERMISSIONS.USE_BAZAAR_FLIPPING}
+      featureName="Bazaar Flipping"
+      featureDescription="Find profitable buy/sell opportunities with intelligent scoring"
+      icon={<Shuffle className="h-8 w-8 text-muted-foreground" />}
+      // hasAdminAccess={hasAdminAccess}
+      hasPermission={hasPermission}
+      loading={permissionLoading}
+      upgradeMessage="Unlock Bazaar Flipping to access our advanced trading algorithms, real-time market analysis, and intelligent opportunity scoring. This premium feature helps you identify the most profitable items to flip with confidence."
+      adminErrorDetails={
+        <div className="space-y-2 text-sm">
+          <p>• User lacks the <code className="bg-muted px-1 rounded">use:bazaar-flipping</code> permission</p>
+          <p>• This may be due to subscription plan restrictions</p>
+          <p>• Check user's current plan and permissions in the admin panel</p>
         </div>
+      }
+    >
+      <TooltipProvider>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shuffle className="h-8 w-8 text-muted-foreground" />
+              <div>
+                <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
+                <p className="text-muted-foreground">Find profitable buy/sell opportunities with intelligent scoring</p>
+              </div>
+            </div>
+            <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+              {isFetching ? 'Refreshing…' : 'Refresh'}
+            </Button>
+          </div>
 
-      {/* Trading Setup */}
-        <TradingSetup
-          query={query}
-          updateQuery={updateQuery}
-          resetTradingSetup={resetTradingSetup}
-          searchText={searchText}
-          setSearchText={setSearchText}
-          budgetInput={budgetInput}
-          setBudgetInput={setBudgetInput}
-          setQuery={setQuery}
-          filtersOpen={filtersOpen}
-          setFiltersOpen={setFiltersOpen}
-          pinFavoritesToTop={pinFavoritesToTop}
-          setPinFavoritesToTop={setPinFavoritesToTop}
-          favCount={favs.size}
-          bazaarTaxRate={bazaarTaxRate}
-          setBazaarTaxRate={setBazaarTaxRate}
-          currentPreset={currentPreset}
-          applyPreset={applyPreset}
-          tradingPresets={tradingPresets}
-        />
+        {/* Trading Setup */}
+          <TradingSetup
+            query={query}
+            updateQuery={updateQuery}
+            resetTradingSetup={resetTradingSetup}
+            searchText={searchText}
+            setSearchText={setSearchText}
+            budgetInput={budgetInput}
+            setBudgetInput={setBudgetInput}
+            setQuery={setQuery}
+            filtersOpen={filtersOpen}
+            setFiltersOpen={setFiltersOpen}
+            pinFavoritesToTop={pinFavoritesToTop}
+            setPinFavoritesToTop={setPinFavoritesToTop}
+            favCount={favs.size}
+            bazaarTaxRate={bazaarTaxRate}
+            setBazaarTaxRate={setBazaarTaxRate}
+            currentPreset={currentPreset}
+            applyPreset={applyPreset}
+            tradingPresets={tradingPresets}
+          />
 
-      {/* Opportunities grid */}
-        <OpportunitiesGrid
-          items={itemsArray as FlipOpportunity[]}
-          isLoading={isLoading}
-          isFetching={isFetching}
-          totalPages={totalPages}
-          currentPage={currentPage}
-          totalItems={totalItems}
-          query={query}
-          limit={query.limit || 50}
-          goToPreviousPage={goToPreviousPage}
-          goToNextPage={goToNextPage}
-          bazaarTaxRate={bazaarTaxRate}
-          favs={favs}
-          toggleFav={toggleFav}
-          expandedCard={expandedCard}
-          setExpandedCard={setExpandedCard}
-        />
-    </div>
-    </TooltipProvider>
+        {/* Opportunities grid */}
+          <OpportunitiesGrid
+            items={itemsArray as FlipOpportunity[]}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            totalPages={totalPages}
+            currentPage={currentPage}
+            totalItems={totalItems}
+            query={query}
+            limit={query.limit || 50}
+            goToPreviousPage={goToPreviousPage}
+            goToNextPage={goToNextPage}
+            bazaarTaxRate={bazaarTaxRate}
+            favs={favs}
+            toggleFav={toggleFav}
+            expandedCard={expandedCard}
+            setExpandedCard={setExpandedCard}
+          />
+      </div>
+      </TooltipProvider>
+    </PermissionCheck>
   )
 }
