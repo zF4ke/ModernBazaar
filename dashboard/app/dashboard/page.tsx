@@ -332,7 +332,7 @@ export default function Dashboard() {
       </section>
 
       {/* About the Project */}
-      <GradientSection variant="hero" padding="md" className="space-y-6">
+      <section className="space-y-6">
         <h2 className="text-xl md:text-2xl font-semibold">Why I Built This</h2>
         <Card>
           <CardHeader className="space-y-3">
@@ -405,7 +405,7 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      </GradientSection>
+      </section>
 
       {/* Token Test Section - Remove this after debugging */}
       {/* <section className="space-y-6">
