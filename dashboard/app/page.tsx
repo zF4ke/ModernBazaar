@@ -88,6 +88,7 @@ export default function LandingPage() {
               </div>
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
                 Flip smarter in the{' '}
+                <br></br>
                 <span className="bg-gradient-to-r from-primary to-primary/75 bg-clip-text text-transparent">
                   Hypixel Bazaar
                 </span>
