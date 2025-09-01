@@ -8,7 +8,7 @@ interface GradientSectionProps {
   as?: ElementType
   variant?: 'hero' | 'glass' | 'subtle' | 'intense'
   className?: string
-  padding?: 'none' | 'sm' | 'md' | 'lg'
+  padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   rounded?: boolean
   withBorder?: boolean
   backdropBlur?: 'none' | 'sm' | 'md'
@@ -34,7 +34,9 @@ const PADDING: Record<NonNullable<GradientSectionProps['padding']>, string> = {
   none: '',
   sm: 'p-4 md:p-5',
   md: 'p-6 md:p-8',
-  lg: 'p-8 md:p-10'
+  lg: 'p-8 md:p-10',
+  xl: 'p-12 md:p-14',
+  '2xl': 'p-16 md:p-18'
 }
 
 const BLUR: Record<NonNullable<GradientSectionProps['backdropBlur']>, string> = {
