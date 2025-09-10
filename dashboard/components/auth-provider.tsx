@@ -12,8 +12,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE
   // Compute redirect URI at runtime so it matches current origin
   const redirectUri = typeof window !== 'undefined'
-    ? window.location.origin
-    : process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI
+    ? `${window.location.origin}/auth/callback`
+    : (process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI
+      ? `${process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI}/auth/callback`
+      : undefined)
 
   if (!domain || !clientId || !audience) {
     throw new Error(

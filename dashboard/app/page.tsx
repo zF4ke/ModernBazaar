@@ -21,6 +21,16 @@ export default function LandingPage() {
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({})
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.has('code') && params.has('state')) {
+      const newUrl = `${window.location.origin}/auth/callback?${params.toString()}`
+      window.location.replace(newUrl)
+      return
+    }
+  }, [])
+
+  useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 0)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -88,6 +98,7 @@ export default function LandingPage() {
               </div>
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
                 Flip smarter in the{' '}
+                <br></br>
                 <span className="bg-gradient-to-r from-primary to-primary/75 bg-clip-text text-transparent">
                   Hypixel Bazaar
                 </span>
