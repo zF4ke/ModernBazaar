@@ -107,12 +107,7 @@ export default function ProfilePage() {
               <AvatarFallback className="text-xl">{initials}</AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="truncate text-2xl font-bold tracking-tight">{user?.name || 'Trader'}</h1>
-                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${tier.badge}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${tier.dot}`} />{tier.label}
-                </span>
-              </div>
+              <h1 className="truncate text-2xl font-bold tracking-tight">{user?.name || 'Trader'}</h1>
               <p className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="h-4 w-4 shrink-0" /><span className="truncate">{user?.email}</span>
               </p>
