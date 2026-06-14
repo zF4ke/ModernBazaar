@@ -27,12 +27,12 @@ const LIVE_STRATEGIES = [
   },
   {
     title: "Bazaar Manipulation", icon: Crosshair,
-    accent: "text-purple-400", tint: "bg-purple-500/15", glow: "bg-purple-500/25", ring: "ring-purple-500/40",
-    blurb: "Corner a thin market, set the price yourself, and follow the exact playbook to pull it off safely.",
+    accent: "text-purple-300", tint: "bg-purple-500/15", glow: "bg-purple-500/25", ring: "ring-purple-400/40",
+    blurb: "This is where the absurd money is. Take control of a thin market's supply, set your own price, and follow the exact playbook to pull it off.",
     points: [
-      "Find the thin markets you can actually control on your budget",
-      "Cost to corner, break-even after tax, and your target price",
-      "Know how long it takes to sell out, so your exit is planned",
+      "Find the thin markets you can fully control on your budget",
+      "Cost to corner, how high you can push the price, and your profit",
+      "Know exactly how much you stand to make and when to cash out",
     ],
   },
 ]
@@ -394,17 +394,17 @@ export default function LandingPage() {
             </Card>
 
             {/* Elite Plan */}
-            <Card className="relative h-full flex flex-col border-2 border-purple-500/30 hover:border-purple-500/60 transition-all duration-200 hover:shadow-lg">
+            <Card className="relative h-full flex flex-col border-2 border-purple-400/30 hover:border-purple-400/60 transition-all duration-200 hover:shadow-lg">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
-                <Badge className="bg-purple-600 text-white px-3 py-1 shadow-lg hover:bg-purple-600">
+                <Badge className="bg-purple-500 text-white px-3 py-1 shadow-lg hover:bg-purple-500">
                   <Trophy className="h-3 w-3 mr-1" />
                   For Experts
                 </Badge>
               </div>
-              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-500/15 blur-3xl" />
+              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-400/15 blur-3xl" />
               <CardHeader className="text-center space-y-4 pt-9 relative z-10">
                 <div className="mx-auto w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-purple-400" />
+                  <Zap className="h-6 w-6 text-purple-300" />
                 </div>
                 <div>
                   <CardTitle className="text-xl">Elite</CardTitle>
@@ -418,8 +418,8 @@ export default function LandingPage() {
               <CardContent className="flex-1 flex flex-col relative z-10">
                 <div className="flex-1 space-y-4">
                   <div>
-                    <div className="flex items-center gap-2 text-base font-bold text-purple-400"><Crosshair className="h-4 w-4 shrink-0" />Bazaar Manipulation</div>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">The full cornering playbook: cost to corner, break-even after tax, the buy/sell ladder, and exactly when to exit.</p>
+                    <div className="flex items-center gap-2 text-base font-bold text-purple-300"><Crosshair className="h-4 w-4 shrink-0" />Bazaar Manipulation</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Where the real money is. Take control of the supply, set your own price, and follow the full play: cost to corner, how high to push it, and exactly when to cash out.</p>
                   </div>
                   <div>
                     <div className="text-sm font-semibold">Priority support</div>
@@ -429,7 +429,7 @@ export default function LandingPage() {
                 <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
                   <Plus className="h-4 w-4 shrink-0" /><span>Everything in Flipper</span>
                 </div>
-                <Button asChild className="mt-5 w-full border-purple-500/40 text-purple-300 hover:bg-purple-500/10" variant="outline">
+                <Button asChild className="mt-5 w-full border-purple-400/40 text-purple-200 hover:bg-purple-400/10" variant="outline">
                   <Link href="/dashboard">Choose Elite</Link>
                 </Button>
               </CardContent>
