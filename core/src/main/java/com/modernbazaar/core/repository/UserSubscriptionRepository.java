@@ -3,6 +3,8 @@ package com.modernbazaar.core.repository;
 import com.modernbazaar.core.domain.UserSubscription;
 import com.modernbazaar.core.repository.projection.DayCountRow;
 import com.modernbazaar.core.repository.projection.LabelCountRow;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +14,8 @@ import java.util.Optional;
 
 public interface UserSubscriptionRepository extends JpaRepository<UserSubscription, Long> {
     Optional<UserSubscription> findFirstByUserIdOrderByIdDesc(String userId);
+
+    Page<UserSubscription> findByUserIdContainingIgnoreCase(String userId, Pageable pageable);
 
     /* ───────────────────── admin analytics ───────────────────── */
 

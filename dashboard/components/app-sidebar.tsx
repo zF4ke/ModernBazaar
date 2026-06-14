@@ -57,6 +57,7 @@ export function AppSidebar() {
       label: "Admin",
       items: [
         { title: "Analytics", url: "/dashboard/admin/analytics", icon: BarChart3 },
+        { title: "Users", url: "/dashboard/admin/users", icon: User },
         { title: "Plans", url: "/dashboard/admin/plans", icon: Shield },
         { title: "Endpoints", url: "/dashboard/admin/endpoints", icon: Code },
         { title: "Settings", url: "/dashboard/admin/settings", icon: Settings },
