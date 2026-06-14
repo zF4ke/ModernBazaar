@@ -2,19 +2,20 @@
 
 Adversarial multi-agent audit of how someone could make Modern Bazaar lose money or
 get paid value for free. **17 of 24 findings confirmed real.** Grouped by theme with
-the remediation plan. The headline issue: **billing state and entitlement are
-decoupled, and access is never revoked.**
+the remediation plan. The headline issue **(now fixed, see §A): billing state and
+entitlement *were* decoupled, and access was never revoked.**
 
 > Context: access is gated by Auth0 token scopes (`use:bazaar-flipping`,
-> `use:bazaar-manipulation`). The Lemon Squeezy webhook only writes `plan_slug` to our
-> DB — it never touches Auth0. So the DB "knows" who paid, but the token (the only
-> thing actually enforced) doesn't, and nothing downgrades on cancel/refund.
+> `use:bazaar-manipulation`). At audit time the Lemon Squeezy webhook only wrote
+> `plan_slug` to our DB and never touched Auth0, so the DB knew who paid but the token
+> (the only thing enforced) didn't. **This is now wired up** — the webhook syncs the
+> Auth0 role on upgrade/cancel (§A).
 
 ---
 
-## A. Entitlement ↔ billing are decoupled (the big one) — findings 1–7, 14, 15, 17
+## A. Entitlement ↔ billing were decoupled (the big one) — findings 1–7, 14, 15, 17 — ✅ FIXED
 
-**What's wrong**
+**What was wrong (at audit time)**
 - `SubscriptionService.applyProviderWebhook` only sets `plan_slug`/`status` in the DB; it makes **no Auth0 role/permission call**. The only role code that exists is `Auth0ManagementService.assignFreeRole` (first login). There is **no** `assignFlipperRole`/`assignEliteRole` and **no** `removeRoles`.
 - So today the system **fails *closed*** (good news): a free user's token has no paid scope → 403 on paid endpoints. **Nobody gets paid features for free** out of the box.
 - The bad news: a **paying** user also gets nothing in code — their token isn't upgraded unless something *outside the repo* (manual Auth0 assignment) grants it. → refunds, support load.

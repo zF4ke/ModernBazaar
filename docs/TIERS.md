@@ -11,8 +11,8 @@ realistic feature split (only things we can actually deliver) plus an honest
 | Live Bazaar prices | ✓ | ✓ | ✓ | public | n/a (free) |
 | Item catalog (Bazaar + Skyblock) | ✓ | ✓ | ✓ | public | n/a (free) |
 | Favorites & search | ✓ | ✓ | ✓ | client-side | n/a (free) |
-| **Bazaar Flipping finder** (profit/hr score, filters, presets, budget sizing) | — | ✓ | ✓ | scope `use:bazaar-flipping` on `/api/strategies/flipping` | ✅ endpoint enforced — ⚠️ **but the scope is never granted on payment** (see below) |
-| **Bazaar Manipulation** (corner plan, break-even, ladder, sell-through) | — | — | ✓ | scope `use:bazaar-manipulation` on `/api/strategies/manipulation` | ✅ endpoint enforced — ⚠️ same grant gap |
+| **Bazaar Flipping finder** (profit/hr score, filters, presets, budget sizing) | no | yes | yes | scope `use:bazaar-flipping` on `/api/strategies/flipping` | ✅ endpoint enforced; **paying grants the scope** via `syncPlanRoles` (needs the Auth0 **Flipper** role configured) |
+| **Bazaar Manipulation** (corner plan, break-even, ladder, sell-through) | no | no | yes | scope `use:bazaar-manipulation` on `/api/strategies/manipulation` | ✅ endpoint enforced; granted on payment, revoked on cancel (needs the Auth0 **Elite** role configured) |
 | Priority support | — | — | ✓ | manual / ops | manual |
 | Deeper price history (48h → extended) | 48h | deeper | extended | — | ❌ **NOT enforced** — there's no per-tier history limit in code |
 
