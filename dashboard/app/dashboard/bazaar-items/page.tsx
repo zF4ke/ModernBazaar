@@ -338,6 +338,7 @@ export default function BazaarItemsPage() {
             </div>
           )}
           
+          <div className="overflow-x-auto">
           <Table className="my-4">
             <TableHeader>
               <TableRow>
@@ -421,6 +422,7 @@ export default function BazaarItemsPage() {
               )}
             </TableBody>
           </Table>
+          </div>
 
           {/* Bottom Pagination Controls */}
           {!isLoading && totalPages > 1 && (
