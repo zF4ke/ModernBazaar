@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,32 @@ public class SubscriptionService {
 
     public Optional<UserSubscription> findCurrentForUser(String userId) {
         return userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId);
+    }
+
+    /**
+     * The feature scopes a user is actually entitled to, derived from their DB plan
+     * (the source of truth) — NOT the Auth0 token, which can be stale/misconfigured.
+     * Free gets market data only; flipper adds flipping; elite adds manipulation.
+     * A cancelled plan keeps access until the period end.
+     */
+    @Transactional(readOnly = true)
+    public Set<String> entitledScopes(String userId) {
+        Set<String> scopes = new LinkedHashSet<>();
+        scopes.add("read:market_data"); // every signed-in user, including free
+        var sub = findCurrentForUser(userId).orElse(null);
+        if (sub == null) return scopes;
+        boolean active = "active".equalsIgnoreCase(sub.getStatus())
+                || ("canceled".equalsIgnoreCase(sub.getStatus()) && sub.getCurrentPeriodEnd() != null
+                    && sub.getCurrentPeriodEnd().isAfter(OffsetDateTime.now()));
+        if (!active) return scopes;
+        String plan = sub.getPlanSlug() == null ? "free" : sub.getPlanSlug().toLowerCase();
+        if (plan.equals("flipper") || plan.equals("elite")) scopes.add("use:bazaar-flipping");
+        if (plan.equals("elite")) scopes.add("use:bazaar-manipulation");
+        return scopes;
+    }
+
+    public boolean isEntitled(String userId, String scope) {
+        return entitledScopes(userId).contains(scope);
     }
 
     @Transactional

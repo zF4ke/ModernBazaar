@@ -125,6 +125,23 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Access denied (e.g. a feature not included in the user's plan) -> 403.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    protected ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex,
+            WebRequest request) {
+
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.FORBIDDEN.value(),
+                ex.getMessage() == null ? "Access denied" : ex.getMessage(),
+                null
+        );
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
+    /**
      * Catch-all for unexpected exceptions not handled by specific handlers.
      * 
      * @param ex The unexpected exception

@@ -6,13 +6,16 @@ import com.modernbazaar.core.api.dto.ManipulationOpportunityResponseDTO;
 import com.modernbazaar.core.api.dto.PagedResponseDTO;
 import com.modernbazaar.core.service.StrategyFlippingService;
 import com.modernbazaar.core.service.StrategyManipulationService;
+import com.modernbazaar.core.service.SubscriptionService;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -35,6 +38,14 @@ public class StrategiesController {
 
     private final StrategyFlippingService flipping;
     private final StrategyManipulationService manipulation;
+    private final SubscriptionService subscriptions;
+
+    /** Gate a feature on the user's actual DB plan (not the token scope). */
+    private void require(Jwt jwt, String scope) {
+        if (jwt == null || !subscriptions.isEntitled(jwt.getSubject(), scope)) {
+            throw new AccessDeniedException("Your plan doesn't include this feature");
+        }
+    }
 
     /**
      * Lists bazaar flipping opportunities based on current market conditions.
@@ -68,6 +79,7 @@ public class StrategiesController {
             responses = @ApiResponse(responseCode = "200"))
     @RateLimiter(name = "bazaarEndpoint")
     public PagedResponseDTO<FlipOpportunityResponseDTO> listFlipping(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Double minSell,
             @RequestParam(required = false) Double maxSell,
@@ -87,6 +99,7 @@ public class StrategiesController {
             @RequestParam(defaultValue = "0")  Integer page,
             @RequestParam(defaultValue = "50") Integer limit
     ) {
+        require(jwt, "use:bazaar-flipping");
         var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, minSpread,
                                            maxTime, minUnitsPerHour, maxUnitsPerHour);
         return flipping.listWithAdvancedFilters(filter, Optional.ofNullable(sort), page, limit, budget, horizonHours,
@@ -122,6 +135,7 @@ public class StrategiesController {
             responses = @ApiResponse(responseCode = "200"))
     @RateLimiter(name = "bazaarEndpoint")
     public PagedResponseDTO<ManipulationOpportunityResponseDTO> listManipulation(
+            @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) Double minSell,
             @RequestParam(required = false) Double maxSell,
@@ -137,6 +151,7 @@ public class StrategiesController {
             @RequestParam(defaultValue = "0")  Integer page,
             @RequestParam(defaultValue = "50") Integer limit
     ) {
+        require(jwt, "use:bazaar-manipulation");
         var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, null);
         return manipulation.list(filter, Optional.ofNullable(sort), page, limit,
                                  budget, roi, taxRate, sellWallFactor, minDemandSupplyRatio, minProfit);

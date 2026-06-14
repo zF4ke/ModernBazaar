@@ -220,8 +220,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // libera preflight
                         .requestMatchers(getPublicEndpoints()).permitAll()
                         // Strategy-specific permissions: require feature scopes
-                        .requestMatchers("/api/strategies/flipping", "/api/strategies/flipping/**").hasAuthority(SCOPE_USE_BAZAAR_FLIPPING)
-                        .requestMatchers("/api/strategies/manipulation", "/api/strategies/manipulation/**").hasAuthority(SCOPE_USE_BAZAAR_MANIPULATION)
+                        // Feature access is enforced by DB plan in StrategiesController
+                        // (the source of truth), so here we only require authentication.
+                        .requestMatchers("/api/strategies/flipping", "/api/strategies/flipping/**").authenticated()
+                        .requestMatchers("/api/strategies/manipulation", "/api/strategies/manipulation/**").authenticated()
                         .requestMatchers(getAdminEndpoints()).hasAuthority(SCOPE_MANAGE_PLANS)
                         // Fallback for other strategy endpoints (legacy tier-based gating)
                         .requestMatchers(getStrategyEndpoints()).hasAnyAuthority(TIER_PERMISSIONS)

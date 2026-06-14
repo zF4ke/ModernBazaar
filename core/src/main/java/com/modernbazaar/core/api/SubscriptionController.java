@@ -137,21 +137,18 @@ public class SubscriptionController {
         try {
             String userId = jwt.getSubject();
             log.debug("Fetching permissions for user: {}", userId);
-            
-            // Extract permissions from JWT claims
-            List<String> permissions = extractPermissionsFromJwt(jwt);
-            
-            // Get subscription info for tier and expiry
+
             var subscription = subscriptionService.ensureFreePlan(userId);
             var plan = planRepository.findBySlug(subscription.getPlanSlug()).orElse(null);
-            
             String subscriptionTier = plan != null ? plan.getSlug() : "free";
-            
-            log.debug("Successfully retrieved permissions for user: {} - {} permissions, tier: {}", 
-                     userId, permissions.size(), subscriptionTier);
-            
+
+            // Permissions reflect the user's actual DB plan (the source of truth), not
+            // the possibly-stale token. Admin (manage:plans) still comes from the token.
+            Set<String> entitled = new LinkedHashSet<>(subscriptionService.entitledScopes(userId));
+            if (extractPermissionsFromJwt(jwt).contains("manage:plans")) entitled.add("manage:plans");
+
             return UserPermissionsDTO.builder()
-                .permissions(permissions)
+                .permissions(List.copyOf(entitled))
                 .subscriptionTier(subscriptionTier)
                 .expiresAt(subscription.getCurrentPeriodEnd())
                 .build();

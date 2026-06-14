@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Users as UsersIcon, RefreshCw, Search, ChevronLeft, ChevronRight, CalendarPlus, MoreHorizontal, Copy, Trash2, Mail, Layers, Check, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
+import { Users as UsersIcon, RefreshCw, Search, ChevronLeft, ChevronRight, MoreHorizontal, Copy, Trash2, Mail, Layers, Check, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -35,6 +35,15 @@ const STATUS_COLOR: Record<string, string> = {
   active: "text-emerald-400", past_due: "text-amber-400", canceled: "text-red-400", incomplete: "text-muted-foreground",
 }
 const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleDateString() : "—")
+const relativeExpiry = (s: string | null) => {
+  if (!s) return { label: "—", tone: "text-muted-foreground" }
+  const ms = new Date(s).getTime() - Date.now()
+  if (ms <= 0) return { label: "expired", tone: "text-red-400" }
+  const days = Math.ceil(ms / 86_400_000)
+  if (days <= 7) return { label: `in ${days} day${days === 1 ? "" : "s"}`, tone: "text-amber-400" }
+  if (days < 45) return { label: `in ${days} days`, tone: "text-muted-foreground" }
+  return { label: `in ${Math.round(days / 30)} months`, tone: "text-muted-foreground" }
+}
 const titleCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ") : s)
 
 export default function AdminUsersPage() {
@@ -125,7 +134,7 @@ export default function AdminUsersPage() {
                 <SortHead field="userId" sortBy={sortBy} dir={dir} onSort={toggleSort}>User</SortHead>
                 <SortHead field="planSlug" sortBy={sortBy} dir={dir} onSort={toggleSort}>Plan</SortHead>
                 <SortHead field="status" sortBy={sortBy} dir={dir} onSort={toggleSort}>Status</SortHead>
-                <SortHead field="currentPeriodEnd" sortBy={sortBy} dir={dir} onSort={toggleSort}>Renews</SortHead>
+                <SortHead field="currentPeriodEnd" sortBy={sortBy} dir={dir} onSort={toggleSort}>Expires</SortHead>
                 <SortHead field="createdAt" sortBy={sortBy} dir={dir} onSort={toggleSort}>Joined</SortHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -151,7 +160,9 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell><Badge variant="outline" className={`text-[10px] ${PLAN_COLOR[u.planSlug] ?? "border-zinc-600 text-zinc-400"}`}>{titleCase(u.planSlug)}</Badge></TableCell>
                       <TableCell><span className={`inline-flex items-center gap-1.5 text-xs font-medium ${STATUS_COLOR[u.status] ?? "text-foreground"}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{titleCase(u.status)}</span></TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{fmtDate(u.currentPeriodEnd)}</TableCell>
+                      <TableCell className={`text-sm ${relativeExpiry(u.currentPeriodEnd).tone}`} title={u.currentPeriodEnd ? new Date(u.currentPeriodEnd).toLocaleString() : "No expiry"}>
+                        {relativeExpiry(u.currentPeriodEnd).label}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{fmtDate(u.createdAt)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -173,9 +184,6 @@ export default function AdminUsersPage() {
                                 ))}
                               </DropdownMenuSubContent>
                             </DropdownMenuSub>
-                            <DropdownMenuItem onClick={() => mutate("/api/admin/users/extend", { userId: u.userId, days: 30 }, `Extended ${u.name || u.email || "user"} by 30 days`, u.userId + "-ext")}>
-                              <CalendarPlus className="h-4 w-4 mr-2" />Extend 30 days
-                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => copyVal(u.userId, "User ID")}><Copy className="h-4 w-4 mr-2" />Copy user ID</DropdownMenuItem>
                             {u.email && <DropdownMenuItem onClick={() => copyVal(u.email!, "Email")}><Mail className="h-4 w-4 mr-2" />Copy email</DropdownMenuItem>}
