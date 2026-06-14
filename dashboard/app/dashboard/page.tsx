@@ -147,7 +147,7 @@ export default function Dashboard() {
           <ToolCard
             icon={Shuffle} accent="text-emerald-400" tint="bg-emerald-500/15"
             title="Bazaar Flipping"
-            description="Find buy/sell gaps worth taking — ranked by profit per hour after tax, with risk flags and fill-time estimates."
+            description="Find buy/sell gaps worth taking, ranked by profit per hour after tax, with risk flags and fill-time estimates."
             href="/dashboard/strategies/flipping"
           />
           <ToolCard
@@ -159,7 +159,7 @@ export default function Dashboard() {
         </div>
 
         <p className="text-sm text-muted-foreground">
-          More tools in progress — {ROADMAP.join(" · ")}.{" "}
+          More tools in progress: {ROADMAP.join(" · ")}.{" "}
           <Link href="/dashboard/strategies" className="text-foreground/80 hover:text-foreground underline underline-offset-2">See the roadmap</Link>
         </p>
       </section>

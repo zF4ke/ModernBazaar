@@ -9,11 +9,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { FeatureCard } from "@/components/feature-card"
-import { ExpandableFeatureCard, Accent, ExpandableFeatureGrid } from "@/components/expandable-feature-card"
 import { GradientSection } from "@/components/gradient-section"
 import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Crosshair, Target, DollarSign, Activity } from "lucide-react"
 import { useBackendHealthContext } from '@/components/backend-health-provider'
 import { BrandMark } from "@/components/brand-mark"
+
+const STRATEGIES = [
+  { title: "Bazaar Flipping", icon: Shuffle, color: "text-emerald-400", tint: "bg-emerald-500/15", live: true,
+    points: ["Buy and sell gaps ranked by profit per hour", "How much to buy for your budget", "Risk flags and fill-time estimates"] },
+  { title: "Bazaar Manipulation", icon: Crosshair, color: "text-blue-400", tint: "bg-blue-500/15", live: true,
+    points: ["Spot thin markets you can corner", "A full plan: cost, resell price and profit", "How long it takes to sell out"] },
+  { title: "Craft Flipping", icon: Hammer, color: "text-muted-foreground", tint: "bg-muted", live: false,
+    points: ["Compare craft cost to sell price", "How many to craft for your budget", "Profit after fees and time to sell"] },
+  { title: "NPC Flipping", icon: Coins, color: "text-muted-foreground", tint: "bg-muted", live: false,
+    points: ["Best items for the daily NPC limit", "How to spend your 200M cap", "Buy low, sell straight to NPCs"] },
+  { title: "Budget Planner", icon: DollarSign, color: "text-muted-foreground", tint: "bg-muted", live: false,
+    points: ["Split your coins across strategies", "Matched to your risk and limits", "See when your coins free up"] },
+  { title: "Auction House", icon: ArrowRightLeft, color: "text-muted-foreground", tint: "bg-muted", live: false,
+    points: ["Snipe underpriced listings", "Fair bid and buyout prices", "Expected profit and time to sell"] },
+]
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
@@ -164,54 +178,39 @@ export default function LandingPage() {
         </div>
       </GradientSection>
 
-      {/* What it does */}
+      {/* What you get */}
       <section className="py-12 px-4">
-        <div className="container mx-auto max-w-5xl">
+        <div className="container mx-auto max-w-6xl">
           <div className="space-y-3 mb-10 text-center">
-            <h2 className="text-2xl md:text-3xl font-bold">Two tools, live today</h2>
+            <h2 className="text-2xl md:text-3xl font-bold">What you get</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Real-time Bazaar data turned into clear, budget-aware decisions — no spreadsheets, no guesswork.
+              Real-time Bazaar data turned into clear, budget-aware calls. Two tools are live now, the rest are on the way.
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <FeatureCard backgroundStyle="glass">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15">
-                  <Shuffle className="h-5 w-5 text-emerald-400" />
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {STRATEGIES.map((s) => (
+              <FeatureCard key={s.title} backgroundStyle="glass" className={s.live ? "" : "opacity-80"}>
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.tint}`}>
+                    <s.icon className={`h-4 w-4 ${s.color}`} />
+                  </div>
+                  <h3 className="text-base font-semibold">{s.title}</h3>
+                  <span className={`ml-auto text-[10px] font-medium uppercase tracking-wide ${s.live ? "text-emerald-400" : "text-muted-foreground"}`}>
+                    {s.live ? "Live" : "Soon"}
+                  </span>
                 </div>
-                <h3 className="text-lg font-semibold">Bazaar Flipping</h3>
-                <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Live
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Find buy/sell gaps worth taking, ranked by <span className="text-foreground">profit per hour after the 1.125% tax</span>.
-                It tells you how much to buy for your budget, flags volatile or manipulated-looking prices, and estimates how long fills take.
-              </p>
-            </FeatureCard>
-
-            <FeatureCard backgroundStyle="glass">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/15">
-                  <Crosshair className="h-5 w-5 text-blue-400" />
-                </div>
-                <h3 className="text-lg font-semibold">Bazaar Manipulation</h3>
-                <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Live
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Find thin-supply, high-demand markets you can corner within budget. You get the
-                <span className="text-foreground"> full plan</span>: cost to corner, break-even after tax,
-                the buy/sell ladder, and how long it takes to sell out.
-              </p>
-            </FeatureCard>
+                <ul className="space-y-2">
+                  {s.points.map((p, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <Check className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${s.live ? "text-emerald-500" : "text-muted-foreground/40"}`} />
+                      <span>{p}</span>
+                    </li>
+                  ))}
+                </ul>
+              </FeatureCard>
+            ))}
           </div>
-
-          <p className="text-center text-sm text-muted-foreground mt-8">
-            More on the way — craft flipping, NPC flipping, a budget planner, and auction-house tools.
-          </p>
         </div>
       </section>
 
@@ -225,15 +224,8 @@ export default function LandingPage() {
       <section id="pricing" className="py-16 px-4 cursor-default">
         <div className="container mx-auto max-w-6xl">
           <div className="space-y-3 mb-6">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-              <h2 className="text-2xl md:text-3xl font-bold">Fair, simple pricing</h2>
-              <div className="flex justify-center md:justify-end">
-                <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground">
-                  <Link href="/pricing/compare">Compare plans</Link>
-                </Button>
-              </div>
-            </div>
-            <p className="text-muted-foreground max-w-2xl">The app is still in active development — plans aren&apos;t live yet, so everything&apos;s free for now. This is where they&apos;ll land.</p>
+            <h2 className="text-2xl md:text-3xl font-bold">Fair, simple pricing</h2>
+            <p className="text-muted-foreground max-w-2xl">The app is still in active development, so plans aren&apos;t live yet and everything&apos;s free for now. This is where they&apos;ll land.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -442,8 +434,8 @@ export default function LandingPage() {
                     <span className="text-sm">Everything in Flipper</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-blue-400" />
-                    <span className="text-sm font-medium">Bazaar Manipulation</span>
+                    <Check className="h-4 w-4 text-green-500" />
+                    <span className="text-sm">Bazaar Manipulation</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
@@ -491,13 +483,13 @@ export default function LandingPage() {
                 <AccordionItem value="profit">
                   <AccordionTrigger>Will it make me money?</AccordionTrigger>
                   <AccordionContent>
-                    Maybe — it&apos;s not magic. It surfaces good setups and does the math; the market still does what it wants. Think of it as a head start, not a guarantee.
+                    Maybe, but it&apos;s not magic. It surfaces good setups and does the math; the market still does what it wants. Think of it as a head start, not a guarantee.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="how-it-ranks">
                   <AccordionTrigger>How does it pick flips?</AccordionTrigger>
                   <AccordionContent>
-                    It looks at the spread, how much actually trades each hour, how crowded the item is, and how jumpy the price has been — then ranks by expected profit per hour after tax. You can sort by raw profit instead if you&apos;d rather.
+                    It looks at the spread, how much actually trades each hour, how crowded the item is, and how jumpy the price has been, then ranks by expected profit per hour after tax. You can sort by raw profit instead if you&apos;d rather.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="data-refresh">
@@ -509,7 +501,7 @@ export default function LandingPage() {
                 <AccordionItem value="getting-started">
                   <AccordionTrigger>How do I start?</AccordionTrigger>
                   <AccordionContent>
-                    Open the dashboard, set your budget, and look at the top of the Flipping list. Start with items that trade a lot — they fill faster and are harder to get stuck in.
+                    Open the dashboard, set your budget, and look at the top of the Flipping list. Start with items that trade a lot, since they fill faster and are harder to get stuck in.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="roadmap">
@@ -536,7 +528,7 @@ export default function LandingPage() {
         <div className="container mx-auto max-w-3xl text-center">
           <h2 className="text-2xl md:text-3xl font-bold">Stop guessing prices.</h2>
           <p className="text-muted-foreground mt-2">
-            See what&apos;s actually worth flipping right now — and how much you stand to make.
+            See what&apos;s actually worth flipping right now, and how much you stand to make.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-5">
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg px-8 py-3 text-base font-medium">
