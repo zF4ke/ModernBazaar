@@ -432,46 +432,6 @@ public class FlippingScorer {
         return out;
     }
 
-    private List<FlipOpportunityResponseDTO> applyAdvancedFilters(
-            List<FlipOpportunityResponseDTO> opportunities,
-            Double maxTime,
-            Double minUnitsPerHour,
-            Double maxUnitsPerHour,
-            Double maxCompetitionPerHour,
-            Double maxRiskScore) {
-
-        return opportunities.stream()
-                .filter(opp -> {
-                    // Filter by maximum total time
-                    if (maxTime != null && opp.suggestedTotalFillHours() != null) {
-                        if (opp.suggestedTotalFillHours() > maxTime) return false;
-                    }
-
-                    // Filter by minimum units per hour
-                    if (minUnitsPerHour != null && opp.suggestedUnitsPerHour() != null) {
-                        if (opp.suggestedUnitsPerHour() < minUnitsPerHour) return false;
-                    }
-
-                    // Filter by maximum units per hour
-                    if (maxUnitsPerHour != null && opp.suggestedUnitsPerHour() != null) {
-                        if (opp.suggestedUnitsPerHour() > maxUnitsPerHour) return false;
-                    }
-
-                    // Filter by maximum competition per hour
-                    if (maxCompetitionPerHour != null && opp.competitionPerHour() != null) {
-                        if (opp.competitionPerHour() > maxCompetitionPerHour) return false;
-                    }
-
-                    // Filter by maximum risk score
-                    if (maxRiskScore != null && opp.riskScore() != null) {
-                        if (opp.riskScore() > maxRiskScore) return false;
-                    }
-
-                    return true;
-                })
-                .collect(Collectors.toList());
-    }
-
     private Map<String, String> preloadNames(Set<String> ids) {
         return itemRepo.findAllByProductIdIn(ids).stream()
                 .filter(bi -> bi.getSkyblockItem() != null)

@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User, Boxes } from "lucide-react"
+import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User, Boxes, Crosshair } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAdminAccess } from "@/hooks/use-admin-access"
@@ -42,6 +42,7 @@ export function AppSidebar() {
       items: [
         { title: "Strategies", url: "/dashboard/strategies", icon: Compass },
         { title: "Flipping", url: "/dashboard/strategies/flipping", icon: Shuffle },
+        { title: "Manipulation", url: "/dashboard/strategies/manipulation", icon: Crosshair },
       ],
     },
     {

@@ -21,6 +21,7 @@ export const PERMISSIONS = {
   
   // Feature-specific Permissions
   USE_BAZAAR_FLIPPING: 'use:bazaar-flipping',
+  USE_BAZAAR_MANIPULATION: 'use:bazaar-manipulation',
 } as const
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS]

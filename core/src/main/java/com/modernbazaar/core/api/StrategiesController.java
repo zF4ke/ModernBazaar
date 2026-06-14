@@ -2,8 +2,10 @@ package com.modernbazaar.core.api;
 
 import com.modernbazaar.core.api.dto.BazaarItemFilterDTO;
 import com.modernbazaar.core.api.dto.FlipOpportunityResponseDTO;
+import com.modernbazaar.core.api.dto.ManipulationOpportunityResponseDTO;
 import com.modernbazaar.core.api.dto.PagedResponseDTO;
 import com.modernbazaar.core.service.StrategyFlippingService;
+import com.modernbazaar.core.service.StrategyManipulationService;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,6 +34,7 @@ import java.util.Optional;
 public class StrategiesController {
 
     private final StrategyFlippingService flipping;
+    private final StrategyManipulationService manipulation;
 
     /**
      * Lists bazaar flipping opportunities based on current market conditions.
@@ -90,5 +93,52 @@ public class StrategiesController {
                                                maxTime, minUnitsPerHour, maxUnitsPerHour, maxCompetitionPerHour, maxRiskScore,
                                                Boolean.TRUE.equals(disableCompetitionPenalties),
                                                Boolean.TRUE.equals(disableRiskPenalties));
+    }
+
+    /**
+     * Lists Bazaar Manipulation opportunities: items with thin supply and strong demand
+     * that are cheap enough to corner within {@code budget}. Each result includes the full
+     * plan — cost to corner, break-even resell price after tax, the inflated buy order and
+     * sell wall, the doublings needed, expected profit and sell-through time.
+     *
+     * @param q          Search query for item names / ids
+     * @param minSell    Minimum weighted 2% sell price filter
+     * @param maxSell    Maximum weighted 2% sell price filter
+     * @param minBuy     Minimum weighted 2% buy price filter
+     * @param maxBuy     Maximum weighted 2% buy price filter
+     * @param budget     Max coins to corner the market (items costing more are hidden)
+     * @param roi        Buy-order inflation multiplier vs the break-even resell price (default 2.0 = double up)
+     * @param taxRate    Selling tax assumed in the math (default 0.01125 = 1.125%)
+     * @param sellWallFactor Sell wall = targetBuyOrder * factor (default 2.0)
+     * @param minDemandSupplyRatio Hide items whose demand/supply ratio is below this
+     * @param minProfit  Hide items whose total expected profit is below this
+     * @param sort       Sort field: score | profit | ratio | cornerCost | demand
+     * @param page       Page number (0-based)
+     * @param limit      Items per page
+     */
+    @GetMapping("/manipulation")
+    @Operation(summary = "Bazaar Manipulation opportunities",
+            description = "Items with thin supply and strong demand that can be cornered within budget, with a full execution plan.",
+            responses = @ApiResponse(responseCode = "200"))
+    @RateLimiter(name = "bazaarEndpoint")
+    public PagedResponseDTO<ManipulationOpportunityResponseDTO> listManipulation(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Double minSell,
+            @RequestParam(required = false) Double maxSell,
+            @RequestParam(required = false) Double minBuy,
+            @RequestParam(required = false) Double maxBuy,
+            @RequestParam(required = false) Double budget,
+            @RequestParam(required = false) Double roi,
+            @RequestParam(required = false) Double taxRate,
+            @RequestParam(required = false) Double sellWallFactor,
+            @RequestParam(required = false) Double minDemandSupplyRatio,
+            @RequestParam(required = false) Double minProfit,
+            @RequestParam(required = false) String sort,
+            @RequestParam(defaultValue = "0")  Integer page,
+            @RequestParam(defaultValue = "50") Integer limit
+    ) {
+        var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, null);
+        return manipulation.list(filter, Optional.ofNullable(sort), page, limit,
+                                 budget, roi, taxRate, sellWallFactor, minDemandSupplyRatio, minProfit);
     }
 }

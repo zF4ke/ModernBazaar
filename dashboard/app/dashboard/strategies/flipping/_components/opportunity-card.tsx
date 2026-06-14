@@ -131,24 +131,24 @@ export function OpportunityCard({ o, query, bazaarTaxRate, fav, onToggleFav, exp
               </span>
             )}
           </div>
-          {(o as any).suggestedTotalFillHours || (o as any).suggestedBuyFillHours || (o as any).suggestedSellFillHours ? (
+          {o.suggestedTotalFillHours || o.suggestedBuyFillHours || o.suggestedSellFillHours ? (
             <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
-              {(o as any).suggestedBuyFillHours && (
+              {o.suggestedBuyFillHours && (
                 <div className="flex items-center gap-1">
                   <ArrowDown className="h-3 w-3 text-red-400" />
-                  <span>Buy: {formatTime((o as any).suggestedBuyFillHours)}</span>
+                  <span>Buy: {formatTime(o.suggestedBuyFillHours)}</span>
                 </div>
               )}
-              {(o as any).suggestedSellFillHours && (
+              {o.suggestedSellFillHours && (
                 <div className="flex items-center gap-1">
                   <ArrowUp className="h-3 w-3 text-emerald-400" />
-                  <span>Sell: {formatTime((o as any).suggestedSellFillHours)}</span>
+                  <span>Sell: {formatTime(o.suggestedSellFillHours)}</span>
                 </div>
               )}
-              {(o as any).suggestedTotalFillHours && (
+              {o.suggestedTotalFillHours && (
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3 text-muted-foreground" />
-                  <span>Total: {formatTime((o as any).suggestedTotalFillHours)}</span>
+                  <span>Total: {formatTime(o.suggestedTotalFillHours)}</span>
                 </div>
               )}
             </div>

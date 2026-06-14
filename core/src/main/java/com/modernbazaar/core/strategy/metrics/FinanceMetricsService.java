@@ -5,6 +5,7 @@ import com.modernbazaar.core.domain.BazaarItemHourSummary;
 import com.modernbazaar.core.repository.BazaarFinanceMetricsRepository;
 import com.modernbazaar.core.repository.BazaarItemHourSummaryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class FinanceMetricsService {
 
@@ -83,7 +85,7 @@ public class FinanceMetricsService {
         // Determinar combos faltantes (se algum) e fazer UMA query grande até maxWindow para fallback
         boolean anyMissing = result.entrySet().stream().anyMatch(e -> e.getValue().size() < productIds.size());
         if (anyMissing) {
-            System.out.println("FinanceMetrics multi-window fallback: windows=" + winSet + " maxWindow=" + maxWindow);
+            log.debug("FinanceMetrics multi-window fallback: windows={} maxWindow={}", winSet, maxWindow);
             List<BazaarItemHourSummary> rows = hourRepo.findLastWindowByProductIds(productIds, maxWindow);
             if (!rows.isEmpty()) {
                 Map<String, List<BazaarItemHourSummary>> grouped = rows.stream().collect(Collectors.groupingBy(BazaarItemHourSummary::getProductId));

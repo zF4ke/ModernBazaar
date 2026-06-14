@@ -89,7 +89,10 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
     - [x] Caching and performance optimizations
 - [ ] NPC Flipping
 - [ ] Craft Flipping
-- [ ] Bazaar Manipulation
+- [x] Bazaar Manipulation
+    - [x] Manipulation Service and Scorer (corner-cost, break-even-after-tax, inflated buy/sell orders, doublings, sell-through ETA)
+    - [x] `GET /api/strategies/manipulation` endpoint with budget/ROI/tax/ratio filters
+    - [x] Manipulation route with step-by-step plan cards
 - [ ] Budget Planner
 - [ ] Auction House
 

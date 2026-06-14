@@ -32,29 +32,7 @@ public class StrategyFlippingService {
         if (page < 0) page = 0;
 
         List<FlipOpportunityResponseDTO> all = scorer.list(filter, budget, horizonHours);
-
-        // aplicar ordenação (padrão: score desc)
-        String key = sort.map(String::trim).filter(s -> !s.isEmpty()).map(String::toLowerCase).orElse("score");
-        Comparator<FlipOpportunityResponseDTO> cmp;
-        switch (key) {
-            case "spread":
-                cmp = Comparator.comparingDouble(FlipOpportunityResponseDTO::spread).reversed();
-                break;
-            case "iselldesc":
-                cmp = Comparator.comparingDouble(FlipOpportunityResponseDTO::instantSellPrice).reversed();
-                break;
-            case "ibuydesc":
-                cmp = Comparator.comparingDouble(FlipOpportunityResponseDTO::instantBuyPrice).reversed();
-                break;
-            case "profitperhour": // novo sort: lucro por hora (plano)
-                cmp = Comparator.comparingDouble((FlipOpportunityResponseDTO o) -> Optional.ofNullable(o.reasonableProfitPerHour()).orElse(0.0d)).reversed();
-                break;
-            case "score":
-            default:
-                cmp = Comparator.comparingDouble(FlipOpportunityResponseDTO::score).reversed();
-        }
-        all.sort(cmp);
-
+        all.sort(buildComparator(sort));
         return PagedResponseDTO.of(all, page, limit);
     }
 
@@ -83,29 +61,28 @@ public class StrategyFlippingService {
                                                                             maxTime, minUnitsPerHour, maxUnitsPerHour,
                                                                             maxCompetitionPerHour, maxRiskScore,
                                                                             disableCompetitionPenalties, disableRiskPenalties);
-
-        // aplicar ordenação (padrão: score desc)
-        String key = sort.map(String::trim).filter(s -> !s.isEmpty()).map(String::toLowerCase).orElse("score");
-        Comparator<FlipOpportunityResponseDTO> cmp;
-        switch (key) {
-            case "spread":
-                cmp = Comparator.comparingDouble(FlipOpportunityResponseDTO::spread).reversed();
-                break;
-            case "iselldesc":
-                cmp = Comparator.comparingDouble(FlipOpportunityResponseDTO::instantSellPrice).reversed();
-                break;
-            case "ibuydesc":
-                cmp = Comparator.comparingDouble(FlipOpportunityResponseDTO::instantBuyPrice).reversed();
-                break;
-            case "profitperhour": // novo sort: lucro por hora (plano)
-                cmp = Comparator.comparingDouble((FlipOpportunityResponseDTO o) -> Optional.ofNullable(o.reasonableProfitPerHour()).orElse(0.0d)).reversed();
-                break;
-            case "score":
-            default:
-                cmp = Comparator.comparingDouble(FlipOpportunityResponseDTO::score).reversed();
-        }
-        all.sort(cmp);
-
+        all.sort(buildComparator(sort));
         return PagedResponseDTO.of(all, page, limit);
+    }
+
+    /**
+     * Builds the result comparator for the requested sort key (default: score desc).
+     * Shared by both list endpoints so the sort options stay in one place.
+     */
+    private static Comparator<FlipOpportunityResponseDTO> buildComparator(Optional<String> sort) {
+        String key = sort.map(String::trim).filter(s -> !s.isEmpty()).map(String::toLowerCase).orElse("score");
+        return switch (key) {
+            case "spread" ->
+                    Comparator.comparingDouble(FlipOpportunityResponseDTO::spread).reversed();
+            case "iselldesc" ->
+                    Comparator.comparingDouble(FlipOpportunityResponseDTO::instantSellPrice).reversed();
+            case "ibuydesc" ->
+                    Comparator.comparingDouble(FlipOpportunityResponseDTO::instantBuyPrice).reversed();
+            case "profitperhour" -> // profit per hour (planned)
+                    Comparator.comparingDouble((FlipOpportunityResponseDTO o) ->
+                            Optional.ofNullable(o.reasonableProfitPerHour()).orElse(0.0d)).reversed();
+            default ->
+                    Comparator.comparingDouble(FlipOpportunityResponseDTO::score).reversed();
+        };
     }
 }

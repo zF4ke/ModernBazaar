@@ -33,7 +33,8 @@ import {
   Settings,
   Eye,
   Shuffle,
-  Rocket
+  Rocket,
+  Crosshair
 } from "lucide-react"
 import Link from "next/link"
 import { GradientSection } from '@/components/gradient-section'
@@ -70,10 +71,10 @@ const strategies = [
   {
     id: "bazaar-manipulation",
     title: "Bazaar Manipulation",
-    description: "Set market prices and manipulate supply to create profitable opportunities. High risk, high reward.",
-    icon: Shield,
-    status: "planned",
-    href: "#",
+    description: "Corner thin-supply, high-demand markets, set the price, and lure overpriced buy orders. High risk, high reward.",
+    icon: Crosshair,
+    status: "released",
+    href: "/dashboard/strategies/manipulation",
     color: "rose"
   },
   {
@@ -141,6 +142,25 @@ const getFAQData = (strategyId: string) => {
         {
           question: "What's the difference between the trading presets?",
           answer: "Fast (30min) maximizes profit per hour and disables risk penalties. Default (1h) balances profit with safety. Stable (6h) focuses on items with stable prices so you can hold them longer and be confident the prices won't change much, ensuring you still make profit even after several hours."
+        }
+      ]
+    case "bazaar-manipulation":
+      return [
+        {
+          question: "How does cornering the market work?",
+          answer: "We look for items with thin supply (few standing sell orders, low sell volume) but strong demand (lots of buyers per hour). We add up every visible sell offer to estimate how many coins it takes to buy out the whole market, and the average cost per unit. Once you hold all the supply, you control the price."
+        },
+        {
+          question: "What is the minimum resell price?",
+          answer: "It's your break-even after the Bazaar tax. If your average cost is C per unit and tax is 1.125%, you need to sell at C / (1 - 0.01125) just to break even. We never suggest selling below that."
+        },
+        {
+          question: "What do ROI and the doublings mean?",
+          answer: "ROI is how inflated your buy order is versus the break-even price. At 2x, your inflated buy order is twice the break-even, so when other players outbid it and you insta-sell into them, you roughly double your cornering capital. The doublings show how many times the current top bid must double to reach that inflated buy order."
+        },
+        {
+          question: "Why is this high risk?",
+          answer: "Cornering ties up a lot of capital in one item, and you rely on other players continuing to buy. They can dump their own supply, undercut your sell wall, or simply stop buying. The sell-through estimate assumes current demand holds. Only risk what you can afford to hold."
         }
       ]
     case "craft-flipping":
@@ -394,8 +414,77 @@ function TradingStrategiesContent() {
           </Card>
         )}
 
+        {/* Bazaar Manipulation Content */}
+        {activeStrategy === "bazaar-manipulation" && (
+          <>
+            <Card className="border">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-muted border">
+                    <Crosshair className="h-6 w-6 text-rose-400" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl">Bazaar Manipulation</CardTitle>
+                    <CardDescription>Corner thin markets, set the price, and lure overpriced buy orders</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">How It Works</h3>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      We look for items with <span className="text-rose-300 font-medium">thin supply</span> (few standing sell orders, low sell volume) but <span className="text-rose-300 font-medium">strong demand</span> (many buyers per hour). Those are the markets a single trader can corner.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      For each one we add up every visible sell offer to estimate the <span className="text-rose-300 font-medium">cost to buy out the whole market</span> and the average cost per unit. From there we compute your <span className="text-rose-300 font-medium">break-even resell price after tax</span>, a very-high <span className="text-rose-300 font-medium">sell wall</span> to make the item look valuable, and an <span className="text-rose-300 font-medium">inflated buy order</span> set to your target ROI so other players outbid you and you insta-sell into their overpriced orders.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      We also estimate how long it takes to offload your stock based on hourly demand, and how many times you&apos;ll need to double the current top bid to reach your inflated buy order.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      This is the highest-risk strategy we offer. It ties up large capital in one item and relies on demand holding. Use the budget filter so you only see markets you can fully corner, and only risk what you can afford to hold.
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">How to Use It</h3>
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Set your <span className="text-rose-300 font-medium">max budget</span> and a <span className="text-rose-300 font-medium">target ROI</span> (2x is a sensible default — it aims to at least double your cornering capital). Pick your Bazaar <span className="text-rose-300 font-medium">tax rate</span> so the break-even math is accurate.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Sort by <span className="text-rose-300 font-medium">recommended score</span> for the best blend of profit and demand, or by total profit, demand/supply ratio, or cheapest to corner. Expand any card for the full step-by-step plan.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-muted border">
+                    <Rocket className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <CardTitle>Getting Started</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Link href="/dashboard/strategies/manipulation" className="block md:w-1/2">
+                  <Button className="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border-rose-500/30 hover:border-rose-500/50 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
+                    <Crosshair className="h-4 w-4 mr-2" />
+                    Try Bazaar Manipulation
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
         {/* Other strategies content would go here */}
-        {!["bazaar-flipping", "craft-flipping", "npc-flipping"].includes(activeStrategy) && (
+        {!["bazaar-flipping", "craft-flipping", "npc-flipping", "bazaar-manipulation"].includes(activeStrategy) && (
           <Card className="border">
             <CardContent className="p-6">
               <div className="text-center">
@@ -407,8 +496,8 @@ function TradingStrategiesContent() {
         )}
       </div>
 
-             {/* FAQ Section - Only show for Bazaar Flipping */}
-             {activeStrategy === "bazaar-flipping" && (
+             {/* FAQ Section - shown for released strategies with curated answers */}
+             {(activeStrategy === "bazaar-flipping" || activeStrategy === "bazaar-manipulation") && (
                <Card className="border">
                  <CardHeader className="pb-4">
                    <div className="flex items-center gap-3">

@@ -94,7 +94,13 @@ public class SecurityConfig {
      * More granular than tier-based permissions.
      */
     public static final String SCOPE_USE_BAZAAR_FLIPPING = "SCOPE_use:bazaar-flipping";
-    
+
+    /**
+     * Permission to use Bazaar Manipulation strategy features.
+     * More granular than tier-based permissions.
+     */
+    public static final String SCOPE_USE_BAZAAR_MANIPULATION = "SCOPE_use:bazaar-manipulation";
+
     /**
      * Array of all tier-based permissions for easy validation.
      */
@@ -116,6 +122,7 @@ public class SecurityConfig {
             SCOPE_READ_MARKET_DATA,
             SCOPE_MANAGE_PLANS,
             SCOPE_USE_BAZAAR_FLIPPING,
+            SCOPE_USE_BAZAAR_MANIPULATION,
             SCOPE_USE_STARTER,
             SCOPE_USE_FLIPPER,
             SCOPE_USE_ELITE
@@ -205,6 +212,7 @@ public class SecurityConfig {
                         .requestMatchers(getPublicEndpoints()).permitAll()
                         // Strategy-specific permissions: require feature scopes
                         .requestMatchers("/api/strategies/flipping", "/api/strategies/flipping/**").hasAuthority(SCOPE_USE_BAZAAR_FLIPPING)
+                        .requestMatchers("/api/strategies/manipulation", "/api/strategies/manipulation/**").hasAuthority(SCOPE_USE_BAZAAR_MANIPULATION)
                         .requestMatchers(getAdminEndpoints()).hasAuthority(SCOPE_MANAGE_PLANS)
                         // Fallback for other strategy endpoints (legacy tier-based gating)
                         .requestMatchers(getStrategyEndpoints()).hasAnyAuthority(TIER_PERMISSIONS)
@@ -260,9 +268,7 @@ public class SecurityConfig {
         if (allowedMethods == null || allowedMethods.isBlank()) {
             allowedMethods = "GET,POST,PUT,DELETE,OPTIONS,PATCH";
         }
-        System.out.println("🔧 Security CORS Configuration:");
-        System.out.println("   Allowed Origins: " + allowedOrigins);
-        System.out.println("   Allowed Methods: " + allowedMethods);
+        log.info("Security CORS configuration — allowed origins: {}, allowed methods: {}", allowedOrigins, allowedMethods);
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
         configuration.setAllowedHeaders(List.of("*")); // wildcard para preflight genérico
@@ -271,7 +277,7 @@ public class SecurityConfig {
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
-        System.out.println("   ✅ CORS configured for all endpoints in security chain");
+        log.info("CORS configured for all endpoints in the security chain");
         return source;
     }
 
@@ -557,6 +563,9 @@ public class SecurityConfig {
         // Strategy endpoints: granular feature permissions first
         if (matchesEndpoint(endpoint, "/api/strategies/flipping") || matchesEndpoint(endpoint, "/api/strategies/flipping/**")) {
             return List.of(SCOPE_USE_BAZAAR_FLIPPING);
+        }
+        if (matchesEndpoint(endpoint, "/api/strategies/manipulation") || matchesEndpoint(endpoint, "/api/strategies/manipulation/**")) {
+            return List.of(SCOPE_USE_BAZAAR_MANIPULATION);
         }
         // Fallback for other strategy endpoints: ANY of the tier permissions
         for (String strategyEndpoint : getStrategyEndpoints()) {

@@ -271,19 +271,11 @@ export default function FlippingPage() {
     }
   }, [query.budget, isLoadingSetup])
 
-  const finalQuery: FlippingQuery = useMemo(() => {
-    const result = {
-      ...query,
-      q: debouncedSearch || undefined,
-      budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, '')) : undefined,
-    }
-    console.log('Final query computed:', result)
-    console.log('Stable filters:', {
-      maxCompetitionPerHour: result.maxCompetitionPerHour,
-      maxRiskScore: result.maxRiskScore
-    })
-    return result
-  }, [query, debouncedSearch, debouncedBudget])
+  const finalQuery: FlippingQuery = useMemo(() => ({
+    ...query,
+    q: debouncedSearch || undefined,
+    budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, '')) : undefined,
+  }), [query, debouncedSearch, debouncedBudget])
 
   const params = buildQueryParams(finalQuery as Record<string, any>)
   const endpoint = `/api/strategies/flipping?${params}`

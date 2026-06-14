@@ -55,3 +55,51 @@ export interface PagedResponse<T> {
   hasNext: boolean
   hasPrevious: boolean
 }
+
+// Mirrors ManipulationOpportunityResponseDTO on the backend.
+export interface ManipulationOpportunity {
+  productId: string
+  displayName?: string
+  // current market
+  instantBuyPrice: number
+  instantSellPrice: number
+  currentHighestBuyOrder: number
+  // cornering the market
+  cornerSupplyUnits: number
+  cornerCost: number
+  avgBuyCostPerUnit: number
+  // pricing
+  taxRate: number
+  minResellPrice: number
+  roi: number
+  targetBuyOrderPrice: number
+  suggestedSellOrderPrice: number
+  buyOrderDoublingSteps: number
+  // demand / supply
+  demandPerHour?: number
+  supplyPerHour?: number
+  demandSupplyRatio?: number
+  activeSellOrders: number
+  activeBuyOrders: number
+  // economics
+  netProfitPerUnit: number
+  totalProfit: number
+  estimatedSellThroughHours?: number
+  // risk + ranking
+  risky?: boolean
+  riskNote?: string
+  score: number
+}
+
+export interface ManipulationQuery {
+  q?: string
+  budget?: number
+  roi?: number
+  taxRate?: number
+  sellWallFactor?: number
+  minDemandSupplyRatio?: number
+  minProfit?: number
+  sort?: string
+  page?: number
+  limit?: number
+}
