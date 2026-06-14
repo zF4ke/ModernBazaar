@@ -11,8 +11,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { FeatureCard } from "@/components/feature-card"
 import { ExpandableFeatureCard, Accent, ExpandableFeatureGrid } from "@/components/expandable-feature-card"
 import { GradientSection } from "@/components/gradient-section"
-import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Target, DollarSign, Activity } from "lucide-react"
+import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Crosshair, Target, DollarSign, Activity } from "lucide-react"
 import { useBackendHealthContext } from '@/components/backend-health-provider'
+import { BrandMark } from "@/components/brand-mark"
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
@@ -68,9 +69,7 @@ export default function LandingPage() {
       )}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Boxes className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <BrandMark className="h-8 w-8 rounded-lg" />
             <span className="font-semibold text-lg">Modern Bazaar</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
@@ -93,8 +92,8 @@ export default function LandingPage() {
           <div className="grid items-center gap-10 md:grid-cols-2">
             <div className="space-y-6 text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
-                <Trophy className="h-4 w-4" />
-                SkyBlock's best trading toolkit
+                <LineChart className="h-4 w-4" />
+                Real-time Hypixel Bazaar analytics
               </div>
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
                 Flip smarter in the{' '}
@@ -186,8 +185,8 @@ export default function LandingPage() {
                   <p>Your copilot for day-to-day flips: it tells you what to do, when to do it, and why.</p>
                   <ul className="list-disc pl-5 space-y-1">
                     <li><Accent>Position sizing</Accent>: exactly how much to buy/sell for your budget.</li>
-                    <li><Accent>Projected P/L</Accent>: expected coins and downside with clear risk flags.</li>
-                    <li><Accent>Manipulation shields</Accent>: detects spoofing/spreads and limits exposure.</li>
+                    <li><Accent>Profit per hour</Accent>: expected coins after tax for your budget and horizon.</li>
+                    <li><Accent>Risk flags</Accent>: highlights volatile or manipulated-looking prices.</li>
                     <li><Accent>Fill-time ETA</Accent>: realistic time windows for buys and sells to complete.</li>
                   </ul>
                 </div>
@@ -241,19 +240,19 @@ export default function LandingPage() {
             
             <ExpandableFeatureCard
               id="manipulation"
-              className="opacity-90"
-              accent="purple"
-              icon={<Shield className="h-4 w-4 text-purple-500" />}
+              accent="rose"
+              icon={<Crosshair className="h-4 w-4 text-rose-500" />}
               title="Bazaar Manipulation"
-              status="planned"
-              summary={<span>Set prices and shape supply with risk controls and timeline-aware execution.</span>}
+              status="released"
+              summary={<span>Find thin-supply, high-demand markets you can corner within budget, with a full execution plan.</span>}
               details={
                 <div className="space-y-2">
-                  <p>Model scenarios before you act: understand liquidity needs, risk, and expected payoff over time.</p>
+                  <p>For higher-risk plays: see exactly what it costs to corner a market and how to price the exit.</p>
                   <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Playbook guidance</Accent>: step-by-step "what, when, how much".</li>
-                    <li><Accent>Guardrails</Accent>: exposure caps, stop conditions, and anomaly detection.</li>
-                    <li><Accent>Timeline</Accent>: staged orders with fill-time windows and unwind paths.</li>
+                    <li><Accent>Cost to corner</Accent>: total coins to buy out the visible supply, and the average cost per unit.</li>
+                    <li><Accent>Break-even after tax</Accent>: the minimum resell price once the 1.125% bazaar tax is paid.</li>
+                    <li><Accent>Buy/sell plan</Accent>: the inflated buy order, the sell wall, and how many doublings to get there.</li>
+                    <li><Accent>Sell-through ETA</Accent>: how long to offload your stock based on hourly demand.</li>
                   </ul>
                 </div>
               }
@@ -469,13 +468,9 @@ export default function LandingPage() {
                   <CardTitle className="text-xl">Flipper</CardTitle>
                   <CardDescription>For serious traders</CardDescription>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-sm"></div>
-                  <div className="text-center text-3xl flex justify-center items-center">
-                    <span className="font-bold">$9.99</span>
-                    <span className="line-through text-muted-foreground/80 text-sm ml-1">$12.99</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 text-xs text-green-400">Save 23%</div>
+                <div className="space-y-2">
+                  <div className="text-3xl font-bold">$9.99</div>
+                  <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 flex-1 flex flex-col relative z-10">
