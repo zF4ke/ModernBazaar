@@ -1,51 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { handleBackendError } from '@/lib/api'
+import { type NextRequest, NextResponse } from 'next/server'
+import { fetchFromBackend } from '@/lib/api'
+import { isBackendError } from '@/types/errors'
 
+/**
+ * Reports whether the current user has admin access by probing an admin endpoint
+ * with the server-side session token (nextjs-auth0 v4). The old version read an
+ * Authorization header off the browser request, which is never present here, so
+ * it always 401'd — which made admins look like they had no access. Always
+ * returns 200 with { hasAccess } so the client query doesn't treat it as an error.
+ */
 export async function GET(request: NextRequest) {
   try {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080'
-    
-    // Get the Authorization header from the request
-    const authHeader = request.headers.get('authorization')
-    
-    if (!authHeader) {
-      return NextResponse.json(
-        { 
-          hasAccess: false,
-          error: 'Authorization header required',
-          details: 'This endpoint requires a valid JWT token in the Authorization header'
-        },
-        { status: 401 }
-      )
+    const result = await fetchFromBackend(request, '/api/admin/plans', {})
+    if (isBackendError(result)) {
+      return NextResponse.json({ hasAccess: false })
     }
-
-    // Check if user has admin access by trying to access admin endpoint
-    const response = await fetch(`${backendUrl}/api/admin/plans`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': authHeader,
-      },
-    })
-
-    if (response.ok) {
-      return NextResponse.json({ hasAccess: true })
-    } else {
-      const errorDetails = await handleBackendError(response, '/api/admin/plans')
-      return NextResponse.json({ 
-        hasAccess: false,
-        ...errorDetails
-      }, { status: errorDetails.status })
-    }
-  } catch (error) {
-    console.error('Error checking admin access:', error)
-    return NextResponse.json(
-      { 
-        hasAccess: false,
-        error: 'Failed to check admin access',
-        details: error instanceof Error ? error.message : 'Unknown error occurred'
-      },
-      { status: 500 }
-    )
+    return NextResponse.json({ hasAccess: true })
+  } catch {
+    return NextResponse.json({ hasAccess: false })
   }
 }
