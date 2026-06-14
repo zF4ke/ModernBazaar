@@ -132,7 +132,7 @@ export default function LandingPage() {
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto md:mx-0">
-                Handcrafted tools with real-time pricing and clear, budget-aware scores so you can flip with confidence.
+                Modern Bazaar reads the market for you and tells you the exact move: what to flip, how much to buy and when to sell, all sized to your budget. It practically teaches you to trade as you go.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start items-center pt-1">
                 <Button asChild size="lg" className="px-8 py-3 text-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all">
@@ -199,7 +199,7 @@ export default function LandingPage() {
           <div className="space-y-3 mb-10 text-center">
             <h2 className="text-2xl md:text-3xl font-bold">What you get</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Real-time Bazaar data turned into clear, budget-aware calls. Two tools are live now, the rest are on the way.
+              You don't need to know the meta. Modern Bazaar reads the market and walks you through the exact move, step by step, sized to your coins. Two tools are live now, more on the way.
             </p>
           </div>
 
@@ -213,7 +213,7 @@ export default function LandingPage() {
                     <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${s.tint}`}>
                       <s.icon className={`h-5 w-5 ${s.accent}`} />
                     </div>
-                    <h3 className="text-xl font-extrabold leading-tight">{s.title}</h3>
+                    <h3 className="text-xl font-medium leading-tight">{s.title}</h3>
                   </div>
                   <p className="mb-4 text-sm text-muted-foreground">{s.blurb}</p>
                   <ul className="space-y-2">
@@ -261,7 +261,7 @@ export default function LandingPage() {
         <div className="container mx-auto max-w-6xl">
           <div className="space-y-3 mb-6">
             <h2 className="text-2xl md:text-3xl font-bold">Fair, simple pricing</h2>
-            <p className="text-muted-foreground max-w-2xl">The app is still in active development, so plans aren&apos;t live yet and everything&apos;s free for now. This is where they&apos;ll land.</p>
+            <p className="text-muted-foreground max-w-2xl">Start free, upgrade when you&apos;re ready. Each tier pays for itself the first flip it finds that you&apos;d have walked past.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -318,7 +318,7 @@ export default function LandingPage() {
               <CardContent className="flex-1 flex flex-col relative z-10">
                 <div className="flex-1 space-y-4">
                   <div>
-                    <div className="text-base font-bold text-blue-400">Bazaar Flipping finder</div>
+                    <div className="flex items-center gap-2 text-base font-bold text-blue-400"><Shuffle className="h-4 w-4 shrink-0" />Bazaar Flipping</div>
                     <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">A handcrafted formula, tested over thousands of flips, that ranks every item by profit per hour.</p>
                   </div>
                   <div>
@@ -344,7 +344,13 @@ export default function LandingPage() {
             </Card>
 
             {/* Elite Plan */}
-            <Card className="relative h-full flex flex-col border-2 hover:border-purple-500/60 transition-all duration-200 hover:shadow-lg">
+            <Card className="relative h-full flex flex-col border-2 border-purple-500/30 hover:border-purple-500/60 transition-all duration-200 hover:shadow-lg">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
+                <Badge className="bg-purple-600 text-white px-3 py-1 shadow-lg hover:bg-purple-600">
+                  <Trophy className="h-3 w-3 mr-1" />
+                  For Experts
+                </Badge>
+              </div>
               <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-500/15 blur-3xl" />
               <CardHeader className="text-center space-y-4 relative z-10">
                 <div className="mx-auto w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
@@ -362,7 +368,7 @@ export default function LandingPage() {
               <CardContent className="flex-1 flex flex-col relative z-10">
                 <div className="flex-1 space-y-4">
                   <div>
-                    <div className="text-base font-bold text-purple-400">Bazaar Manipulation</div>
+                    <div className="flex items-center gap-2 text-base font-bold text-purple-400"><Crosshair className="h-4 w-4 shrink-0" />Bazaar Manipulation</div>
                     <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">The full cornering playbook: cost to corner, break-even after tax, the buy/sell ladder, and exactly when to exit.</p>
                   </div>
                   <div>
