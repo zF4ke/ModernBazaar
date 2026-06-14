@@ -104,3 +104,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Animated gradient text (used for the Bazaar Manipulation title so it pops) */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.text-gradient-blue {
+  background-image: linear-gradient(90deg, #60a5fa, #22d3ee, #60a5fa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-gradient-purple-anim {
+  background-image: linear-gradient(90deg, #a855f7, #d946ef, #8b5cf6, #a855f7);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradientShift 4s linear infinite;
+}

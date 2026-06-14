@@ -10,23 +10,38 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { FeatureCard } from "@/components/feature-card"
 import { GradientSection } from "@/components/gradient-section"
-import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Crosshair, Target, DollarSign, Activity } from "lucide-react"
+import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Plus, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Crosshair, Target, DollarSign, Activity } from "lucide-react"
 import { useBackendHealthContext } from '@/components/backend-health-provider'
 import { BrandMark } from "@/components/brand-mark"
 
-const STRATEGIES = [
-  { title: "Bazaar Flipping", icon: Shuffle, color: "text-emerald-400", tint: "bg-emerald-500/15", live: true,
-    points: ["Buy and sell gaps ranked by profit per hour", "How much to buy for your budget", "Risk flags and fill-time estimates"] },
-  { title: "Bazaar Manipulation", icon: Crosshair, color: "text-blue-400", tint: "bg-blue-500/15", live: true,
-    points: ["Spot thin markets you can corner", "A full plan: cost, resell price and profit", "How long it takes to sell out"] },
-  { title: "Craft Flipping", icon: Hammer, color: "text-muted-foreground", tint: "bg-muted", live: false,
-    points: ["Compare craft cost to sell price", "How many to craft for your budget", "Profit after fees and time to sell"] },
-  { title: "NPC Flipping", icon: Coins, color: "text-muted-foreground", tint: "bg-muted", live: false,
-    points: ["Best items for the daily NPC limit", "How to spend your 200M cap", "Buy low, sell straight to NPCs"] },
-  { title: "Budget Planner", icon: DollarSign, color: "text-muted-foreground", tint: "bg-muted", live: false,
-    points: ["Split your coins across strategies", "Matched to your risk and limits", "See when your coins free up"] },
-  { title: "Auction House", icon: ArrowRightLeft, color: "text-muted-foreground", tint: "bg-muted", live: false,
-    points: ["Snipe underpriced listings", "Fair bid and buyout prices", "Expected profit and time to sell"] },
+const LIVE_STRATEGIES = [
+  {
+    title: "Bazaar Flipping", icon: Shuffle,
+    accent: "text-blue-400", tint: "bg-blue-500/15", glow: "bg-blue-500/25", ring: "ring-blue-500/30",
+    blurb: "A handcrafted formula, tested over thousands of flips, that ranks every item by profit per hour.",
+    points: [
+      "Spread, real volume, competition and price swings, all in one score",
+      "Tells you how much to buy for your budget",
+      "Risk flags and fill-time estimates so you don't get stuck",
+    ],
+  },
+  {
+    title: "Bazaar Manipulation", icon: Crosshair,
+    accent: "text-purple-400", tint: "bg-purple-500/15", glow: "bg-purple-500/25", ring: "ring-purple-500/40",
+    blurb: "Corner a thin market, set the price yourself, and follow the exact playbook to pull it off safely.",
+    points: [
+      "Find the thin markets you can actually control on your budget",
+      "Cost to corner, break-even after tax, and your target price",
+      "Know how long it takes to sell out, so your exit is planned",
+    ],
+  },
+]
+
+const SOON_STRATEGIES = [
+  { title: "Craft Flipping", icon: Hammer, points: ["Compare craft cost to sell price", "How many to craft for your budget", "Profit after fees and time to sell"] },
+  { title: "NPC Flipping", icon: Coins, points: ["Best items for the daily NPC limit", "How to spend your 200M cap", "Buy low, sell straight to NPCs"] },
+  { title: "Budget Planner", icon: DollarSign, points: ["Split your coins across strategies", "Matched to your risk and limits", "See when your coins free up"] },
+  { title: "Auction House", icon: ArrowRightLeft, points: ["Snipe underpriced listings", "Fair bid and buyout prices", "Expected profit and time to sell"] },
 ]
 
 export default function LandingPage() {
@@ -112,7 +127,7 @@ export default function LandingPage() {
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
                 Flip smarter in the{' '}
                 <br></br>
-                <span className="bg-gradient-to-r from-primary to-primary/75 bg-clip-text text-transparent">
+                <span className="text-primary">
                   Hypixel Bazaar
                 </span>
               </h1>
@@ -188,25 +203,48 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {STRATEGIES.map((s) => (
-              <FeatureCard key={s.title} backgroundStyle="glass" className={s.live ? "" : "opacity-80"} glow={s.live ? s.tint.replace("/15", "/30") : undefined}>
-                <div className="flex items-center gap-2.5 mb-4">
-                  <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.tint}`}>
-                    <s.icon className={`h-4 w-4 ${s.color}`} />
+          {/* Live tools — the two that matter */}
+          <div className="grid gap-5 md:grid-cols-2">
+            {LIVE_STRATEGIES.map((s) => (
+              <div key={s.title} className={`group relative overflow-hidden rounded-2xl border bg-card p-6 ring-1 ${s.ring} transition-transform hover:-translate-y-0.5`}>
+                <div className={`pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-60 ${s.glow}`} />
+                <div className="relative">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${s.tint}`}>
+                      <s.icon className={`h-5 w-5 ${s.accent}`} />
+                    </div>
+                    <h3 className="text-xl font-extrabold leading-tight">{s.title}</h3>
                   </div>
-                  <h3 className="text-base font-semibold">{s.title}</h3>
-                  {!s.live && <span className="ml-auto text-[11px] text-muted-foreground">Soon</span>}
+                  <p className="mb-4 text-sm text-muted-foreground">{s.blurb}</p>
+                  <ul className="space-y-2">
+                    {s.points.map((p, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                        <Check className={`h-4 w-4 mt-0.5 shrink-0 ${s.accent}`} />
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/dashboard" className={`mt-5 inline-flex items-center gap-1 text-sm font-semibold ${s.accent} hover:gap-1.5 transition-all`}>
+                    Explore {s.title} <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </div>
-                <ul className="space-y-2">
-                  {s.points.map((p, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <Check className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${s.live ? "text-emerald-500" : "text-muted-foreground/40"}`} />
-                      <span>{p}</span>
-                    </li>
-                  ))}
-                </ul>
-              </FeatureCard>
+              </div>
+            ))}
+          </div>
+
+          {/* Coming soon */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {SOON_STRATEGIES.map((s) => (
+              <div key={s.title} className="rounded-xl border bg-card/60 p-4 opacity-80">
+                <div className="mb-2 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                    <s.icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <h4 className="text-sm font-medium">{s.title}</h4>
+                  <span className="ml-auto text-[11px] text-muted-foreground">Soon</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{s.points[0]}</p>
+              </div>
             ))}
           </div>
         </div>
@@ -243,10 +281,10 @@ export default function LandingPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 flex-1 flex flex-col">
-                <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Live Bazaar prices</span></li>
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Full item catalog</span></li>
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Favorites &amp; search</span></li>
+                <ul className="space-y-2.5 flex-1 text-muted-foreground">
+                  <li className="flex items-center gap-2.5 text-sm"><Check className="h-4 w-4 shrink-0 text-muted-foreground/50" /><span>Live Bazaar prices</span></li>
+                  <li className="flex items-center gap-2.5 text-sm"><Check className="h-4 w-4 shrink-0 text-muted-foreground/50" /><span>Full item catalog</span></li>
+                  <li className="flex items-center gap-2.5 text-sm"><Check className="h-4 w-4 shrink-0 text-muted-foreground/50" /><span>Favorites &amp; search</span></li>
                 </ul>
                 <Button asChild className="mt-4 w-full" variant="outline">
                   <Link href="/dashboard">Start free</Link>
@@ -277,14 +315,29 @@ export default function LandingPage() {
                   <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 flex-1 flex flex-col relative z-10">
-                <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Everything in Free</span></li>
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Bazaar Flipping finder, ranked by profit/hour</span></li>
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Filters, presets &amp; budget sizing</span></li>
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Deeper price history</span></li>
-                </ul>
-                <Button asChild className="w-full">
+              <CardContent className="flex-1 flex flex-col relative z-10">
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <div className="text-base font-bold text-blue-400">Bazaar Flipping finder</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">A handcrafted formula, tested over thousands of flips, that ranks every item by profit per hour.</p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Budget sizing</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Tell it your budget and get exactly what to buy, how much, and at what price.</p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Filters &amp; presets</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Tune the finder to your playstyle and save your setups.</p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Deeper price history</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">More history to spot the patterns before everyone else.</p>
+                  </div>
+                </div>
+                <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
+                  <Plus className="h-4 w-4 shrink-0" /><span>Everything in Free</span>
+                </div>
+                <Button asChild className="mt-5 w-full">
                   <Link href="/dashboard">Choose Flipper</Link>
                 </Button>
               </CardContent>
@@ -292,9 +345,10 @@ export default function LandingPage() {
 
             {/* Elite Plan */}
             <Card className="relative h-full flex flex-col border-2 hover:border-purple-500/60 transition-all duration-200 hover:shadow-lg">
-              <CardHeader className="text-center space-y-4">
+              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-500/15 blur-3xl" />
+              <CardHeader className="text-center space-y-4 relative z-10">
                 <div className="mx-auto w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-purple-500" />
+                  <Zap className="h-6 w-6 text-purple-400" />
                 </div>
                 <div>
                   <CardTitle className="text-xl">Elite</CardTitle>
@@ -305,13 +359,21 @@ export default function LandingPage() {
                   <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 flex-1 flex flex-col">
-                <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Everything in Flipper</span></li>
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Bazaar Manipulation: the full cornering plan</span></li>
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Priority support</span></li>
-                </ul>
-                <Button asChild className="mt-4 w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10" variant="outline">
+              <CardContent className="flex-1 flex flex-col relative z-10">
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <div className="text-base font-bold text-purple-400">Bazaar Manipulation</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">The full cornering playbook: cost to corner, break-even after tax, the buy/sell ladder, and exactly when to exit.</p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Priority support</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Questions go straight to the founder, not a ticket queue.</p>
+                  </div>
+                </div>
+                <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
+                  <Plus className="h-4 w-4 shrink-0" /><span>Everything in Flipper</span>
+                </div>
+                <Button asChild className="mt-5 w-full border-purple-500/40 text-purple-300 hover:bg-purple-500/10" variant="outline">
                   <Link href="/dashboard">Choose Elite</Link>
                 </Button>
               </CardContent>

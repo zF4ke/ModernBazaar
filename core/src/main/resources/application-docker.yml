@@ -99,6 +99,7 @@ auth0:
 # Lemon Squeezy (Merchant of Record - handles VAT/sales tax). Our only payment provider.
 lemonsqueezy:
   webhook-secret: ${LEMONSQUEEZY_WEBHOOK_SECRET:}
+  api-key: ${LEMONSQUEEZY_API_KEY:}   # for server-side actions (e.g. cancelling a subscription)
 
 
 skyblock:
