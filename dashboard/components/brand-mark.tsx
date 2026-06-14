@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 
-/** Modern Bazaar mark — a bold "M" on the brand-blue tile.
+/** Modern Bazaar mark — ascending market bars with an upward trend line.
  *  Shared by the sidebar and the favicon (app/icon.svg). */
 export function BrandMark({ className }: { className?: string }) {
   return (
@@ -12,20 +12,18 @@ export function BrandMark({ className }: { className?: string }) {
       aria-label="Modern Bazaar"
       className={cn("shrink-0", className)}
     >
+      <rect width="64" height="64" rx="14" fill="#0a0f1e" />
       <defs>
-        <linearGradient id="brandmark-tile" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#3b82f6" />
-          <stop offset="1" stopColor="#2563eb" />
+        <linearGradient id="brandmark-bars" x1="16" y1="50" x2="48" y2="14" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#2563eb" />
+          <stop offset="1" stopColor="#60a5fa" />
         </linearGradient>
       </defs>
-      <rect width="64" height="64" rx="15" fill="url(#brandmark-tile)" />
-      <path
-        d="M15 47 V19 L32 35 L49 19 V47"
-        stroke="#ffffff"
-        strokeWidth="7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <rect x="15" y="34" width="9" height="15" rx="2.5" fill="url(#brandmark-bars)" fillOpacity="0.78" />
+      <rect x="27.5" y="26" width="9" height="23" rx="2.5" fill="url(#brandmark-bars)" fillOpacity="0.9" />
+      <rect x="40" y="18" width="9" height="31" rx="2.5" fill="url(#brandmark-bars)" />
+      <path d="M19.5 31 L32 23 L44.5 15" stroke="#93c5fd" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="44.5" cy="15" r="3.2" fill="#bfdbfe" />
     </svg>
   )
 }
