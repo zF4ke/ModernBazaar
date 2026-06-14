@@ -54,23 +54,16 @@ export function StatusCard({
   const displayValue = value || (isLoading ? "Checking..." : status || "Unknown")
 
   return (
-    <div
-      className="rounded-lg border p-4 backdrop-blur-sm"
-      style={{
-        background:
-          'radial-gradient(ellipse at top left, rgba(255,255,255,0.008) 0%, transparent 60%), radial-gradient(ellipse at bottom right, rgba(255,255,255,0.006) 0%, transparent 60%)',
-        backgroundColor: 'rgba(255,255,255,0.02)'
-      }}
-    >
-      <div className="flex items-center space-x-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-full ${getBgColor()}`}>
+    <div className="rounded-lg border bg-card p-4 transition-colors hover:border-border/80">
+      <div className="flex items-center gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${getBgColor()}`}>
           <Icon className={`h-5 w-5 ${getIconColor()}`} />
         </div>
-        <div className="space-y-1">
-          <p className="text-sm font-medium leading-none">{title}</p>
-          <div className="flex items-center space-x-2">
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-xs font-medium text-muted-foreground leading-none">{title}</p>
+          <div className="flex items-center gap-1.5">
             {!value && getStatusIcon()}
-            <span className={`text-xs font-medium ${getStatusColor()}`}>
+            <span className={`text-lg font-semibold tracking-tight truncate ${value ? '' : getStatusColor()}`}>
               {displayValue}
             </span>
           </div>

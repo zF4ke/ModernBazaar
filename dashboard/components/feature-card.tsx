@@ -44,17 +44,17 @@ export function FeatureCard({
 }: FeatureCardProps) {
   const bg = BG_PRESET[backgroundStyle]
 
+  // Sit on the real (elevated) card surface and layer the gradient as a subtle
+  // sheen on top — previously the near-transparent solid override made cards
+  // blend into the page background.
   return (
     <Card
       className={cn(
-        'border h-full flex flex-col',
+        'border h-full flex flex-col bg-card',
         BLUR_MAP[blur],
         className
       )}
-      style={{
-        background: bg.gradient,
-        backgroundColor: bg.solid
-      }}
+      style={{ backgroundImage: bg.gradient }}
     >
       <CardContent className="p-6 flex-1 flex flex-col">
         {children}

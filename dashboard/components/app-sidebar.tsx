@@ -4,6 +4,7 @@ import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, C
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAdminAccess } from "@/hooks/use-admin-access"
+import { BrandMark } from "@/components/brand-mark"
 
 import {
   Sidebar,
@@ -70,12 +71,10 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Package className="h-4 w-4" />
-          </div>
+        <div className="flex items-center gap-2.5 px-2 py-2">
+          <BrandMark className="h-8 w-8 rounded-lg" />
           <div className="flex flex-col gap-0.5 leading-none">
-            <span className="font-semibold">Modern Bazaar</span>
+            <span className="font-semibold tracking-tight">Modern Bazaar</span>
             <span className="text-xs text-muted-foreground">Trading Dashboard</span>
           </div>
         </div>
