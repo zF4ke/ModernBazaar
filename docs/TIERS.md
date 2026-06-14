@@ -20,10 +20,12 @@ realistic feature split (only things we can actually deliver) plus an honest
 
 - The two **tools** are correctly gated at the API by OAuth scopes — calling
   `/api/strategies/**` without the scope returns 403. The frontend gating matches.
-- **BUT** paying never grants those scopes: `applyProviderWebhook` only writes
-  `plan_slug` to our DB, it never assigns the Auth0 role that carries the scope. And
-  canceling never revokes. So **right now the tiers are not wired to billing** — see
-  [MONEY_LOSS_AUDIT.md](MONEY_LOSS_AUDIT.md) §A for the fix (the #1 next build).
+- ✅ **Paying now grants the scope, canceling revokes it.** `applyProviderWebhook`
+  calls `Auth0ManagementService.syncPlanRoles` to set the user's Auth0 role to match
+  their entitled plan (see [MONEY_LOSS_AUDIT.md](MONEY_LOSS_AUDIT.md) §A). The one
+  remaining step is **owner config in Auth0**: create the `Flipper`/`Elite` roles with
+  the matching RBAC permissions, or the role grants no scopes. Steps in
+  [LEMON_SQUEEZY_SETUP.md](LEMON_SQUEEZY_SETUP.md).
 - "Deeper / extended price history" is **advertised but not enforced** — any tier gets
   the same history. Either implement a per-tier history window (clamp `from`/range by
   scope) or drop the claim from the pricing copy so we're not overselling.

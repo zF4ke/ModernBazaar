@@ -21,6 +21,7 @@ public class SubscriptionService {
 
     private final PlanRepository planRepository;
     private final UserSubscriptionRepository userSubscriptionRepository;
+    private final Auth0ManagementService auth0ManagementService;
 
     public Optional<UserSubscription> findCurrentForUser(String userId) {
         return userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId);
@@ -115,6 +116,18 @@ public class SubscriptionService {
         sub.setStatus(status == null ? "active" : status);
         sub.setCurrentPeriodEnd(periodEndEpoch == null ? null : OffsetDateTime.ofInstant(Instant.ofEpochSecond(periodEndEpoch), ZoneOffset.UTC));
         userSubscriptionRepository.save(sub);
-        log.info("Assinatura atualizada via webhook user={} plan={} status={}", userId, plan.getSlug(), sub.getStatus());
+
+        // Entitlement follows billing: grant the plan's Auth0 role (which carries the
+        // feature scopes) while active — or within a still-paid cancelled period — and
+        // otherwise revoke down to Free. This is what makes upgrades actually unlock
+        // features and cancel/expiry actually remove them. Best-effort (never throws).
+        boolean entitled = "active".equalsIgnoreCase(sub.getStatus())
+                || ("canceled".equalsIgnoreCase(sub.getStatus())
+                    && sub.getCurrentPeriodEnd() != null
+                    && sub.getCurrentPeriodEnd().isAfter(OffsetDateTime.now()));
+        String entitledPlan = entitled ? plan.getSlug() : "free";
+        auth0ManagementService.syncPlanRoles(userId, entitledPlan);
+
+        log.info("Assinatura atualizada via webhook user={} plan={} status={} entitled={}", userId, plan.getSlug(), sub.getStatus(), entitledPlan);
     }
 }

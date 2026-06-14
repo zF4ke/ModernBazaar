@@ -133,6 +133,25 @@ Restart the dev server (or redeploy).
 `flipper` and `elite` plans, and put each **numeric variant ID** in the
 **"Lemon Squeezy Variant ID"** field. Leave the `free` plan's blank.
 
+### 5b. Auth0 roles — so paying actually unlocks features (one-time)
+
+The webhook sets the user's Auth0 **role** to match their plan, but the role only
+grants features if it carries the right RBAC **permissions**. Set this up once:
+
+1. Auth0 → **Applications → APIs → your API (`https://modern-bazaar.api`) → Settings**:
+   enable **RBAC** and **Add Permissions in the Access Token**.
+2. Same API → **Permissions** tab: add `use:bazaar-flipping`, `use:bazaar-manipulation`, `read:market_data`.
+3. Auth0 → **User Management → Roles**, create:
+   - **Free** — (no paid permissions)
+   - **Flipper** — `use:bazaar-flipping`, `read:market_data`
+   - **Elite** — `use:bazaar-flipping`, `use:bazaar-manipulation`, `read:market_data`
+   (The role **names must be exactly** Free / Flipper / Elite — that's what the code looks up.)
+4. The Management M2M app needs scopes `read:roles create:roles read:users update:users`
+   (already requested by `Auth0ManagementService`).
+
+After this, a paid `subscription_created` → the webhook assigns the Flipper/Elite role →
+the next token carries the scope → the tool unlocks. Cancel/expiry → back to Free.
+
 ---
 
 ## 6. Test the flow (Test mode)

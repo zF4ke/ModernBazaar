@@ -20,16 +20,11 @@ decoupled, and access is never revoked.**
 - The bad news: a **paying** user also gets nothing in code — their token isn't upgraded unless something *outside the repo* (manual Auth0 assignment) grants it. → refunds, support load.
 - And critically: **cancel / refund / chargeback / past_due never revoke access.** `subscription_cancelled` sets `status=canceled` but leaves `plan_slug` as `flipper`/`elite`, and no scope is removed. The stored `status` is read by **zero** authorization checks. So once a user *is* entitled, they keep it forever — including after a refund.
 
-**Remediation (the #1 next build):** make `applyProviderWebhook` the source of truth for entitlement.
-1. Create Auth0 RBAC roles **Flipper** (perm `use:bazaar-flipping`, `read:market_data`) and **Elite** (adds `use:bazaar-manipulation`) so their permissions land in the token's `permissions` claim. *(Auth0 config — owner step.)*
-2. Add `Auth0ManagementService.syncPlanRoles(userId, planSlug)` that **adds** the role for the active plan and **removes** the other paid roles.
-3. Call it from `applyProviderWebhook`:
-   - `active` (or `canceled` but `currentPeriodEnd` in the future) → grant the plan's role.
-   - `past_due` / `expired` / `currentPeriodEnd` passed → downgrade to Free role.
-4. Add a small scheduled job to demote subscriptions whose `currentPeriodEnd` has passed (covers the "canceled, ran out the paid period" case with no webhook).
-5. Defense in depth: optionally cross-check the DB `status`/`currentPeriodEnd` in a filter so a stale token can't outlive a refund.
-
-Until this ships, **do not hand out paid Auth0 roles manually** expecting cancel to revoke them — it won't.
+**Remediation — IMPLEMENTED in code (commit wiring `applyProviderWebhook` → Auth0).**
+- ✅ `Auth0ManagementService.syncPlanRoles(userId, planSlug)` adds the role for the entitled plan and **removes** the other managed plan roles. `assignFreeRole` now delegates to it.
+- ✅ `applyProviderWebhook` computes the entitled plan — `active` (or `canceled` with `currentPeriodEnd` still in the future) → the paid role; otherwise → **Free** — and calls `syncPlanRoles`. So paying unlocks, and cancel/expiry/past_due revokes. Best-effort (never fails the webhook).
+- ⏳ **Owner step (required for it to grant anything):** in Auth0, enable RBAC + "Add Permissions in the Access Token" on the API, create permissions `use:bazaar-flipping`, `use:bazaar-manipulation`, `read:market_data`, and create roles **Flipper** (flipping + market_data) and **Elite** (all three). The code assigns the *role*; Auth0 maps role → permissions → token. Steps in [LEMON_SQUEEZY_SETUP.md](LEMON_SQUEEZY_SETUP.md).
+- ⏳ **Follow-up hardening:** a daily scheduled job to demote subscriptions whose `currentPeriodEnd` has passed (covers a missed `subscription_expired` webhook). Lemon Squeezy retries failed webhooks, so the webhook path covers the normal case.
 
 ---
 
