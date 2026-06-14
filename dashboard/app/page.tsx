@@ -300,6 +300,56 @@ export default function LandingPage() {
                   Most Popular
                 </Badge>
               </div>
+                {/* Trading icons background - diagonal lines with subtle glow */}
+                <div className="absolute inset-0 pointer-events-none opacity-20 overflow-hidden rounded-[inherit]">
+                  {(() => {
+                    const icons = [
+                      { icon: TrendingUp, size: 'h-6 w-6' },
+                      { icon: BarChart3, size: 'h-6 w-6' },
+                      { icon: LineChart, size: 'h-6 w-6' },
+                      { icon: Activity, size: 'h-6 w-6' },
+                      { icon: Target, size: 'h-6 w-6' },
+                      { icon: Zap, size: 'h-6 w-6' },
+                    ]
+                    const lineCount = 7
+                    const itemsPerLine = 7
+                    const cMin = -10
+                    const cMax = 199
+                    const cStep = (cMax - cMin) / (lineCount - 1)
+                    const excludeZones = [
+                      { top: 5, bottom: 45, left: 25, right: 70 },
+                      { top: 45, bottom: 90, left: 5, right: 60 },
+                      { top: 90, bottom: 96, left: 5, right: 80 },
+                    ]
+                    const positions: Array<{ top: string; left: string; iconIndex: number }> = []
+                    for (let li = 0; li < lineCount; li++) {
+                      const c = cMin + li * cStep
+                      const xMin = -14
+                      const xMax = 114
+                      const xStep = (xMax - xMin) / (itemsPerLine + 1)
+                      for (let k = 1; k <= itemsPerLine; k++) {
+                        const x = xMin + k * xStep
+                        const y = -x + c
+                        if (x < 0 || x > 100 || y < 0 || y > 100) continue
+                        let excluded = false
+                        for (const z of excludeZones) {
+                          if (y >= z.top && y <= z.bottom && x >= z.left && x <= z.right) excluded = true
+                        }
+                        if (excluded) continue
+                        positions.push({ top: `${y}%`, left: `${x}%`, iconIndex: (li * 2 + k) % icons.length })
+                      }
+                    }
+                    return positions.map((pos, index) => {
+                      const IconComponent = icons[pos.iconIndex].icon
+                      return (
+                        <div key={index} className={`absolute ${icons[pos.iconIndex].size}`}
+                          style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}>
+                          <IconComponent className="text-blue-400/60 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] filter blur-[0.5px]" />
+                        </div>
+                      )
+                    })
+                  })()}
+                </div>
                 {/* glow */}
                 <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-blue-500/25 blur-3xl" />
               <CardHeader className="text-center space-y-4 py-8 relative z-10">
