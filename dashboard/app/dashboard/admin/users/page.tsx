@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Users as UsersIcon, RefreshCw, Search, ChevronLeft, ChevronRight, CalendarPlus, MoreHorizontal, Copy, Trash2, Mail, Layers, Check } from "lucide-react"
+import { Users as UsersIcon, RefreshCw, Search, ChevronLeft, ChevronRight, CalendarPlus, MoreHorizontal, Copy, Trash2, Mail, Layers, Check, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -43,14 +43,22 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(0)
   const [busy, setBusy] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState("userId")
+  const [dir, setDir] = useState<"asc" | "desc">("asc")
   const q = useDebounce(search, 300)
 
-  const params = new URLSearchParams({ page: String(page), limit: "25" })
+  const params = new URLSearchParams({ page: String(page), limit: "25", sortBy, dir })
   if (q) params.set("q", q)
   const { data, isLoading, isFetching, refetch } = useBackendQuery<Paged<AdminUser>>(
     `/api/admin/users?${params.toString()}`,
-    { enabled: hasAdminAccess, requireAuth: true, queryKey: ["admin-users", q, String(page)] }
+    { enabled: hasAdminAccess, requireAuth: true, queryKey: ["admin-users", q, String(page), sortBy, dir] }
   )
+
+  const toggleSort = (field: string) => {
+    if (field === sortBy) setDir((d) => (d === "asc" ? "desc" : "asc"))
+    else { setSortBy(field); setDir("asc") }
+    setPage(0)
+  }
 
   const items = data?.items ?? []
   const totalPages = data?.totalPages ?? 1
@@ -114,11 +122,11 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Plan</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Renews</TableHead>
-                <TableHead>Joined</TableHead>
+                <SortHead field="userId" sortBy={sortBy} dir={dir} onSort={toggleSort}>User</SortHead>
+                <SortHead field="planSlug" sortBy={sortBy} dir={dir} onSort={toggleSort}>Plan</SortHead>
+                <SortHead field="status" sortBy={sortBy} dir={dir} onSort={toggleSort}>Status</SortHead>
+                <SortHead field="currentPeriodEnd" sortBy={sortBy} dir={dir} onSort={toggleSort}>Renews</SortHead>
+                <SortHead field="createdAt" sortBy={sortBy} dir={dir} onSort={toggleSort}>Joined</SortHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -196,5 +204,19 @@ export default function AdminUsersPage() {
         )}
       </div>
     </div>
+  )
+}
+
+function SortHead({ field, sortBy, dir, onSort, children }: { field: string; sortBy: string; dir: "asc" | "desc"; onSort: (f: string) => void; children: React.ReactNode }) {
+  const active = sortBy === field
+  return (
+    <TableHead>
+      <button onClick={() => onSort(field)} className="inline-flex items-center gap-1 transition-colors hover:text-foreground">
+        {children}
+        {active
+          ? (dir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />)
+          : <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />}
+      </button>
+    </TableHead>
   )
 }

@@ -27,8 +27,10 @@ public class AdminUsersController {
     public PagedResponseDTO<AdminUserDTO> list(
             @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "25") int limit) {
-        return users.list(page, limit, q);
+            @RequestParam(defaultValue = "25") int limit,
+            @RequestParam(defaultValue = "userId") String sortBy,
+            @RequestParam(defaultValue = "asc") String dir) {
+        return users.list(page, limit, q, sortBy, dir);
     }
 
     @PostMapping(path = "/plan", consumes = MediaType.APPLICATION_JSON_VALUE)

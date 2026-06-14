@@ -24,10 +24,16 @@ public class AdminUserService {
     private final Auth0ManagementService auth0;
 
     @Transactional(readOnly = true)
-    public PagedResponseDTO<AdminUserDTO> list(int page, int limit, String q) {
+    public PagedResponseDTO<AdminUserDTO> list(int page, int limit, String q, String sortBy, String dir) {
         if (limit <= 0) limit = 25;
         if (page < 0) page = 0;
-        var pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        // Whitelist sortable columns; default to user id (stable, requested default).
+        String field = switch (sortBy == null ? "" : sortBy) {
+            case "planSlug", "status", "currentPeriodEnd", "createdAt", "email", "name" -> sortBy;
+            default -> "userId";
+        };
+        var direction = "desc".equalsIgnoreCase(dir) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        var pageable = PageRequest.of(page, limit, Sort.by(direction, field));
         Page<UserSubscription> p = (q == null || q.isBlank())
                 ? subs.findAll(pageable)
                 : subs.search(q.trim(), pageable);
