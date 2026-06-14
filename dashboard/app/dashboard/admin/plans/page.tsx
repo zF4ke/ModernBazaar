@@ -1,396 +1,151 @@
 "use client"
 
-import { useUser } from '@auth0/nextjs-auth0'
-import { useState, useEffect, useCallback } from 'react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Shield } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
-import type { Plan } from '@/types/subscription'
-import { useAdminAccess } from '@/hooks/use-admin-access'
+import { useState } from "react"
+import { Shield, RefreshCw, Save, Plus, CheckCircle2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useBackendQuery } from "@/hooks/use-backend-query"
+import { useAdminAccess } from "@/hooks/use-admin-access"
+import { fetchWithBackendUrl } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
-interface CreatePlanForm {
-  slug: string
-  name: string
-  stripePriceId: string
-  featuresJson: string
-  active: boolean
-}
+interface Plan { slug: string; name: string; stripePriceId: string | null; featuresJson: string; active: boolean }
+
+const KNOWN = [
+  { slug: "free",    name: "Free",    badge: "border-zinc-500/40 text-zinc-300 bg-zinc-500/10",       paid: false, blurb: "Live prices, full catalog, favorites. The free taste." },
+  { slug: "flipper", name: "Flipper", badge: "border-blue-500/40 text-blue-300 bg-blue-500/10",       paid: true,  blurb: "$9.99/mo · the Bazaar Flipping finder." },
+  { slug: "elite",   name: "Elite",   badge: "border-purple-500/40 text-purple-300 bg-purple-500/10", paid: true,  blurb: "$25.99/mo · everything in Flipper plus Bazaar Manipulation." },
+]
+const DEFAULT_FEATURES = '{"limits":{"maxItemsPerPage":50}}'
 
 export default function AdminPlansPage() {
-  const { user, isLoading: authLoading } = useUser()
-  const isAuthenticated = !!user
+  const { hasAdminAccess, loading: adminLoading } = useAdminAccess()
   const { toast } = useToast()
-  const [plans, setPlans] = useState<Plan[]>([])
-  const [creating, setCreating] = useState(false)
-  const [form, setForm] = useState<CreatePlanForm>({
-    slug: '',
-    name: '',
-    stripePriceId: '',
-    featuresJson: '{\n  "limits": {\n    "maxItemsPerPage": 50,\n    "maxStrategies": 0\n  },\n  "features": {\n    "advancedAnalytics": false,\n    "realTimeUpdates": false\n  }\n}',
-    active: true
-  })
+  const { data, isLoading, isFetching, refetch } = useBackendQuery<Plan[]>(
+    "/api/admin/plans", { enabled: hasAdminAccess, requireAuth: true, queryKey: ["admin-plans"] }
+  )
+  const plans = data ?? []
+  const get = (slug: string) => plans.find((p) => p.slug === slug)
 
-  const fetchPlans = useCallback(async () => {
-    if (!isAuthenticated) {
-      console.log('User not authenticated, skipping plans fetch')
-      return
-    }
+  const [variant, setVariant] = useState<Record<string, string>>({})
+  const [busy, setBusy] = useState<string | null>(null)
 
+  const save = async (slug: string, patch: object, msg: string) => {
+    setBusy(slug)
     try {
-      const response = await fetch('/api/admin/plans')
-      
-      if (response.ok) {
-        const data = await response.json()
-        setPlans(data)
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to fetch plans",
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error('Failed to fetch plans:', error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch plans",
-        variant: "destructive"
-      })
-    }
-  }, [isAuthenticated, toast])
+      await fetchWithBackendUrl(`/api/admin/plans/${slug}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch) })
+      await refetch()
+      toast({ title: msg })
+    } catch (e) {
+      toast({ title: "Couldn't save", description: (e as Error).message, variant: "destructive" })
+    } finally { setBusy(null) }
+  }
 
-  // Use the admin access hook
-  const { hasAdminAccess, loading: adminLoading, error } = useAdminAccess()
-
-  // Fetch plans when admin access is confirmed and user is authenticated
-  useEffect(() => {
-    if (hasAdminAccess && isAuthenticated && !authLoading) {
-      fetchPlans()
-    }
-  }, [hasAdminAccess, isAuthenticated, authLoading, fetchPlans])
-
-  const createPlan = async () => {
-    if (!form.slug || !form.name) {
-      toast({
-        title: "Validation Error",
-        description: "Slug and name are required",
-        variant: "destructive"
-      })
-      return
-    }
-
+  const createPlan = async (slug: string, name: string) => {
+    setBusy(slug)
     try {
-      setCreating(true)
-
-      const response = await fetch('/api/admin/plans', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(form)
+      await fetchWithBackendUrl("/api/admin/plans", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, name, stripePriceId: null, featuresJson: DEFAULT_FEATURES, active: true }),
       })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: "Plan created successfully"
-        })
-        setForm({
-          slug: '',
-          name: '',
-          stripePriceId: '',
-          featuresJson: '{\n  "limits": {\n    "maxItemsPerPage": 50,\n    "maxStrategies": 0\n  },\n  "features": {\n    "advancedAnalytics": false,\n    "realTimeUpdates": false\n  }\n}',
-          active: true
-        })
-        fetchPlans()
-      } else {
-        const error = await response.text()
-        toast({
-          title: "Error",
-          description: `Failed to create plan: ${error}`,
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error('Failed to create plan:', error)
-      toast({
-        title: "Error",
-        description: "Failed to create plan",
-        variant: "destructive"
-      })
-    } finally {
-      setCreating(false)
-    }
+      await refetch()
+      toast({ title: `${name} plan created` })
+    } catch (e) {
+      toast({ title: "Couldn't create plan", description: (e as Error).message, variant: "destructive" })
+    } finally { setBusy(null) }
   }
 
-  const togglePlanStatus = async (slug: string, active: boolean) => {
-    try {
-      const endpoint = active ? 'activate' : 'deactivate'
-
-      const response = await fetch(`/api/admin/plans/${slug}/${endpoint}`, {
-        method: 'POST'
-      })
-
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: `Plan ${active ? 'activated' : 'deactivated'} successfully`
-        })
-        fetchPlans()
-      } else {
-        toast({
-          title: "Error",
-          description: `Failed to ${active ? 'activate' : 'deactivate'} plan`,
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error('Failed to toggle plan status:', error)
-      toast({
-        title: "Error",
-        description: "Failed to update plan status",
-        variant: "destructive"
-      })
-    }
-  }
-
-  // Show loading while Auth0 is initializing
-  if (authLoading) {
+  if (!adminLoading && !hasAdminAccess) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
-            <p className="text-muted-foreground">Manage subscription plans and their features</p>
-          </div>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-full mt-2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <div className="rounded-xl border bg-card p-10 text-center">
+        <h2 className="text-xl font-semibold mb-1">Admins only</h2>
+        <p className="text-sm text-muted-foreground">You need the manage:plans permission to manage plans.</p>
       </div>
     )
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
-            <p className="text-muted-foreground">Manage subscription plans and their features</p>
-          </div>
-        </div>
-        <div className="space-y-4">
-          <p>You need to login to access this page.</p>
-          <div className="pt-4">
-            <Button 
-              onClick={() => window.location.reload()} 
-              variant="outline"
-              size="sm"
-            >
-              Refresh Page
-            </Button>
-          </div>
-        </div>
-        
-
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
-            <p className="text-muted-foreground">Manage subscription plans and their features</p>
-          </div>
-        </div>
-        <p className="text-red-500">Error: {error}</p>
-      </div>
-    )
-  }
-
-  // Show loading state while checking admin access OR if still loading
-  if (adminLoading || (!hasAdminAccess && !error)) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
-            <p className="text-muted-foreground">Manage subscription plans and their features</p>
-          </div>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-full mt-2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    )
-  }
-
-  // Only show access denied if we're sure the user doesn't have access
-  if (!hasAdminAccess && error) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <Shield className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
-            <p className="text-muted-foreground">Manage subscription plans and their features</p>
-          </div>
-        </div>
-        <p className="text-red-500">Access denied. You don't have admin permissions.</p>
-      </div>
-    )
-  }
+  const loading = isLoading || adminLoading
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Shield className="h-8 w-8 text-muted-foreground" />
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Plans</h2>
-          <p className="text-muted-foreground">Manage subscription plans and their features</p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Shield className="h-7 w-7 text-muted-foreground" />
+          <div>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Plans</h2>
+            <p className="text-sm text-muted-foreground">Map each paid plan to its Lemon Squeezy variant and toggle availability.</p>
+          </div>
         </div>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />Refresh
+        </Button>
       </div>
 
-      {/* Create Plan Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Create New Plan</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="slug">Slug</Label>
-              <Input
-                id="slug"
-                placeholder="starter"
-                value={form.slug}
-                onChange={(e) => setForm({ ...form, slug: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                placeholder="Starter Plan"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-          </div>
-          
-          <div>
-            <Label htmlFor="stripePriceId">Lemon Squeezy Variant ID</Label>
-            <Input
-              id="stripePriceId"
-              placeholder="e.g. 123456 (leave blank for the free plan)"
-              value={form.stripePriceId}
-              onChange={(e) => setForm({ ...form, stripePriceId: e.target.value })}
-            />
-            <p className="mt-1 text-xs text-muted-foreground">The Lemon Squeezy product variant id this plan maps to.</p>
-          </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {loading ? (
+          KNOWN.map((k) => (
+            <div key={k.slug} className="rounded-xl border bg-card p-5"><Skeleton className="h-5 w-24 mb-3" /><Skeleton className="h-4 w-full mb-2" /><Skeleton className="h-9 w-full" /></div>
+          ))
+        ) : (
+          KNOWN.map((k) => {
+            const p = get(k.slug)
+            const vid = variant[k.slug] ?? (p?.stripePriceId ?? "")
+            const dirty = p != null && vid !== (p.stripePriceId ?? "")
+            const rowBusy = busy === k.slug
+            return (
+              <div key={k.slug} className="flex flex-col rounded-xl border bg-card p-5">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${k.badge}`}>{k.name}</span>
+                  {p ? (
+                    p.active
+                      ? <span className="inline-flex items-center gap-1 text-xs text-emerald-400"><CheckCircle2 className="h-3.5 w-3.5" />Active</span>
+                      : <span className="text-xs text-muted-foreground">Inactive</span>
+                  ) : <span className="text-xs text-amber-400">Not set up</span>}
+                </div>
+                <p className="mb-4 flex-1 text-sm text-muted-foreground">{k.blurb}</p>
 
-          <div>
-            <Label htmlFor="featuresJson">Features JSON</Label>
-            <Textarea
-              id="featuresJson"
-              rows={8}
-              value={form.featuresJson}
-              onChange={(e) => setForm({ ...form, featuresJson: e.target.value })}
-            />
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="active"
-              checked={form.active}
-              onCheckedChange={(checked) => setForm({ ...form, active: checked })}
-            />
-            <Label htmlFor="active">Active</Label>
-          </div>
-
-          <Button onClick={createPlan} disabled={creating}>
-            {creating ? 'Creating...' : 'Create Plan'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Existing Plans */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {plans.map(plan => (
-          <Card key={plan.slug}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  {plan.name}
-                  {plan.active ? (
-                    <Badge variant="default">Active</Badge>
-                  ) : (
-                    <Badge variant="secondary">Inactive</Badge>
-                  )}
-                </CardTitle>
+                {!p ? (
+                  <Button size="sm" disabled={rowBusy} onClick={() => createPlan(k.slug, k.name)}>
+                    <Plus className="h-4 w-4 mr-1.5" />Create {k.name} plan
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    {k.paid ? (
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground">Lemon Squeezy variant ID</label>
+                        <div className="mt-1 flex gap-2">
+                          <Input value={vid} placeholder="e.g. 123456" className="h-9 font-mono text-sm"
+                            onChange={(e) => setVariant((v) => ({ ...v, [k.slug]: e.target.value }))} />
+                          <Button size="sm" className="h-9" disabled={!dirty || rowBusy}
+                            onClick={() => save(k.slug, { stripePriceId: vid.trim() || null }, `${k.name} variant saved`)}>
+                            <Save className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No variant needed (free).</p>
+                    )}
+                    <div className="flex items-center justify-between border-t pt-3">
+                      <span className="text-sm">Available to users</span>
+                      <Switch checked={p.active} disabled={rowBusy}
+                        onCheckedChange={(val) => save(k.slug, { active: val }, `${k.name} ${val ? "activated" : "deactivated"}`)} />
+                    </div>
+                  </div>
+                )}
               </div>
-              <p className="text-sm text-muted-foreground">
-                Slug: {plan.slug}
-              </p>
-              {plan.stripePriceId && (
-                <p className="text-xs text-muted-foreground">
-                  LS variant: {plan.stripePriceId}
-                </p>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-xs bg-muted p-2 rounded overflow-auto max-h-32">
-                <pre>{JSON.stringify(JSON.parse(plan.featuresJson), null, 2)}</pre>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={plan.active ? "outline" : "default"}
-                  onClick={() => togglePlanStatus(plan.slug, !plan.active)}
-                >
-                  {plan.active ? 'Deactivate' : 'Activate'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+            )
+          })
+        )}
       </div>
+
+      {!loading && plans.some((p) => !KNOWN.find((k) => k.slug === p.slug)) && (
+        <p className="text-xs text-muted-foreground">
+          Other plans in the database: {plans.filter((p) => !KNOWN.find((k) => k.slug === p.slug)).map((p) => p.slug).join(", ")}
+        </p>
+      )}
     </div>
   )
 }
