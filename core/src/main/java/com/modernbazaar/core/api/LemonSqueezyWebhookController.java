@@ -3,6 +3,7 @@ package com.modernbazaar.core.api;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.modernbazaar.core.service.SubscriptionService;
+import com.modernbazaar.core.service.ReferralService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,7 @@ import java.util.HexFormat;
 public class LemonSqueezyWebhookController {
 
     private final SubscriptionService subscriptionService;
+    private final ReferralService referralService;
     private final ObjectMapper objectMapper;
 
     @Value("${lemonsqueezy.webhook-secret:}")
@@ -72,6 +74,11 @@ public class LemonSqueezyWebhookController {
 
             subscriptionService.applyStripeWebhook(variantId, customerId, subscriptionId, periodEnd, status, userId);
             log.info("Lemon Squeezy {} applied: user={} variant={} status={}", event, userId, variantId, status);
+
+            // Attribute the referrer on the first subscription (ref carried through checkout).
+            if ("subscription_created".equals(event)) {
+                referralService.recordConversion(root.path("meta").path("custom_data").path("ref").asText(null));
+            }
         } catch (Exception e) {
             log.error("Error processing Lemon Squeezy webhook", e);
             return ResponseEntity.badRequest().build();
