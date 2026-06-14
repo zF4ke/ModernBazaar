@@ -1,276 +1,175 @@
 "use client"
 
 import { useUser } from '@auth0/nextjs-auth0'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FeatureCard } from '@/components/feature-card'
-import { GradientSection } from '@/components/gradient-section'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
-  User,
-  Settings,
-  CreditCard,
-  Bell,
-  Shield,
-  LogOut,
-  Mail,
-  Calendar,
-  Crown,
-  Star,
-  BarChart3,
-  CheckCircle,
-  Key,
-  Rocket
+  User, LogOut, Mail, CheckCircle, Crown, CreditCard, Calendar, Rocket,
+  Shuffle, Crosshair, BarChart3, Lock, ArrowRight, Sparkles,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useBackendQuery } from '@/hooks/use-backend-query'
 import { LoginCheck } from '@/components/login-check'
+import { PERMISSIONS } from '@/constants/permissions'
+import type { UserPermissions } from '@/types/permissions'
+
+const TOOLS = [
+  { name: "Bazaar Flipping", scope: PERMISSIONS.USE_BAZAAR_FLIPPING, icon: Shuffle, accent: "text-emerald-400", tint: "bg-emerald-500/15" },
+  { name: "Bazaar Manipulation", scope: PERMISSIONS.USE_BAZAAR_MANIPULATION, icon: Crosshair, accent: "text-blue-400", tint: "bg-blue-500/15" },
+  { name: "Market data", scope: PERMISSIONS.READ_MARKET_DATA, icon: BarChart3, accent: "text-violet-400", tint: "bg-violet-500/15" },
+]
+
+const formatDate = (s?: string) =>
+  s ? new Date(s).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '—'
 
 export default function ProfilePage() {
   const { user } = useUser()
   const isAuthenticated = !!user
 
-  const { data: subscription, isLoading: subscriptionLoading } = useBackendQuery<{
-    planName: string
-    status: string
-    currentPeriodStart: string
-    currentPeriodEnd: string
-    features: string[]
-  }>('/api/me/subscription', {
-    enabled: isAuthenticated,
-    requireAuth: true
-  })
+  const { data: subscription, isLoading: subLoading } = useBackendQuery<{
+    planName: string; status: string; currentPeriodStart: string; currentPeriodEnd: string; features: string[]
+  }>('/api/me/subscription', { enabled: isAuthenticated, requireAuth: true, queryKey: ['subscription'] })
 
+  const { data: perms } = useBackendQuery<UserPermissions>(
+    '/api/me/permissions', { enabled: isAuthenticated, requireAuth: true, queryKey: ['permissions'] }
+  )
+  const has = (scope: string) => (perms?.permissions as string[] | undefined)?.includes(scope) ?? false
 
-
-  const userInitials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-  }
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'
+  const planName = subscription?.planName || 'Free Plan'
+  const active = subscription?.status === 'active'
 
   return (
     <LoginCheck
       featureName="Profile"
-      featureDescription="Manage your account settings and preferences"
+      featureDescription="Your account, plan and access"
       icon={<User className="h-8 w-8 text-muted-foreground" />}
     >
       <div className="space-y-6">
-        {/* Header with Sign Out */}
         <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <User className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Profile</h2>
-            <p className="text-muted-foreground">Manage your account settings and preferences</p>
-          </div>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Profile</h2>
+          <Button variant="outline" size="sm" onClick={() => { window.location.href = "/auth/logout" }}>
+            <LogOut className="h-4 w-4 mr-2" />Sign out
+          </Button>
         </div>
-        <Button variant="outline" size="sm" onClick={() => { window.location.href = "/auth/logout" }}>
-          <LogOut className="h-4 w-4 mr-2" />
-          Sign Out
-        </Button>
-      </div>
 
-      {/* Profile Overview */}
-      <GradientSection variant="hero" padding="md">
-        <div className="flex items-center space-x-6">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={user?.picture} alt={user?.name} />
-            <AvatarFallback className="text-xl">{userInitials}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-3">
-              <h3 className="text-2xl font-semibold">{user?.name || 'User'}</h3>
-              <Badge variant="secondary">
-                <Crown className="h-3 w-3 mr-1" />
-                {subscription?.planName || 'Free Plan'}
-              </Badge>
-              {user?.email_verified && (
-                <Badge variant="outline" className="border-emerald-500/20 text-emerald-300">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Verified
+        {/* Identity card */}
+        <div className="relative overflow-hidden rounded-xl border bg-card p-6">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-blue-500/20 blur-3xl" />
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
+            <Avatar className="h-20 w-20 border-2 border-border">
+              <AvatarImage src={user?.picture} alt={user?.name || 'User'} />
+              <AvatarFallback className="text-xl">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-2xl font-semibold truncate">{user?.name || 'User'}</h3>
+                <Badge variant="outline" className="border-amber-500/30 text-amber-400">
+                  <Crown className="h-3 w-3 mr-1" />{planName}
                 </Badge>
-              )}
-            </div>
-            <div className="flex items-center space-x-2 text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span>{user?.email}</span>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              Last login: {user?.updated_at ? formatDate(user.updated_at) : 'Not available'}
+                {user?.email_verified && (
+                  <Badge variant="outline" className="border-emerald-500/30 text-emerald-400">
+                    <CheckCircle className="h-3 w-3 mr-1" />Verified
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Mail className="h-4 w-4 shrink-0" /><span className="truncate">{user?.email}</span>
+              </div>
             </div>
           </div>
         </div>
-      </GradientSection>
 
-      {/* Main Content Grid */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Account Information */}
-        <FeatureCard backgroundStyle="subtle" className="flex flex-col">
-          <CardHeader className="p-0 mb-4">
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Account Information
-            </CardTitle>
-          </CardHeader>
-            <div className="space-y-3 flex-1 flex flex-col justify-end">
-             <div className="grid grid-cols-2 gap-4 h-12 border-b border-white/10 items-center">
-               <span className="text-sm text-muted-foreground">Full Name</span>
-               <span className="text-sm font-medium text-right">{user?.name || 'Not provided'}</span>
-             </div>
-             <div className="grid grid-cols-2 gap-4 h-12 border-b border-white/10 items-center">
-               <span className="text-sm text-muted-foreground">Email</span>
-               <span className="text-sm font-medium text-right">{user?.email || 'Not provided'}</span>
-             </div>
-             <div className="grid grid-cols-2 gap-4 h-12 items-center">
-               <span className="text-sm text-muted-foreground">User ID</span>
-               <span className="text-sm font-mono text-muted-foreground text-right">{user?.sub || 'Not available'}</span>
-             </div>
-           </div>
-        </FeatureCard>
-
-        {/* Subscription Details */}
-        <FeatureCard backgroundStyle="subtle">
-          <CardHeader className="p-0 mb-4">
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Subscription
-            </CardTitle>
-          </CardHeader>
-          <div className="space-y-4">
-            {subscriptionLoading ? (
-              <div className="space-y-2">
-                <div className="h-4 bg-white/10 rounded animate-pulse" />
-                <div className="h-4 bg-white/10 rounded animate-pulse w-2/3" />
-              </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Plan */}
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold">Your plan</h3>
+            </div>
+            {subLoading ? (
+              <div className="space-y-3"><Skeleton className="h-5 w-32" /><Skeleton className="h-4 w-48" /></div>
             ) : (
-              <>
-                <div className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between rounded-lg border bg-background/40 p-3">
                   <div>
-                    <p className="font-medium">{subscription?.planName || 'Free Plan'}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {subscription?.status === 'active' ? 'Active subscription' : 'No active subscription'}
-                    </p>
+                    <p className="font-medium">{planName}</p>
+                    <p className="text-xs text-muted-foreground">{active ? 'Active subscription' : 'No active subscription'}</p>
                   </div>
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${active ? 'text-emerald-400' : 'text-muted-foreground'}`}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-muted-foreground'}`} />
+                    {active ? 'Active' : 'Free'}
+                  </span>
                 </div>
-
                 {subscription?.currentPeriodStart && subscription?.currentPeriodEnd && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Current Period</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground pl-6">
-                      {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
-                    </p>
-                  </div>
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    {formatDate(subscription.currentPeriodStart)} to {formatDate(subscription.currentPeriodEnd)}
+                  </p>
                 )}
-
-                {subscription?.features && subscription.features.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Plan Features</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2 pl-6">
-                      {subscription.features.map((feature, index) => (
-                        <Badge key={index} variant="outline" className="text-xs border-white/20 bg-white/5">
-                          {feature}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <Separator className="bg-white/10" />
-
-                <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                    <Rocket className="h-4 w-4" />
-                    Upgrade Plan
-                  </Button>
-                  <Button variant="outline" size="sm" className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-200 transform">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    View Usage
-                  </Button>
-                </div>
-              </>
+                <Button asChild className="w-full">
+                  <Link href="/#pricing"><Rocket className="h-4 w-4 mr-1" />Upgrade plan</Link>
+                </Button>
+              </div>
             )}
           </div>
-        </FeatureCard>
 
-        {/* Security & Settings */}
-        <FeatureCard backgroundStyle="subtle" className="flex flex-col">
-          <CardHeader className="p-0 mb-4">
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Security & Settings
-            </CardTitle>
-          </CardHeader>
-          <div className="space-y-4 flex-1 flex flex-col justify-end">
-            <div className="flex items-center justify-between p-3 bg-white/5 rounded border border-white/10">
-              <div>
-                <p className="text-sm font-medium">Email Verification</p>
-                <p className="text-xs text-muted-foreground">
-                  {user?.email_verified ? 'Your email is verified' : 'Please verify your email'}
-                </p>
-              </div>
-              <Badge variant={user?.email_verified ? "default" : "destructive"} className='bg-white/10 text-white hover:bg-white/10 hover:text-white cursor-default'>
-                {user?.email_verified ? 'Verified' : 'Unverified'}
-              </Badge>
+          {/* Access */}
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold">Your access</h3>
             </div>
-
             <div className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10">
-                <Key className="h-4 w-4 mr-2" />
-                Change Password
-              </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start bg-white/5 border-white/10 text-red-400 hover:text-red-300  hover:bg-red-500/10">
-                <Shield className="h-4 w-4 mr-2" />
-                Delete Account
-              </Button>
+              {TOOLS.map((t) => {
+                const unlocked = has(t.scope)
+                return (
+                  <div key={t.scope} className="flex items-center gap-3 rounded-lg border bg-background/40 p-3">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${unlocked ? t.tint : 'bg-muted'}`}>
+                      <t.icon className={`h-4 w-4 ${unlocked ? t.accent : 'text-muted-foreground'}`} />
+                    </div>
+                    <span className="flex-1 text-sm font-medium">{t.name}</span>
+                    {unlocked ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-400">
+                        <CheckCircle className="h-3.5 w-3.5" />Unlocked
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                        <Lock className="h-3.5 w-3.5" />Locked
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
-        </FeatureCard>
 
-        {/* Preferences */}
-        <FeatureCard backgroundStyle="subtle" className="opacity-60">
-          <CardHeader className="p-0 mb-4">
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="h-5 w-5" />
-              Preferences
-            </CardTitle>
-          </CardHeader>
-          <div className="text-center py-8">
-            <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">Coming Soon</p>
-            <p className="text-sm text-muted-foreground">Theme, language, and timezone preferences will be available soon.</p>
+          {/* Account details */}
+          <div className="rounded-xl border bg-card p-5 md:col-span-2">
+            <div className="flex items-center gap-2 mb-4">
+              <User className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold">Account</h3>
+            </div>
+            <dl className="divide-y divide-border/60">
+              <Row label="Name" value={user?.name || 'Not provided'} />
+              <Row label="Email" value={user?.email || 'Not provided'} />
+              <Row label="Email status" value={user?.email_verified ? 'Verified' : 'Unverified'} />
+              <Row label="User ID" value={user?.sub || '—'} mono />
+            </dl>
           </div>
-        </FeatureCard>
+        </div>
       </div>
+    </LoginCheck>
+  )
+}
 
-      {/* Notifications Section */}
-      <FeatureCard backgroundStyle="subtle" className="opacity-60">
-        <CardHeader className="p-0 mb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Notifications
-          </CardTitle>
-          <CardDescription>Configure how you receive notifications</CardDescription>
-        </CardHeader>
-        <div className="text-center py-8">
-          <Bell className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-lg font-medium mb-2">Coming Soon</p>
-          <p className="text-sm text-muted-foreground">Email notifications, price alerts, and market updates will be available soon.</p>
-        </div>
-      </FeatureCard>
-        </div>
-      </LoginCheck>
+function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <dt className="text-sm text-muted-foreground">{label}</dt>
+      <dd className={`text-sm text-right truncate ${mono ? 'font-mono text-muted-foreground' : 'font-medium'}`}>{value}</dd>
+    </div>
   )
 }
