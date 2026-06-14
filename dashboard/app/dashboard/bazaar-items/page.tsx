@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import type { BazaarItemLiveView, BazaarItemsQuery, BazaarItemsResponse } from "@/types/bazaar"
 import { buildQueryParams } from "@/lib/api"
@@ -22,6 +23,10 @@ import { FeatureCard } from "@/components/feature-card"
 import { LoginCheck } from "@/components/login-check"
 
 // Fetch handled by useBackendQuery (auth by default)
+
+/** Grouped coin formatting (readable + precise): 1,234,567.9 */
+const fmtCoins = (n: number) =>
+  Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 1 }) : "—"
 
 export default function BazaarItemsPage() {
   const [query, setQuery] = useState<BazaarItemsQuery>({
@@ -348,15 +353,26 @@ export default function BazaarItemsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    Loading bazaar items...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 8 }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-10 ml-auto" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
               ) : itemsArray.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    No bazaar items found
+                  <TableCell colSpan={8} className="py-12">
+                    <div className="flex flex-col items-center gap-2 text-center text-muted-foreground">
+                      <Package className="h-8 w-8 opacity-40" />
+                      <p className="text-sm">No bazaar items match your filters.</p>
+                      <Button onClick={resetFilters} variant="outline" size="sm" className="mt-1">Reset filters</Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -378,20 +394,20 @@ export default function BazaarItemsPage() {
                       </TableCell>
                       <TableCell>{snapshot.displayName || "Unknown"}</TableCell>
                       <TableCell className="text-right">
-                        <div className="font-mono">{snapshot.instantBuyPrice.toFixed(2)}</div>
+                        <div className="font-mono">{fmtCoins(snapshot.instantBuyPrice)}</div>
                         <div className="text-xs text-muted-foreground font-mono">
-                          weighted: {snapshot.weightedTwoPercentBuyPrice.toFixed(2)}
+                          weighted: {fmtCoins(snapshot.weightedTwoPercentBuyPrice)}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="font-mono">{snapshot.instantSellPrice.toFixed(2)}</div>
+                        <div className="font-mono">{fmtCoins(snapshot.instantSellPrice)}</div>
                         <div className="text-xs text-muted-foreground font-mono">
-                          weighted: {snapshot.weightedTwoPercentSellPrice.toFixed(2)}
+                          weighted: {fmtCoins(snapshot.weightedTwoPercentSellPrice)}
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        <span className={snapshot.spread > 0.5 ? "text-green-500 font-semibold" : ""}>
-                          {snapshot.spread.toFixed(2)}
+                        <span className={snapshot.spread > 0.5 ? "text-emerald-400 font-semibold" : ""}>
+                          {fmtCoins(snapshot.spread)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">{snapshot.activeBuyOrdersCount}</TableCell>
