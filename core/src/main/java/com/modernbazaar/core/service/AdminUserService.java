@@ -50,6 +50,17 @@ public class AdminUserService {
         return AdminUserDTO.of(saved);
     }
 
+    /**
+     * Removes a user from our system: revokes their paid Auth0 roles (down to Free)
+     * and deletes their subscription record. The Auth0 account itself is not deleted,
+     * so if they log in again they're re-provisioned on the free plan.
+     */
+    @Transactional
+    public void delete(String userId) {
+        auth0.syncPlanRoles(userId, "free"); // revoke paid scopes
+        subs.deleteByUserId(userId);
+    }
+
     /** Maximum manual grant in one call (10 years) — guards against fat-finger / abuse. */
     private static final int MAX_EXTEND_DAYS = 3650;
 

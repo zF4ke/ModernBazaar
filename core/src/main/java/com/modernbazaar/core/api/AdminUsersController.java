@@ -43,6 +43,14 @@ public class AdminUsersController {
         return users.extend(body.userId(), body.days());
     }
 
+    @PostMapping(path = "/delete", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Remove a user (revoke paid roles + delete their subscription)")
+    public java.util.Map<String, Boolean> delete(@RequestBody DeleteRequest body) {
+        users.delete(body.userId());
+        return java.util.Map.of("deleted", true);
+    }
+
     public record SetPlanRequest(String userId, String planSlug) {}
     public record ExtendRequest(String userId, int days) {}
+    public record DeleteRequest(String userId) {}
 }

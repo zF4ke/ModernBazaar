@@ -15,6 +15,8 @@ import java.util.Optional;
 public interface UserSubscriptionRepository extends JpaRepository<UserSubscription, Long> {
     Optional<UserSubscription> findFirstByUserIdOrderByIdDesc(String userId);
 
+    void deleteByUserId(String userId);
+
     Page<UserSubscription> findByUserIdContainingIgnoreCase(String userId, Pageable pageable);
 
     /** Admin search across user id, email and display name. */

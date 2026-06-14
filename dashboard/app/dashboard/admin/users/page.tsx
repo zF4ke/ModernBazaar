@@ -1,13 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { Users as UsersIcon, RefreshCw, Search, ChevronLeft, ChevronRight, CalendarPlus } from "lucide-react"
+import { Users as UsersIcon, RefreshCw, Search, ChevronLeft, ChevronRight, CalendarPlus, MoreHorizontal, Copy, Trash2, Mail, Layers, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useAdminAccess } from "@/hooks/use-admin-access"
 import { fetchWithBackendUrl } from "@/lib/api"
@@ -63,6 +66,17 @@ export default function AdminUsersPage() {
     } finally {
       setBusy(null)
     }
+  }
+
+  const copyVal = (value: string, label: string) => {
+    navigator.clipboard?.writeText(value)
+    toast({ title: `${label} copied` })
+  }
+
+  const remove = async (u: AdminUser) => {
+    const who = u.name || u.email || u.userId
+    if (!window.confirm(`Delete ${who}? This revokes their access and removes their record. They'll be re-created as a free user only if they sign in again.`)) return
+    await mutate("/api/admin/users/delete", { userId: u.userId }, `${who} removed`, u.userId + "-del")
   }
 
   if (!adminLoading && !hasAdminAccess) {
@@ -131,20 +145,38 @@ export default function AdminUsersPage() {
                       <TableCell><span className={`inline-flex items-center gap-1.5 text-xs font-medium ${STATUS_COLOR[u.status] ?? "text-foreground"}`}><span className="h-1.5 w-1.5 rounded-full bg-current" />{titleCase(u.status)}</span></TableCell>
                       <TableCell className="text-sm text-muted-foreground">{fmtDate(u.currentPeriodEnd)}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{fmtDate(u.createdAt)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-2">
-                          <Select value={u.planSlug} disabled={rowBusy}
-                            onValueChange={(v) => v !== u.planSlug && mutate("/api/admin/users/plan", { userId: u.userId, planSlug: v }, `${u.name || u.email || "User"} set to ${titleCase(v)}`, u.userId + "-plan")}>
-                            <SelectTrigger className="h-8 w-[110px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {PLAN_OPTIONS.map((p) => <SelectItem key={p} value={p} className="text-xs">{titleCase(p)}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Button variant="outline" size="sm" className="h-8" disabled={rowBusy} title="Extend this user's access by 30 days"
-                            onClick={() => mutate("/api/admin/users/extend", { userId: u.userId, days: 30 }, `Extended ${u.name || u.email || "user"} by 30 days`, u.userId + "-ext")}>
-                            <CalendarPlus className="h-3.5 w-3.5 mr-1" />+30d
-                          </Button>
-                        </div>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" disabled={rowBusy}>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel className="truncate">{u.name || u.email || "User"}</DropdownMenuLabel>
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger><Layers className="h-4 w-4 mr-2" />Change plan</DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                {PLAN_OPTIONS.map((p) => (
+                                  <DropdownMenuItem key={p} disabled={p === u.planSlug}
+                                    onClick={() => mutate("/api/admin/users/plan", { userId: u.userId, planSlug: p }, `${u.name || u.email || "User"} set to ${titleCase(p)}`, u.userId + "-plan")}>
+                                    {titleCase(p)}{p === u.planSlug && <Check className="ml-auto h-3.5 w-3.5 text-emerald-400" />}
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            <DropdownMenuItem onClick={() => mutate("/api/admin/users/extend", { userId: u.userId, days: 30 }, `Extended ${u.name || u.email || "user"} by 30 days`, u.userId + "-ext")}>
+                              <CalendarPlus className="h-4 w-4 mr-2" />Extend 30 days
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => copyVal(u.userId, "User ID")}><Copy className="h-4 w-4 mr-2" />Copy user ID</DropdownMenuItem>
+                            {u.email && <DropdownMenuItem onClick={() => copyVal(u.email!, "Email")}><Mail className="h-4 w-4 mr-2" />Copy email</DropdownMenuItem>}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-400 focus:text-red-400" onClick={() => remove(u)}>
+                              <Trash2 className="h-4 w-4 mr-2" />Delete user
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   )
