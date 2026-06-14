@@ -308,7 +308,7 @@ export default function LandingPage() {
               <CardContent className="space-y-4 flex-1 flex flex-col">
                 <ul className="space-y-3 flex-1">
                   <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Everything in Flipper</span></li>
-                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Bazaar Manipulation — full cornering plan</span></li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Bazaar Manipulation: the full cornering plan</span></li>
                   <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Priority support</span></li>
                 </ul>
                 <Button asChild className="mt-4 w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10" variant="outline">
@@ -421,7 +421,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t">
         <div className="container mx-auto px-4 py-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm text-muted-foreground">© 2025 Modern Bazaar. All rights reserved. 💜</div>
+          <div className="text-sm text-muted-foreground">© 2026 Modern Bazaar. All rights reserved. 💜</div>
           <div className="flex items-center gap-4 text-sm">
             <Link href="/terms" className="hover:underline">Terms of Service</Link>
             <Link href="/privacy" className="hover:underline">Privacy Policy</Link>

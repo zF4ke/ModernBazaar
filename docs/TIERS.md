@@ -1,0 +1,46 @@
+# Plans & feature tiers — what we offer and what's actually enforced
+
+Three plans: **Free ($0) / Flipper ($9.99/mo) / Elite ($25.99/mo)**. This is the
+realistic feature split (only things we can actually deliver) plus an honest
+**enforcement** column — i.e. whether the code really stops a lower tier from using it.
+
+## Feature matrix
+
+| Feature | Free | Flipper | Elite | Gated by | Enforced today? |
+|---|:---:|:---:|:---:|---|---|
+| Live Bazaar prices | ✓ | ✓ | ✓ | public | n/a (free) |
+| Item catalog (Bazaar + Skyblock) | ✓ | ✓ | ✓ | public | n/a (free) |
+| Favorites & search | ✓ | ✓ | ✓ | client-side | n/a (free) |
+| **Bazaar Flipping finder** (profit/hr score, filters, presets, budget sizing) | — | ✓ | ✓ | scope `use:bazaar-flipping` on `/api/strategies/flipping` | ✅ endpoint enforced — ⚠️ **but the scope is never granted on payment** (see below) |
+| **Bazaar Manipulation** (corner plan, break-even, ladder, sell-through) | — | — | ✓ | scope `use:bazaar-manipulation` on `/api/strategies/manipulation` | ✅ endpoint enforced — ⚠️ same grant gap |
+| Priority support | — | — | ✓ | manual / ops | manual |
+| Deeper price history (48h → extended) | 48h | deeper | extended | — | ❌ **NOT enforced** — there's no per-tier history limit in code |
+
+## The enforcement reality (from the money-loss audit)
+
+- The two **tools** are correctly gated at the API by OAuth scopes — calling
+  `/api/strategies/**` without the scope returns 403. The frontend gating matches.
+- **BUT** paying never grants those scopes: `applyProviderWebhook` only writes
+  `plan_slug` to our DB, it never assigns the Auth0 role that carries the scope. And
+  canceling never revokes. So **right now the tiers are not wired to billing** — see
+  [MONEY_LOSS_AUDIT.md](MONEY_LOSS_AUDIT.md) §A for the fix (the #1 next build).
+- "Deeper / extended price history" is **advertised but not enforced** — any tier gets
+  the same history. Either implement a per-tier history window (clamp `from`/range by
+  scope) or drop the claim from the pricing copy so we're not overselling.
+
+## Recommendation: keep the split to what we can enforce
+
+The cleanly enforceable differentiators are the **two tools** (scope-gated). Lead the
+pricing with those and make secondary perks real:
+- **Free** — live prices, full catalog, favorites (a genuine taste).
+- **Flipper** — the Flipping finder + its tuning/presets (scope `use:bazaar-flipping`).
+- **Elite** — adds Manipulation (scope `use:bazaar-manipulation`) + priority support.
+
+Add `read:market_data`-gated extras later (e.g. raw data export, longer history) only
+once the per-tier limit is actually implemented — never advertise an unenforced limit.
+
+## To make the tiers real (checklist)
+1. Create Auth0 roles **Flipper** / **Elite** with the matching RBAC permissions.
+2. Implement `syncPlanRoles` and call it from the webhook on upgrade/downgrade
+   ([MONEY_LOSS_AUDIT.md](MONEY_LOSS_AUDIT.md) §A).
+3. Either build the per-tier history window or remove that line from pricing.

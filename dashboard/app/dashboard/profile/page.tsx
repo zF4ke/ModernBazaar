@@ -77,7 +77,7 @@ export default function ProfilePage() {
                   <span className="text-2xl font-bold">{planName}</span>
                   <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${active ? 'text-emerald-400' : 'text-muted-foreground'}`}>
                     <span className={`h-1.5 w-1.5 rounded-full ${active ? 'bg-emerald-400' : 'bg-muted-foreground'}`} />
-                    {active ? 'Active' : 'Free tier'}
+                    {active ? 'Active' : 'No active subscription'}
                   </span>
                 </div>
               )}

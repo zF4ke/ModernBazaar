@@ -31,7 +31,7 @@ export function OpportunityFeed({ items, isLoading }: { items: FlipOpportunity[]
         </div>
       ) : items.length === 0 ? (
         <div className="p-10 text-center text-sm text-muted-foreground">
-          No standout flips this minute. The market refreshes every minute — check back shortly.
+          No standout flips this minute. The market refreshes every minute, so check back shortly.
         </div>
       ) : (
         <div className="divide-y divide-border/50">
