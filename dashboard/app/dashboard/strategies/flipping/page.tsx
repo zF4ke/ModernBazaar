@@ -350,20 +350,28 @@ export default function FlippingPage() {
         }
       >
       <TooltipProvider>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shuffle className="h-8 w-8 text-muted-foreground" />
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight">Bazaar Flipping</h2>
-                <p className="text-muted-foreground">Find profitable buy/sell opportunities with intelligent scoring</p>
+        <div className="space-y-6">
+          <GradientSection variant="hero" padding="md">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-60 bg-emerald-500/20" />
+            <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
+                  <Shuffle className="h-6 w-6 text-emerald-400" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Bazaar Flipping
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Find your next flip</h1>
+                  <p className="text-sm text-muted-foreground">Buy/sell gaps ranked by profit per hour after tax.</p>
+                </div>
               </div>
+              <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
+                {isFetching ? 'Refreshing…' : 'Refresh'}
+              </Button>
             </div>
-            <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-              {isFetching ? 'Refreshing…' : 'Refresh'}
-            </Button>
-          </div>
+          </GradientSection>
 
         {/* Trading Setup */}
           <TradingSetup

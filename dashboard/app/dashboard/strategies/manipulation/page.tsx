@@ -12,6 +12,7 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { useHasPermission } from "@/hooks/use-has-permission"
 import { PermissionCheck } from "@/components/permission-check"
 import { LoginCheck } from "@/components/login-check"
+import { GradientSection } from "@/components/gradient-section"
 import { PERMISSIONS } from "@/constants/permissions"
 import { ManipulationSetup } from "./_components/manipulation-setup"
 import { ManipulationGrid } from "./_components/manipulation-grid"
@@ -157,20 +158,28 @@ export default function ManipulationPage() {
         }
       >
         <TooltipProvider>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Crosshair className="h-8 w-8 text-muted-foreground" />
-                <div>
-                  <h2 className="text-3xl font-bold tracking-tight">Bazaar Manipulation</h2>
-                  <p className="text-muted-foreground">Corner thin markets, set the price, and lure overpriced buy orders</p>
+          <div className="space-y-6">
+            <GradientSection variant="hero" padding="md">
+              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-60 bg-blue-500/20" />
+              <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-500/15">
+                    <Crosshair className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />Bazaar Manipulation
+                    </div>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Corner the market</h1>
+                    <p className="text-sm text-muted-foreground">Thin-supply markets you can control, with the full plan and break-even.</p>
+                  </div>
                 </div>
+                <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
+                  {isFetching ? "Refreshing…" : "Refresh"}
+                </Button>
               </div>
-              <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
-                {isFetching ? "Refreshing…" : "Refresh"}
-              </Button>
-            </div>
+            </GradientSection>
 
             <ManipulationSetup
               query={query}
