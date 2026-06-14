@@ -314,13 +314,14 @@ export default function AdminPlansPage() {
           </div>
           
           <div>
-            <Label htmlFor="stripePriceId">Stripe Price ID</Label>
+            <Label htmlFor="stripePriceId">Lemon Squeezy Variant ID</Label>
             <Input
               id="stripePriceId"
-              placeholder="price_1ABC123..."
+              placeholder="e.g. 123456 (leave blank for the free plan)"
               value={form.stripePriceId}
               onChange={(e) => setForm({ ...form, stripePriceId: e.target.value })}
             />
+            <p className="mt-1 text-xs text-muted-foreground">The Lemon Squeezy product variant id this plan maps to.</p>
           </div>
 
           <div>
@@ -368,7 +369,7 @@ export default function AdminPlansPage() {
               </p>
               {plan.stripePriceId && (
                 <p className="text-xs text-muted-foreground">
-                  Stripe: {plan.stripePriceId}
+                  LS variant: {plan.stripePriceId}
                 </p>
               )}
             </CardHeader>
