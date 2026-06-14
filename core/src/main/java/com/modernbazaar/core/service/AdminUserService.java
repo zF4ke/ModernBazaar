@@ -21,6 +21,7 @@ public class AdminUserService {
 
     private final UserSubscriptionRepository subs;
     private final PlanRepository plans;
+    private final Auth0ManagementService auth0;
 
     @Transactional(readOnly = true)
     public PagedResponseDTO<AdminUserDTO> list(int page, int limit, String q) {
@@ -42,7 +43,11 @@ public class AdminUserService {
                 .orElse(UserSubscription.builder().userId(userId).status("active").build());
         sub.setPlanSlug(plan.getSlug());
         if (sub.getStatus() == null) sub.setStatus("active");
-        return AdminUserDTO.of(subs.save(sub));
+        var saved = subs.save(sub);
+        // Sync Auth0 roles so access actually changes (grant on upgrade, revoke on
+        // downgrade to free). Takes effect on the user's next token refresh / login.
+        auth0.syncPlanRoles(userId, plan.getSlug());
+        return AdminUserDTO.of(saved);
     }
 
     /** Maximum manual grant in one call (10 years) — guards against fat-finger / abuse. */

@@ -29,10 +29,17 @@ public class AdminReferralController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Get or create a referral code for a user")
+    @Operation(summary = "Get or create a referral code for a user (optional custom code)")
     public ReferralCodeDTO create(@RequestBody CreateRequest body) {
-        return referrals.getOrCreate(body.userId());
+        return referrals.getOrCreate(body.userId(), body.code());
     }
 
-    public record CreateRequest(String userId) {}
+    @DeleteMapping(path = "/{id}")
+    @Operation(summary = "Delete a referral code")
+    public java.util.Map<String, Boolean> delete(@PathVariable Long id) {
+        referrals.delete(id);
+        return java.util.Map.of("deleted", true);
+    }
+
+    public record CreateRequest(String userId, String code) {}
 }

@@ -33,14 +33,30 @@ public class ReferralService {
                 .toList();
     }
 
-    /** Idempotent: returns the user's existing code or mints one. */
+    /**
+     * Returns the user's existing referral code, or mints one. An optional custom
+     * code (great for influencers, e.g. "ALEX") is used only when first creating it.
+     */
     @Transactional
-    public ReferralCodeDTO getOrCreate(String userId) {
+    public ReferralCodeDTO getOrCreate(String userId, String customCode) {
         if (userId == null || userId.isBlank()) throw new IllegalArgumentException("userId is required");
-        return repo.findByUserId(userId)
-                .map(ReferralCodeDTO::of)
-                .orElseGet(() -> ReferralCodeDTO.of(repo.save(
-                        ReferralCode.builder().userId(userId).code(generateUniqueCode()).conversions(0).build())));
+        var existing = repo.findByUserId(userId);
+        if (existing.isPresent()) return ReferralCodeDTO.of(existing.get());
+
+        String code;
+        if (customCode != null && !customCode.isBlank()) {
+            code = customCode.trim().toUpperCase().replaceAll("[^A-Z0-9_-]", "");
+            if (code.isBlank()) throw new IllegalArgumentException("Custom code must contain letters or numbers");
+            if (repo.existsByCodeIgnoreCase(code)) throw new IllegalArgumentException("Code already in use: " + code);
+        } else {
+            code = generateUniqueCode();
+        }
+        return ReferralCodeDTO.of(repo.save(ReferralCode.builder().userId(userId).code(code).conversions(0).build()));
+    }
+
+    @Transactional
+    public void delete(Long id) {
+        repo.deleteById(id);
     }
 
     /**

@@ -166,7 +166,7 @@ export default function ProfilePage() {
                 )
               ) : (
                 <Button asChild className="shrink-0">
-                  <Link href="/#pricing"><Rocket className="h-4 w-4 mr-1.5" />View plans</Link>
+                  <Link href="/#pricing"><Rocket className="h-4 w-4 mr-1.5" />Upgrade your plan</Link>
                 </Button>
               )}
             </div>
