@@ -121,8 +121,8 @@ export default function LandingPage() {
           <div className="grid items-center gap-10 md:grid-cols-2">
             <div className="space-y-6 text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
-                <LineChart className="h-4 w-4" />
-                Real-time Hypixel Bazaar analytics
+                <Trophy className="h-4 w-4" />
+                SkyBlock&apos;s best trading toolkit
               </div>
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
                 Flip smarter in the{' '}
@@ -360,8 +360,12 @@ export default function LandingPage() {
                   <CardTitle className="text-xl">Flipper</CardTitle>
                   <CardDescription>Find flips worth doing</CardDescription>
                 </div>
-                <div className="space-y-2">
-                  <div className="text-3xl font-bold">$9.99</div>
+                <div className="space-y-1">
+                  <div className="flex items-baseline justify-center gap-2">
+                    <div className="text-3xl font-bold">$9.99</div>
+                    <div className="text-lg text-muted-foreground line-through">$12.99</div>
+                  </div>
+                  <div className="text-sm font-semibold text-emerald-400">Save 23%</div>
                   <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
@@ -410,8 +414,12 @@ export default function LandingPage() {
                   <CardTitle className="text-xl">Elite</CardTitle>
                   <CardDescription>Move the market yourself</CardDescription>
                 </div>
-                <div className="space-y-2">
-                  <div className="text-3xl font-bold">$25.99</div>
+                <div className="space-y-1">
+                  <div className="flex items-baseline justify-center gap-2">
+                    <div className="text-3xl font-bold">$25.99</div>
+                    <div className="text-lg text-muted-foreground line-through">$33.99</div>
+                  </div>
+                  <div className="text-sm font-semibold text-emerald-400">Save 24%</div>
                   <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
