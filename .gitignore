@@ -55,3 +55,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Claude Code session/workflow artifacts
+.claude/
