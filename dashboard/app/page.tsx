@@ -227,46 +227,29 @@ export default function LandingPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Starter Plan */}
-            <Card className="relative h-full flex flex-col border-2 hover:border-yellow-500/60 transition-all duration-200 hover:shadow-lg">
+            {/* Free Plan */}
+            <Card className="relative h-full flex flex-col border-2 hover:border-zinc-500/60 transition-all duration-200 hover:shadow-lg">
               <CardHeader className="text-center space-y-4">
-                <div className="mx-auto w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                  <Boxes className="h-6 w-6 text-yellow-500" />
+                <div className="mx-auto w-12 h-12 rounded-lg bg-zinc-500/20 flex items-center justify-center">
+                  <Boxes className="h-6 w-6 text-zinc-400" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Starter</CardTitle>
-                  <CardDescription>Kickstart your trading</CardDescription>
+                  <CardTitle className="text-xl">Free</CardTitle>
+                  <CardDescription>Get a feel for the market</CardDescription>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-3xl font-bold">$5.99</div>
-                  <div className="text-sm text-muted-foreground">per month</div>
+                  <div className="text-3xl font-bold">$0</div>
+                  <div className="text-sm text-muted-foreground">forever</div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 flex-1 flex flex-col">
                 <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Bazaar Flipping finder</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Real-time Bazaar prices</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Profit-per-hour scoring</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">48h price history</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Favorites &amp; search</span>
-                  </li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Live Bazaar prices</span></li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Full item catalog</span></li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Favorites &amp; search</span></li>
                 </ul>
-                <Button asChild className="mt-4 w-full border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10" variant="outline">
-                  <Link href="/dashboard">Choose Starter</Link>
+                <Button asChild className="mt-4 w-full" variant="outline">
+                  <Link href="/dashboard">Start free</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -287,7 +270,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <CardTitle className="text-xl">Flipper</CardTitle>
-                  <CardDescription>For serious traders</CardDescription>
+                  <CardDescription>Find flips worth doing</CardDescription>
                 </div>
                 <div className="space-y-2">
                   <div className="text-3xl font-bold">$9.99</div>
@@ -296,32 +279,12 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="space-y-4 flex-1 flex flex-col relative z-10">
                 <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Everything in Starter</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Advanced filters & tuning</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Trading presets</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Risk &amp; competition controls</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Market insights dashboard</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Deeper price history</span>
-                  </li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Everything in Free</span></li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Bazaar Flipping finder, ranked by profit/hour</span></li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Filters, presets &amp; budget sizing</span></li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Deeper price history</span></li>
                 </ul>
-                <Button asChild className="w-full border-primary/30 text-primary hover:bg-primary/10" variant="outline">
+                <Button asChild className="w-full">
                   <Link href="/dashboard">Choose Flipper</Link>
                 </Button>
               </CardContent>
@@ -335,7 +298,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <CardTitle className="text-xl">Elite</CardTitle>
-                  <CardDescription>For power users</CardDescription>
+                  <CardDescription>Move the market yourself</CardDescription>
                 </div>
                 <div className="space-y-2">
                   <div className="text-3xl font-bold">$25.99</div>
@@ -344,26 +307,9 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent className="space-y-4 flex-1 flex flex-col">
                 <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Everything in Flipper</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Bazaar Manipulation</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Extended history &amp; metrics</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Customizable scoring weights</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Priority support</span>
-                  </li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Everything in Flipper</span></li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Bazaar Manipulation — full cornering plan</span></li>
+                  <li className="flex items-center gap-3"><Check className="h-4 w-4 text-green-500 shrink-0" /><span className="text-sm">Priority support</span></li>
                 </ul>
                 <Button asChild className="mt-4 w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10" variant="outline">
                   <Link href="/dashboard">Choose Elite</Link>
