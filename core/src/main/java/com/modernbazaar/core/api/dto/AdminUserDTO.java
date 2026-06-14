@@ -5,6 +5,8 @@ import com.modernbazaar.core.domain.UserSubscription;
 /** Admin view of a user's subscription row. */
 public record AdminUserDTO(
         String userId,
+        String email,
+        String name,
         String planSlug,
         String status,
         String currentPeriodEnd,
@@ -15,6 +17,8 @@ public record AdminUserDTO(
     public static AdminUserDTO of(UserSubscription s) {
         return new AdminUserDTO(
                 s.getUserId(),
+                s.getEmail(),
+                s.getName(),
                 s.getPlanSlug(),
                 s.getStatus(),
                 s.getCurrentPeriodEnd() == null ? null : s.getCurrentPeriodEnd().toString(),

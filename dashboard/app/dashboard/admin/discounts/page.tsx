@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Ticket, RefreshCw, Plus, Copy, Check } from "lucide-react"
+import { Ticket, RefreshCw, Plus, Copy, Check, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -69,6 +69,17 @@ export default function AdminDiscountsPage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active: !d.active }),
       })
+      await refetch()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const remove = async (d: Discount) => {
+    if (!window.confirm(`Delete code ${d.code}? This can't be undone.`)) return
+    setBusy(true)
+    try {
+      await fetchWithBackendUrl(`/api/admin/discounts/${d.id}`, { method: "DELETE" })
       await refetch()
     } finally {
       setBusy(false)
@@ -180,9 +191,14 @@ export default function AdminDiscountsPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm" className="h-8" disabled={busy} onClick={() => toggle(d)}>
-                        {d.active ? "Disable" : "Enable"}
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="outline" size="sm" className="h-8" disabled={busy} onClick={() => toggle(d)}>
+                          {d.active ? "Disable" : "Enable"}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-400" disabled={busy} title="Delete code permanently" onClick={() => remove(d)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

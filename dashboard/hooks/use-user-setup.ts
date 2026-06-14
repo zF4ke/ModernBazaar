@@ -43,8 +43,14 @@ export function useUserSetup() {
     const ensureSetup = async () => {
       try {
         setIsSettingUp(true)
-        // Idempotent on the backend: returns OK for existing users too.
-        const response = await fetch('/api/me/setup', { method: 'POST' })
+        // Idempotent on the backend: returns OK for existing users too. We pass the
+        // email/name from the session (the backend access token may not carry them) so
+        // admins can identify users.
+        const response = await fetch('/api/me/setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user?.email ?? null, name: user?.name ?? null }),
+        })
         if (cancelled) return
         setIsSetupComplete(response.ok)
         // Re-arm ONLY for a transient server error. Auth failures (401/403) will

@@ -88,6 +88,17 @@ public class SubscriptionService {
         }
     }
 
+    /** Stores the user's email/display name on their subscription so admins can identify them. */
+    @Transactional
+    public void setContactInfo(String userId, String email, String name) {
+        if ((email == null || email.isBlank()) && (name == null || name.isBlank())) return;
+        userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId).ifPresent(sub -> {
+            if (email != null && !email.isBlank()) sub.setEmail(email);
+            if (name != null && !name.isBlank()) sub.setName(name);
+            userSubscriptionRepository.save(sub);
+        });
+    }
+
     /**
      * Apply a payment-provider (Lemon Squeezy) subscription event. priceId is the
      * provider's variant id, mapped to a local plan via Plan.stripePriceId (the

@@ -41,6 +41,13 @@ public class AdminDiscountController {
         return discounts.setActive(id, body.active());
     }
 
+    @DeleteMapping(path = "/{id}")
+    @Operation(summary = "Permanently delete a discount code")
+    public java.util.Map<String, Boolean> delete(@PathVariable Long id) {
+        discounts.delete(id);
+        return java.util.Map.of("deleted", true);
+    }
+
     public record CreateRequest(Integer percentOff, String planSlug, Integer maxRedemptions, Integer expiresInDays, String code) {}
     public record ActiveRequest(boolean active) {}
 }

@@ -60,6 +60,11 @@ public class DiscountService {
         return DiscountCodeDTO.of(repo.save(dc));
     }
 
+    @Transactional
+    public void delete(Long id) {
+        repo.deleteById(id);
+    }
+
     private String generateUniqueCode() {
         for (int attempt = 0; attempt < 10; attempt++) {
             String candidate = randomBlock(4) + "-" + randomBlock(4);

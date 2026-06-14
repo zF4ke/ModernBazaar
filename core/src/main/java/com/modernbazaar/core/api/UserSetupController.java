@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,19 +27,25 @@ public class UserSetupController {
     @PostMapping("/me/setup")
     @RateLimiter(name = "userSetupEndpoint")
     public ResponseEntity<SubscriptionResponseDTO> ensureUserSetup(
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody(required = false) SetupRequest body) {
         try {
             if (jwt == null) {
                 log.warn("Setup endpoint called without valid JWT token");
                 return ResponseEntity.status(401).build();
             }
-            
+
             String userId = jwt.getSubject();
-            String email = jwt.getClaimAsString("email");
-            
+            // Prefer email/name from the body (the dashboard has them from the ID token);
+            // fall back to access-token claims if present.
+            String email = (body != null && body.email() != null && !body.email().isBlank())
+                    ? body.email() : jwt.getClaimAsString("email");
+            String name = (body != null && body.name() != null && !body.name().isBlank())
+                    ? body.name() : jwt.getClaimAsString("name");
+
             log.info("Setting up user: {} (email: {})", userId, email);
-            
-            var subscription = userManagementService.ensureNewUserSetup(userId, email, null);
+
+            var subscription = userManagementService.ensureNewUserSetup(userId, email, name);
             var plan = planRepository.findBySlug(subscription.getPlanSlug()).orElse(null);
             
             log.info("User setup completed successfully for: {}", userId);
@@ -50,4 +57,6 @@ public class UserSetupController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    public record SetupRequest(String email, String name) {}
 }

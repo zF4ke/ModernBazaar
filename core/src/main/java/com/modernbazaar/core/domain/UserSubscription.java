@@ -23,6 +23,12 @@ public class UserSubscription {
     @Column(name = "user_id", nullable = false, length = 100)
     private String userId; // matches IdP subject (sub claim)
 
+    @Column(name = "email", length = 200)
+    private String email; // captured at setup so admins can identify the user
+
+    @Column(name = "display_name", length = 200)
+    private String name;
+
     @Column(name = "stripe_customer_id", length = 100)
     private String stripeCustomerId;
 

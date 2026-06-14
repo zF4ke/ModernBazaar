@@ -29,7 +29,7 @@ public class AdminUserService {
         var pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "updatedAt"));
         Page<UserSubscription> p = (q == null || q.isBlank())
                 ? subs.findAll(pageable)
-                : subs.findByUserIdContainingIgnoreCase(q.trim(), pageable);
+                : subs.search(q.trim(), pageable);
         return PagedResponseDTO.fromPage(p.map(AdminUserDTO::of));
     }
 

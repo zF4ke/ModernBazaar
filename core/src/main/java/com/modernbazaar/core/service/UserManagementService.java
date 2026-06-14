@@ -42,6 +42,8 @@ public class UserManagementService {
             }
             log.info("✅ Auth0 role assignment successful for user: {}", userId);
             UserSubscription subscription = subscriptionService.ensureFreePlan(userId);
+            // Capture email/name (re-applied each login so existing users get backfilled).
+            subscriptionService.setContactInfo(userId, email, nickname);
             log.info("✅ User setup completed for {}: plan={}, status= {}, auth0Role=true", userId, subscription.getPlanSlug(), subscription.getStatus());
             return subscription;
         } catch (Exception e) {

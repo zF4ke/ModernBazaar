@@ -11,7 +11,8 @@ import { postFetchFromBackend } from '@/lib/api'
  */
 export async function POST(request: NextRequest) {
   try {
-    return await postFetchFromBackend(request, '/api/me/setup', {})
+    const body = await request.text().catch(() => '')
+    return await postFetchFromBackend(request, '/api/me/setup', body ? { body } : {})
   } catch {
     return NextResponse.json({ error: 'User setup failed' }, { status: 500 })
   }
