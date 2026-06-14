@@ -45,9 +45,17 @@ public class AdminUserService {
         return AdminUserDTO.of(subs.save(sub));
     }
 
+    /** Maximum manual grant in one call (10 years) — guards against fat-finger / abuse. */
+    private static final int MAX_EXTEND_DAYS = 3650;
+
     /** Extend the current period by N days (comp time / manual grant). */
     @Transactional
     public AdminUserDTO extend(String userId, int days) {
+        // Reject non-positive (would move the period backward / expire a paying user)
+        // and absurdly large values.
+        if (days < 1 || days > MAX_EXTEND_DAYS) {
+            throw new IllegalArgumentException("days must be between 1 and " + MAX_EXTEND_DAYS);
+        }
         var sub = subs.findFirstByUserIdOrderByIdDesc(userId)
                 .orElseThrow(() -> new NoSuchElementException("No subscription for " + userId));
         var now = OffsetDateTime.now();

@@ -79,13 +79,18 @@ public class SubscriptionService {
         }
     }
 
+    /**
+     * Apply a payment-provider (Lemon Squeezy) subscription event. priceId is the
+     * provider's variant id, mapped to a local plan via Plan.stripePriceId (the
+     * column is reused as a generic provider price/variant id).
+     */
     @Transactional
-    public void applyStripeWebhook(String priceId,
-                                   String customerId,
-                                   String subscriptionId,
-                                   Long periodEndEpoch,
-                                   String status,
-                                   String userId) {
+    public void applyProviderWebhook(String priceId,
+                                     String customerId,
+                                     String subscriptionId,
+                                     Long periodEndEpoch,
+                                     String status,
+                                     String userId) {
         if (userId == null || userId.isBlank()) {
             log.warn("Webhook sem userId - ignorando");
             return;

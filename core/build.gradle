@@ -72,8 +72,8 @@ dependencies {
     // Byte‑Buddy agent for Mockito inline
     add("mockitoAgent", "net.bytebuddy:byte-buddy-agent:1.17.6")
 
-    // Stripe Billing
-    implementation 'com.stripe:stripe-java:24.0.0'
+    // Payments: Lemon Squeezy (Merchant of Record) — webhook is verified with a
+    // plain HMAC-SHA256 (JDK crypto), so no payment-provider SDK is needed.
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     
     // Auth0 Management API

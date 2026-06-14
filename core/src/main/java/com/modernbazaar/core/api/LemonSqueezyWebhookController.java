@@ -19,7 +19,7 @@ import java.util.HexFormat;
 
 /**
  * Lemon Squeezy (Merchant of Record) webhook. Mirrors the Stripe handler and
- * reuses {@link SubscriptionService#applyStripeWebhook}: the Lemon Squeezy
+ * reuses {@link SubscriptionService#applyProviderWebhook}: the Lemon Squeezy
  * variant id is stored in {@code plan.stripe_price_id} (provider price id), and
  * {@code custom_data.user_id} (passed at checkout) carries the account.
  *
@@ -49,11 +49,16 @@ public class LemonSqueezyWebhookController {
             log.debug("Billing disabled - ignoring Lemon Squeezy webhook");
             return ResponseEntity.ok().build();
         }
-        if (webhookSecret != null && !webhookSecret.isBlank()) {
-            if (signature == null || !validSignature(payload, signature)) {
-                log.warn("Invalid Lemon Squeezy webhook signature");
-                return ResponseEntity.status(400).build();
-            }
+        // Fail closed: a subscription mutation must never be processed unsigned.
+        // Previously a blank secret skipped verification entirely — anyone could
+        // POST a forged "active Elite" subscription for any user_id.
+        if (webhookSecret == null || webhookSecret.isBlank()) {
+            log.error("BILLING_ENABLED is true but LEMONSQUEEZY_WEBHOOK_SECRET is not set — refusing to process webhook.");
+            return ResponseEntity.status(500).build();
+        }
+        if (signature == null || !validSignature(payload, signature)) {
+            log.warn("Invalid Lemon Squeezy webhook signature");
+            return ResponseEntity.status(400).build();
         }
         try {
             JsonNode root = objectMapper.readTree(payload);
@@ -72,12 +77,14 @@ public class LemonSqueezyWebhookController {
             String status = mapStatus(attrs.path("status").asText(null), event);
             Long periodEnd = parseEpoch(attrs.path("renews_at").asText(null));
 
-            subscriptionService.applyStripeWebhook(variantId, customerId, subscriptionId, periodEnd, status, userId);
+            subscriptionService.applyProviderWebhook(variantId, customerId, subscriptionId, periodEnd, status, userId);
             log.info("Lemon Squeezy {} applied: user={} variant={} status={}", event, userId, variantId, status);
 
-            // Attribute the referrer on the first subscription (ref carried through checkout).
+            // Attribute the referrer on the first subscription (ref carried through
+            // checkout). Idempotent per referred user, so a replayed signed event
+            // cannot inflate conversion counts.
             if ("subscription_created".equals(event)) {
-                referralService.recordConversion(root.path("meta").path("custom_data").path("ref").asText(null));
+                referralService.recordConversion(root.path("meta").path("custom_data").path("ref").asText(null), userId);
             }
         } catch (Exception e) {
             log.error("Error processing Lemon Squeezy webhook", e);
@@ -90,8 +97,11 @@ public class LemonSqueezyWebhookController {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(webhookSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            String computed = HexFormat.of().formatHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
-            return MessageDigest.isEqual(computed.getBytes(StandardCharsets.UTF_8), signature.getBytes(StandardCharsets.UTF_8));
+            String computed = HexFormat.of().formatHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8))); // lowercase hex
+            // Normalize the incoming signature (trim, lowercase, strip optional "sha256=").
+            String provided = signature.trim().toLowerCase();
+            if (provided.startsWith("sha256=")) provided = provided.substring("sha256=".length());
+            return MessageDigest.isEqual(computed.getBytes(StandardCharsets.UTF_8), provided.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
             log.warn("Failed to verify Lemon Squeezy signature", e);
             return false;

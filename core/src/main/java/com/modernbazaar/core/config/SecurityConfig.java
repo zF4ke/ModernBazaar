@@ -177,6 +177,15 @@ public class SecurityConfig {
     @Value("${auth.mock-enabled:false}")
     private boolean mockEnabled;
 
+    /**
+     * Comma-separated Auth0 subs (user ids) that are granted the {@code manage:plans}
+     * admin scope server-side, regardless of their token's permissions. Lets the
+     * owner bootstrap the first admin without configuring Auth0 RBAC. Keep this list
+     * tiny and treat it like a secret (set via ADMIN_USER_SUBS in the environment).
+     */
+    @Value("${auth.admin-user-subs:}")
+    private String adminUserSubs;
+
     // ============================================================================
     // Security Configuration Beans
     // ============================================================================
@@ -260,9 +269,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // Credentialed CORS: keep this list tight. Only HTTPS prod origins + localhost
+        // for dev. Set CORS_ALLOWED_ORIGINS in production to the exact dashboard host(s).
         String allowedOrigins = System.getenv("CORS_ALLOWED_ORIGINS");
         if (allowedOrigins == null || allowedOrigins.isBlank()) {
-            allowedOrigins = "http://localhost:3000,http://localhost:3001,https://localhost:3001,http://modern-bazaar.vercel.app,https://modern-bazaar.vercel.app";
+            allowedOrigins = "http://localhost:3000,http://localhost:3001,https://localhost:3001,https://modern-bazaar.vercel.app";
         }
         String allowedMethods = System.getenv("CORS_ALLOWED_METHODS");
         if (allowedMethods == null || allowedMethods.isBlank()) {
@@ -271,7 +282,8 @@ public class SecurityConfig {
         log.info("Security CORS configuration — allowed origins: {}, allowed methods: {}", allowedOrigins, allowedMethods);
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
-        configuration.setAllowedHeaders(List.of("*")); // wildcard para preflight genérico
+        // Explicit header allowlist (safer than "*" when credentials are allowed).
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
@@ -297,7 +309,6 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui.html",
             "/swagger-ui/**",
-            "/api/v1/billing/webhook/stripe",
             "/api/v1/billing/webhook/lemonsqueezy",
             "/api/plans",
             "/api/metrics/**",
@@ -377,36 +388,41 @@ public class SecurityConfig {
      */
     @Bean
     public JwtDecoder jwtDecoder() {
-        // Check if mock mode is enabled
+        // The test decoder trusts ANY token and grants every scope (incl. manage:plans).
+        // It must ONLY ever run when auth.mock-enabled is explicitly true (local dev).
         if (mockEnabled) {
-            log.info("Mock mode enabled, using test JWT decoder");
+            log.warn("auth.mock-enabled=true — using TEST JWT decoder that trusts any token. " +
+                    "NEVER enable this outside local development.");
             return createTestJwtDecoder();
         }
 
+        // Fail closed: a missing JWKS URI used to silently fall back to the test
+        // decoder, meaning one unset env var (AUTH_JWKS_URI) granted full admin to
+        // anyone. Refuse to start instead.
         if (jwksUri == null || jwksUri.isBlank()) {
-            log.warn("No JWKS URI configured, using test JWT decoder");
-            return createTestJwtDecoder();
+            throw new IllegalStateException(
+                    "auth.jwks-uri is not configured and auth.mock-enabled is false. " +
+                    "Refusing to start with an insecure JWT decoder. Set AUTH_JWKS_URI " +
+                    "(production) or AUTH_MOCK_ENABLED=true (local development only).");
         }
         log.info("Using real JWT decoder with JWKS URI: {}", jwksUri);
         return buildRealJwtDecoder();
     }
-    
+
     /**
      * Creates a real JWT decoder based on JWKS configuration.
+     *
+     * Intentionally does NOT catch-and-fall-back to the permissive test decoder:
+     * if the real decoder cannot be built we want the app to fail closed.
      *
      * @return Configured JwtDecoder with real Auth0 validation
      */
     private JwtDecoder buildRealJwtDecoder() {
-        try {
-            log.info("Building real JWT decoder with JWKS URI: {}", jwksUri);
-            NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwksUri).build();
-            decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(buildValidators()));
-            log.info("Real JWT decoder built successfully");
-            return decoder;
-        } catch (Exception e) {
-            log.error("Failed to build real JWT decoder, falling back to test decoder", e);
-            return createTestJwtDecoder();
-        }
+        log.info("Building real JWT decoder with JWKS URI: {}", jwksUri);
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwksUri).build();
+        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(buildValidators()));
+        log.info("Real JWT decoder built successfully");
+        return decoder;
     }
     
     /**
@@ -515,16 +531,22 @@ public class SecurityConfig {
                     log.debug("Found permissions claim: {}", col);
                 }
                 
+                // Owner bootstrap: grant manage:plans to allowlisted subs (ADMIN_USER_SUBS).
+                if (isAllowlistedAdmin(jwt.getSubject())) {
+                    scopes.add("manage:plans");
+                    log.info("Granting manage:plans to allowlisted admin sub: {}", jwt.getSubject());
+                }
+
                 if (scopes.isEmpty()) {
                     log.warn("No scopes found in JWT for user: {}", jwt.getSubject());
                     return List.of();
                 }
-                
+
                 var authorities = scopes.stream()
                         .filter(s -> !s.isBlank())
                         .map(s -> (GrantedAuthority) new SimpleGrantedAuthority("SCOPE_" + s))
                         .collect(Collectors.toList());
-                
+
                 log.debug("Generated authorities for user {}: {}", jwt.getSubject(), authorities);
                 return authorities;
             } catch (Exception e) {
@@ -533,6 +555,17 @@ public class SecurityConfig {
             }
         });
         return conv;
+    }
+
+    /** True if the given sub is in the ADMIN_USER_SUBS allowlist (exact match). */
+    private boolean isAllowlistedAdmin(String sub) {
+        if (sub == null || sub.isBlank() || adminUserSubs == null || adminUserSubs.isBlank()) {
+            return false;
+        }
+        for (String allowed : adminUserSubs.split(",")) {
+            if (sub.equals(allowed.trim())) return true;
+        }
+        return false;
     }
     
     /**

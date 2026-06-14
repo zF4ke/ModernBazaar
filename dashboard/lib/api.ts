@@ -54,17 +54,27 @@ async function getSessionAccessToken(): Promise<string | undefined> {
   }
 }
 
+/**
+ * Resolve the backend base URL. SECURITY: never trust a client-sent x-backend-url
+ * in production — the server attaches the user's access token to this request, so
+ * honoring an attacker-controlled host would exfiltrate the token (SSRF). The
+ * override is only allowed outside production for local dev convenience.
+ */
+function resolveBackendUrl(request: Request): string {
+  const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
+  if (process.env.NODE_ENV !== "production") {
+    return (request.headers.get("x-backend-url") || DEFAULT_BACKEND_URL).replace(/\/+$/, "")
+  }
+  return DEFAULT_BACKEND_URL.replace(/\/+$/, "")
+}
+
 export async function fetchFromBackend(
   request: Request,
   endpoint: string,
   options: RequestInit = {},
   accessToken?: string
 ) {
-  const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
-  let backendUrl = request.headers.get('x-backend-url') || DEFAULT_BACKEND_URL
-
-  // Clean up the backend URL - ensure it doesn't end with a slash
-  backendUrl = backendUrl.replace(/\/+$/, '')
+  const backendUrl = resolveBackendUrl(request)
 
   // Ensure endpoint starts with a slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
@@ -141,15 +151,11 @@ export async function postFetchFromBackend(
   options: RequestInit = {},
   accessToken?: string
 ) {
-  const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
-  let backendUrl = request.headers.get('x-backend-url') || DEFAULT_BACKEND_URL
-  
-  // Clean up the backend URL - ensure it doesn't end with a slash
-  backendUrl = backendUrl.replace(/\/+$/, '')
-  
+  const backendUrl = resolveBackendUrl(request)
+
   // Ensure endpoint starts with a slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-  
+
   // Construct the full URL
   const fullUrl = `${backendUrl}${cleanEndpoint}`
 

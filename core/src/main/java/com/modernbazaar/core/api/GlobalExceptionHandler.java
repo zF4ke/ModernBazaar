@@ -105,6 +105,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles invalid arguments (e.g. out-of-range discount percent, bad extend days).
+     *
+     * @param ex The exception indicating an invalid argument
+     * @param request The web request that caused it
+     * @return ResponseEntity with 400 error details
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    protected ResponseEntity<ErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex,
+            WebRequest request) {
+
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                null
+        );
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
      * Catch-all for unexpected exceptions not handled by specific handlers.
      * 
      * @param ex The unexpected exception
