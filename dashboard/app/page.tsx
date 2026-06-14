@@ -164,140 +164,54 @@ export default function LandingPage() {
         </div>
       </GradientSection>
 
-      {/* What You Get */}
-      <section className="py-12 px-4 cursor-default">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center space-y-3 mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold">What You Get</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">An explainable scoring system that adapts to your budget, competition, and fill times.</p>
+      {/* What it does */}
+      <section className="py-12 px-4">
+        <div className="container mx-auto max-w-5xl">
+          <div className="space-y-3 mb-10 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold">Two tools, live today</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Real-time Bazaar data turned into clear, budget-aware decisions — no spreadsheets, no guesswork.
+            </p>
           </div>
-          <ExpandableFeatureGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Core features */}
-            <ExpandableFeatureCard
-              id="bazaar"
-              accent="emerald"
-              icon={<Shuffle className="h-4 w-4 text-emerald-500" />}
-              title="Bazaar Flipping"
-              status="released"
-              summary={<span>Discover quick flips with budget-aware, competition and fill-time scoring.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Your copilot for day-to-day flips: it tells you what to do, when to do it, and why.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Position sizing</Accent>: exactly how much to buy/sell for your budget.</li>
-                    <li><Accent>Profit per hour</Accent>: expected coins after tax for your budget and horizon.</li>
-                    <li><Accent>Risk flags</Accent>: highlights volatile or manipulated-looking prices.</li>
-                    <li><Accent>Fill-time ETA</Accent>: realistic time windows for buys and sells to complete.</li>
-                  </ul>
-                </div>
-              }
-            />
-            
-            
 
-            {/* Coming soon */}
-            <ExpandableFeatureCard
-              id="craft"
-              className="opacity-90"
-              accent="blue"
-              icon={<Hammer className="h-4 w-4 text-blue-500" />}
-              title="Craft Flipping"
-              status="coming"
-              summary={<span>Profit from crafting by scoring material baskets against sale prices, factoring in demand and fill time.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Choose recipes with confidence: the copilot balances cost, demand, and your coin limits.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Smart materials</Accent>: optimizes basket sources and warns on inflated inputs.</li>
-                    <li><Accent>Exact quantities</Accent>: tells you how many to craft for your budget and risk.</li>
-                    <li><Accent>Profit clarity</Accent>: net-after-fees estimates and sensitivity to price swings.</li>
-                    <li><Accent>Time-aware</Accent>: expected sell-through times factored into your plan.</li>
-                  </ul>
+          <div className="grid gap-6 md:grid-cols-2">
+            <FeatureCard backgroundStyle="glass">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15">
+                  <Shuffle className="h-5 w-5 text-emerald-400" />
                 </div>
-              }
-            />
-            
-            <ExpandableFeatureCard
-              id="npc"
-              className="opacity-90"
-              accent="amber"
-              icon={<Coins className="h-4 w-4 text-amber-500" />}
-              title="NPC Flipping"
-              status="coming"
-              summary={<span>Maximize daily-limit profits with budget-aware scoring that targets the highest NPC margins.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Plan your caps like a pro: the assistant sequences buys/sells to squeeze the most from limits.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Route planning</Accent>: prioritized items based on margin, availability, and limits.</li>
-                    <li><Accent>Budget fit</Accent>: allocates coins across items for best risk-adjusted return.</li>
-                    <li><Accent>Risk callouts</Accent>: flags manipulation and volatile windows to avoid.</li>
-                    <li><Accent>Timing</Accent>: clear expectations for how long each step takes.</li>
-                  </ul>
-                </div>
-              }
-            />
-            
-            <ExpandableFeatureCard
-              id="manipulation"
-              accent="rose"
-              icon={<Crosshair className="h-4 w-4 text-rose-500" />}
-              title="Bazaar Manipulation"
-              status="released"
-              summary={<span>Find thin-supply, high-demand markets you can corner within budget, with a full execution plan.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>For higher-risk plays: see exactly what it costs to corner a market and how to price the exit.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Cost to corner</Accent>: total coins to buy out the visible supply, and the average cost per unit.</li>
-                    <li><Accent>Break-even after tax</Accent>: the minimum resell price once the 1.125% bazaar tax is paid.</li>
-                    <li><Accent>Buy/sell plan</Accent>: the inflated buy order, the sell wall, and how many doublings to get there.</li>
-                    <li><Accent>Sell-through ETA</Accent>: how long to offload your stock based on hourly demand.</li>
-                  </ul>
-                </div>
-              }
-            />
+                <h3 className="text-lg font-semibold">Bazaar Flipping</h3>
+                <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Live
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Find buy/sell gaps worth taking, ranked by <span className="text-foreground">profit per hour after the 1.125% tax</span>.
+                It tells you how much to buy for your budget, flags volatile or manipulated-looking prices, and estimates how long fills take.
+              </p>
+            </FeatureCard>
 
-            <ExpandableFeatureCard
-              id="budget"
-              className="opacity-90"
-              accent="emerald"
-              icon={<DollarSign className="h-4 w-4 text-emerald-500" />}
-              title="Budget Planner"
-              status="planned"
-              summary={<span>Allocate coins across strategies using risk-adjusted, fill-time-aware projections.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Personal to your constraints: the copilot tunes ideas to your coins and preferences.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Allocation advice</Accent>: how much to place in each strategy right now.</li>
-                    <li><Accent>Risk fit</Accent>: respects your max drawdown, concentration, and cooldown settings.</li>
-                    <li><Accent>Cashflow timing</Accent>: when coins unlock based on fill-time expectations.</li>
-                  </ul>
+            <FeatureCard backgroundStyle="glass">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/15">
+                  <Crosshair className="h-5 w-5 text-blue-400" />
                 </div>
-              }
-            />
+                <h3 className="text-lg font-semibold">Bazaar Manipulation</h3>
+                <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Live
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Find thin-supply, high-demand markets you can corner within budget. You get the
+                <span className="text-foreground"> full plan</span>: cost to corner, break-even after tax,
+                the buy/sell ladder, and how long it takes to sell out.
+              </p>
+            </FeatureCard>
+          </div>
 
-            <ExpandableFeatureCard
-              id="ah"
-              className="opacity-90"
-              accent="rose"
-              icon={<ArrowRightLeft className="h-4 w-4 text-rose-500" />}
-              title="Auction House"
-              status="planned"
-              summary={<span>Snipe and flip using live listings and history, scored by budget, competition, and time to sell.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Turn signals into action: the assistant calls the trades and sizes them for your wallet.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Entry timing</Accent>: when to place the bid or buyout.</li>
-                    <li><Accent>Size + price</Accent>: how many and at what price is reasonable.</li>
-                    <li><Accent>Outcome preview</Accent>: expected profit, risk, and sell-through time.</li>
-                  </ul>
-                </div>
-              }
-            />
-          </ExpandableFeatureGrid>
+          <p className="text-center text-sm text-muted-foreground mt-8">
+            More on the way — craft flipping, NPC flipping, a budget planner, and auction-house tools.
+          </p>
         </div>
       </section>
 
@@ -319,7 +233,7 @@ export default function LandingPage() {
                 </Button>
               </div>
             </div>
-            <p className="text-muted-foreground max-w-2xl">Choose your plan. Upgrade anytime.</p>
+            <p className="text-muted-foreground max-w-2xl">The app is still in active development — plans aren&apos;t live yet, so everything&apos;s free for now. This is where they&apos;ll land.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -342,23 +256,23 @@ export default function LandingPage() {
                 <ul className="space-y-3 flex-1">
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Flip finder (core features)</span>
+                    <span className="text-sm">Bazaar Flipping finder</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Real-time pricing</span>
+                    <span className="text-sm">Real-time Bazaar prices</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Explainable scores</span>
+                    <span className="text-sm">Profit-per-hour scoring</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">24h history & volatility</span>
+                    <span className="text-sm">48h price history</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Favorites & pin</span>
+                    <span className="text-sm">Favorites &amp; search</span>
                   </li>
                 </ul>
                 <Button asChild className="mt-4 w-full border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10" variant="outline">
@@ -489,7 +403,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Deeper history & volatility</span>
+                    <span className="text-sm">Risk &amp; competition controls</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
@@ -497,7 +411,7 @@ export default function LandingPage() {
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Explainable scoring details</span>
+                    <span className="text-sm">Deeper price history</span>
                   </li>
                 </ul>
                 <Button asChild className="w-full border-primary/30 text-primary hover:bg-primary/10" variant="outline">
@@ -528,12 +442,12 @@ export default function LandingPage() {
                     <span className="text-sm">Everything in Flipper</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Extended history & metrics</span>
+                    <Check className="h-4 w-4 text-blue-400" />
+                    <span className="text-sm font-medium">Bazaar Manipulation</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Advanced risk breakdowns</span>
+                    <span className="text-sm">Extended history &amp; metrics</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Check className="h-4 w-4 text-green-500" />
@@ -569,45 +483,39 @@ export default function LandingPage() {
             <CardContent className="p-6">
               <Accordion type="multiple">
                 <AccordionItem value="what-it-is">
-                  <AccordionTrigger>What this is</AccordionTrigger>
+                  <AccordionTrigger>What is this?</AccordionTrigger>
                   <AccordionContent>
-                    A practical set of tools to monitor Bazaar prices and spot steady opportunities. It favors clarity over hype.
+                    A dashboard that watches Hypixel Bazaar prices and points out flips actually worth doing. I got tired of eyeballing prices and tabbing in and out of the game, so I built this.
                   </AccordionContent>
                 </AccordionItem>
-                <AccordionItem value="what-it-isnt">
-                  <AccordionTrigger>What this isn’t</AccordionTrigger>
+                <AccordionItem value="profit">
+                  <AccordionTrigger>Will it make me money?</AccordionTrigger>
                   <AccordionContent>
-                    A guarantee of profit or a magic signal generator. Markets move. Use judgement and trade responsibly.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="privacy">
-                  <AccordionTrigger>Privacy & ethics</AccordionTrigger>
-                  <AccordionContent>
-                    No gimmicks. No spam. I want this to be useful, respectful, and fun, just like I'd want for myself.
+                    Maybe — it&apos;s not magic. It surfaces good setups and does the math; the market still does what it wants. Think of it as a head start, not a guarantee.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="how-it-ranks">
-                  <AccordionTrigger>How are flips ranked?</AccordionTrigger>
+                  <AccordionTrigger>How does it pick flips?</AccordionTrigger>
                   <AccordionContent>
-                    Scores blend spread, volume, fill-rate, and risk. You can choose presets (fast, default, stable) or tune filters to match your style.
+                    It looks at the spread, how much actually trades each hour, how crowded the item is, and how jumpy the price has been — then ranks by expected profit per hour after tax. You can sort by raw profit instead if you&apos;d rather.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="data-refresh">
-                  <AccordionTrigger>How real-time is the data?</AccordionTrigger>
+                  <AccordionTrigger>How fresh is the data?</AccordionTrigger>
                   <AccordionContent>
-                    Market data is kept near real-time. The backend fetches Hypixel Bazaar frequently and aggregates it so you can act with fresh information.
+                    It pulls from Hypixel about once a minute, so prices are usually within a minute or two of live.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="getting-started">
-                  <AccordionTrigger>How do I get started?</AccordionTrigger>
+                  <AccordionTrigger>How do I start?</AccordionTrigger>
                   <AccordionContent>
-                    Open the dashboard, pick a preset, set basic filters (min volume, margin), and sort by score or profit/hour. Favor items with steady volume and reasonable spreads.
+                    Open the dashboard, set your budget, and look at the top of the Flipping list. Start with items that trade a lot — they fill faster and are harder to get stuck in.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="roadmap">
-                  <AccordionTrigger>What’s next?</AccordionTrigger>
+                  <AccordionTrigger>What&apos;s coming?</AccordionTrigger>
                   <AccordionContent>
-                    Better risk metrics, richer history, and more strategy tooling. Your feedback shapes what comes first.
+                    Craft and NPC flipping, a budget planner, and auction-house tools. What I build next mostly comes down to what people ask for.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -626,9 +534,9 @@ export default function LandingPage() {
       {/* CTA (simple) */}
       <section className="px-4 py-12 mb-12">
         <div className="container mx-auto max-w-3xl text-center">
-          <h2 className="text-2xl md:text-3xl font-bold">Ready to flip with confidence?</h2>
+          <h2 className="text-2xl md:text-3xl font-bold">Stop guessing prices.</h2>
           <p className="text-muted-foreground mt-2">
-            See spread, volume, and risk at a glance. Understand the why, then execute.
+            See what&apos;s actually worth flipping right now — and how much you stand to make.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-5">
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg px-8 py-3 text-base font-medium">
