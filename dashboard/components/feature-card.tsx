@@ -9,6 +9,8 @@ export interface FeatureCardProps {
   className?: string
   blur?: 'none' | 'sm' | 'md'
   backgroundStyle?: 'glass' | 'subtle' | 'flat' | 'intense'
+  /** Optional bg color class (e.g. "bg-emerald-500/20") rendered as a soft corner glow. */
+  glow?: string
 }
 
 const BG_PRESET: Record<NonNullable<FeatureCardProps['backgroundStyle']>, { gradient: string; solid?: string }> = {
@@ -40,23 +42,29 @@ export function FeatureCard({
   children,
   className,
   blur = 'sm',
-  backgroundStyle = 'glass'
+  backgroundStyle = 'glass',
+  glow
 }: FeatureCardProps) {
   const bg = BG_PRESET[backgroundStyle]
 
-  // Sit on the real (elevated) card surface and layer the gradient as a subtle
-  // sheen on top — previously the near-transparent solid override made cards
-  // blend into the page background.
+  // Sit on the real (elevated) card surface, layer the gradient as a sheen, and
+  // optionally render a soft colored glow in the corner for the "vibrant" look.
   return (
     <Card
       className={cn(
-        'border h-full flex flex-col bg-card',
+        'relative overflow-hidden border h-full flex flex-col bg-card',
         BLUR_MAP[blur],
         className
       )}
       style={{ backgroundImage: bg.gradient }}
     >
-      <CardContent className="p-6 flex-1 flex flex-col">
+      {glow && (
+        <div
+          aria-hidden
+          className={cn('pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full blur-3xl opacity-50', glow)}
+        />
+      )}
+      <CardContent className="relative p-6 flex-1 flex flex-col">
         {children}
       </CardContent>
     </Card>

@@ -145,13 +145,13 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ToolCard
-            icon={Shuffle} accent="text-emerald-400" tint="bg-emerald-500/15"
+            icon={Shuffle} accent="text-emerald-400" tint="bg-emerald-500/15" glow="bg-emerald-500/30"
             title="Bazaar Flipping"
             description="Find buy/sell gaps worth taking, ranked by profit per hour after tax, with risk flags and fill-time estimates."
             href="/dashboard/strategies/flipping"
           />
           <ToolCard
-            icon={Crosshair} accent="text-blue-400" tint="bg-blue-500/15"
+            icon={Crosshair} accent="text-blue-400" tint="bg-blue-500/15" glow="bg-blue-500/30"
             title="Bazaar Manipulation"
             description="Find thin markets you can corner within budget, with the full plan: cost to corner, break-even after tax, and sell-through time."
             href="/dashboard/strategies/manipulation"
@@ -168,27 +168,26 @@ export default function Dashboard() {
 }
 
 function ToolCard({
-  icon: Icon, accent, tint, title, description, href,
+  icon: Icon, accent, tint, glow, title, description, href,
 }: {
   icon: React.ComponentType<{ className?: string }>
   accent: string
   tint: string
+  glow: string
   title: string
   description: string
   href: string
 }) {
   return (
-    <FeatureCard backgroundStyle="glass">
-      <div className="flex items-start gap-3 mb-3">
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tint}`}>
-          <Icon className={`h-5 w-5 ${accent}`} />
+    <FeatureCard backgroundStyle="glass" glow={glow}>
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tint}`}>
+          <Icon className={`h-[22px] w-[22px] ${accent}`} />
         </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-base font-semibold">{title}</h3>
-        </div>
+        <h3 className="text-lg font-semibold">{title}</h3>
       </div>
-      <p className="text-sm text-muted-foreground mb-4 flex-1">{description}</p>
-      <Button asChild size="sm" className="mt-auto w-fit">
+      <p className="text-sm text-muted-foreground mb-5 flex-1 leading-relaxed">{description}</p>
+      <Button asChild className="mt-auto w-fit">
         <Link href={href}>Open <ArrowRight className="h-4 w-4 ml-1" /></Link>
       </Button>
     </FeatureCard>

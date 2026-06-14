@@ -190,7 +190,7 @@ export default function LandingPage() {
 
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {STRATEGIES.map((s) => (
-              <FeatureCard key={s.title} backgroundStyle="glass" className={s.live ? "" : "opacity-80"}>
+              <FeatureCard key={s.title} backgroundStyle="glass" className={s.live ? "" : "opacity-80"} glow={s.live ? s.tint.replace("/15", "/30") : undefined}>
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${s.tint}`}>
                     <s.icon className={`h-4 w-4 ${s.color}`} />

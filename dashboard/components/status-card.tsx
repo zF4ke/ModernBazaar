@@ -54,16 +54,18 @@ export function StatusCard({
   const displayValue = value || (isLoading ? "Checking..." : status || "Unknown")
 
   return (
-    <div className="rounded-lg border bg-card p-4 transition-colors hover:border-border/80">
-      <div className="flex items-center gap-3">
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${getBgColor()}`}>
-          <Icon className={`h-5 w-5 ${getIconColor()}`} />
+    <div className="group relative overflow-hidden rounded-xl border bg-card p-4 transition-all hover:border-border/80">
+      {/* colored glow */}
+      <div className={`pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full blur-3xl opacity-70 transition-opacity group-hover:opacity-100 ${getBgColor()}`} />
+      <div className="relative flex items-center gap-3">
+        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${getBgColor()}`}>
+          <Icon className={`h-[22px] w-[22px] ${getIconColor()}`} />
         </div>
-        <div className="min-w-0 space-y-0.5">
-          <p className="text-xs font-medium text-muted-foreground leading-none">{title}</p>
+        <div className="min-w-0 space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground leading-none">{title}</p>
           <div className="flex items-center gap-1.5">
             {!value && getStatusIcon()}
-            <span className={`text-lg font-semibold tracking-tight truncate ${value ? '' : getStatusColor()}`}>
+            <span className={`text-2xl font-bold tracking-tight truncate ${value ? '' : getStatusColor()}`}>
               {displayValue}
             </span>
           </div>
