@@ -11,6 +11,7 @@ import {
 import { useBackendQuery } from '@/hooks/use-backend-query'
 import { LoginCheck } from '@/components/login-check'
 import { GradientSection } from '@/components/gradient-section'
+import { UpgradeButton } from '@/components/upgrade-button'
 import { PERMISSIONS } from '@/constants/permissions'
 import type { UserPermissions } from '@/types/permissions'
 
@@ -81,9 +82,9 @@ export default function ProfilePage() {
                 </div>
               )}
             </div>
-            <Button asChild className="shrink-0">
-              <Link href="/#pricing"><Rocket className="h-4 w-4 mr-1" />Upgrade plan</Link>
-            </Button>
+            <UpgradeButton plan="elite" className="shrink-0">
+              <Rocket className="h-4 w-4 mr-1" />Upgrade plan
+            </UpgradeButton>
           </div>
         </div>
 

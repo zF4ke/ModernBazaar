@@ -298,6 +298,7 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/api/v1/billing/webhook/stripe",
+            "/api/v1/billing/webhook/lemonsqueezy",
             "/api/plans",
             "/api/metrics/**",
             "/api/me/setup" // corrigido para incluir barra inicial
