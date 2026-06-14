@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 
-/** Modern Bazaar mark — a single uptrend line on a blue→indigo tile.
+/** Modern Bazaar mark — a bold upward "trending" arrow on a blue→indigo tile.
  *  Shared by the sidebar and the favicon (app/icon.svg). */
 export function BrandMark({ className }: { className?: string }) {
   return (
@@ -19,8 +19,10 @@ export function BrandMark({ className }: { className?: string }) {
         </linearGradient>
       </defs>
       <rect width="64" height="64" rx="15" fill="url(#brandmark-tile)" />
-      <path d="M16 41 L31 29 L48 18" stroke="#ffffff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="48" cy="18" r="4.5" fill="#ffffff" />
+      <g stroke="#ffffff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 46 L44 20" />
+        <path d="M30 20 L44 20 L44 34" />
+      </g>
     </svg>
   )
 }
