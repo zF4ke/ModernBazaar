@@ -2,9 +2,7 @@
 
 import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { FlipOpportunity, FlippingQuery } from "@/types/strategies"
 import {
   Star,
@@ -12,19 +10,19 @@ import {
   Package,
   ArrowDown,
   ArrowUp,
-  TrendingUp,
-  ShieldAlert,
-  Users,
-  BarChart3,
   ChevronDown,
   ChevronUp,
   Info,
-  Target,
-  Calculator,
-  AlertCircle,
   Clock
 } from "lucide-react"
 import { format, formatTime } from "./utils"
+import { PROFIT_HIGHLIGHT } from "./badge-thresholds"
+import { StatusBadges } from "./opportunity-card/status-badges"
+import { StepPurchase } from "./opportunity-card/step-purchase"
+import { StepBuyOrders } from "./opportunity-card/step-buy-orders"
+import { StepSellOrders } from "./opportunity-card/step-sell-orders"
+import { StepProfit } from "./opportunity-card/step-profit"
+import { RiskWarning } from "./opportunity-card/risk-warning"
 import React from "react"
 
 interface OpportunityCardProps {
@@ -48,7 +46,7 @@ export function OpportunityCard({ o, query, bazaarTaxRate, fav, onToggleFav, exp
   const spreadPctVal = (o.spreadPct ?? 0) * 100
   const isExpanded = expandedCard === o.productId
 
-  const profitColor = (o.reasonableProfitPerHour ?? 0) * (query.horizonHours || 1) >= 900000
+  const profitColor = (o.reasonableProfitPerHour ?? 0) * (query.horizonHours || 1) >= PROFIT_HIGHLIGHT
     ? 'text-emerald-400'
     : 'text-foreground'
 
@@ -214,159 +212,3 @@ export function OpportunityCard({ o, query, bazaarTaxRate, fav, onToggleFav, exp
     </Card>
   )
 }
-
-// Subcomponents / helpers
-function StatusBadges({ o, riskPct, spreadPctVal, d, s, format }: any) {
-  const competitionScore = o.competitionPerHour ?? 0
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${spreadPctVal >= 20 ? 'border-emerald-500/50 text-emerald-400' : spreadPctVal >= 10 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
-        <TrendingUp className="h-3 w-3 mr-1" />
-        {format(spreadPctVal, 0)}% spread
-      </Badge>
-      {riskPct !== undefined && (
-        o.riskNote ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant="outline" className={`text-[10px] px-2 py-0.5 cursor-help ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
-                <ShieldAlert className="h-3 w-3 mr-1" />
-                {riskPct}% risk
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="max-w-xs text-sm">{o.riskNote}</p>
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${riskPct >= 50 ? 'border-red-500/50 text-red-400' : 'border-zinc-600 text-zinc-400'}`}>
-            <ShieldAlert className="h-3 w-3 mr-1" />
-            {riskPct}% risk
-          </Badge>
-        )
-      )}
-      <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${competitionScore >= 1000 ? 'border-red-500/50 text-red-400' : competitionScore >= 500 ? 'border-amber-500/50 text-amber-400' : 'border-zinc-600 text-zinc-400'}`}>
-        <Users className="h-3 w-3 mr-1" />
-        {format(competitionScore, 0)} comp
-      </Badge>
-      <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-        <BarChart3 className="h-3 w-3" />
-        <span>Demand {format(d,0)} · Supply {format(s,0)}</span>
-      </div>
-    </div>
-  )
-}
-
-function StepPurchase({ o, query, buy }: any) {
-  return (
-    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <Target className="h-4 w-4 text-blue-400" />
-        <span className="font-medium text-blue-300">Step 1: Calculate Purchase Amount</span>
-      </div>
-      <div className="text-xs text-muted-foreground space-y-1">
-        <div className="flex items-center justify-between">
-          <span>Suggested amount per hour:</span>
-          <span className="font-mono text-blue-300">{format(o.suggestedUnitsPerHour, 0)} units</span>
-        </div>
-        {query.horizonHours && (
-          <div className="flex items-center justify-between">
-            <span>For {query.horizonHours}h timeframe:</span>
-            <span className="font-mono text-blue-300">{format((o.suggestedUnitsPerHour || 0) * query.horizonHours, 0)} units</span>
-          </div>
-        )}
-        <div className="flex items-center justify-between border-t border-blue-500/20 pt-1">
-          <span>Total investment needed:</span>
-          <span className="font-mono text-blue-300">
-            {format((query.horizonHours || 1) * Math.round(o.suggestedUnitsPerHour || 0) * buy, 0)} coins
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function StepBuyOrders({ o, buy }: any) {
-  return (
-    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <ArrowDown className="h-4 w-4 text-red-400" />
-        <span className="font-medium text-red-300">Step 2: Place Buy Orders</span>
-      </div>
-      <div className="text-xs text-muted-foreground space-y-1">
-        <div>• Go to the Bazaar and search for <span className="font-mono text-red-300">{o.displayName || o.productId}</span></div>
-        <div>• Place buy orders at <span className="font-mono text-red-300">{format(buy, 2)} coins</span> each</div>
-        <div>• Expected fill time: <span className="text-red-300">{(o as any).suggestedBuyFillHours ? formatTime((o as any).suggestedBuyFillHours) : 'Unknown'}</span></div>
-      </div>
-    </div>
-  )
-}
-
-function StepSellOrders({ o, sell, bazaarTaxRate }: any) {
-  return (
-    <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <ArrowUp className="h-4 w-4 text-emerald-400" />
-        <span className="font-medium text-emerald-300">Step 3: Place Sell Orders</span>
-      </div>
-      <div className="text-xs text-muted-foreground space-y-1">
-        <div>• Once items are bought, place sell orders at <span className="font-mono text-emerald-300">{format(sell, 2)} coins</span> each</div>
-        <div>• After {(bazaarTaxRate * 100).toFixed(2)}% tax, you'll receive <span className="font-mono text-emerald-300">{format(sell * (1 - bazaarTaxRate), 2)} coins</span> net</div>
-        <div>• Expected fill time: <span className="text-emerald-300">{(o as any).suggestedSellFillHours ? formatTime((o as any).suggestedSellFillHours) : 'Unknown'}</span></div>
-        <div>• Total expected time: <span className="text-emerald-300">{(o as any).suggestedTotalFillHours ? formatTime((o as any).suggestedTotalFillHours) : 'Unknown'}</span></div>
-      </div>
-    </div>
-  )
-}
-
-function StepProfit({ o, buy, sell, bazaarTaxRate, query }: any) {
-  return (
-    <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <Calculator className="h-4 w-4 text-purple-400" />
-        <span className="font-medium text-purple-300">Step 4: Profit Setup</span>
-      </div>
-      <div className="text-xs text-muted-foreground space-y-1">
-        <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Per Item:</div>
-        <div className="flex items-center justify-between">
-          <span>Gross profit:</span>
-          <span className="font-mono text-purple-300">{format(sell - buy, 2)} coins</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Tax deduction ({(bazaarTaxRate * 100).toFixed(2)}%):</span>
-          <span className="font-mono text-red-300">-{format(sell * bazaarTaxRate, 2)} coins</span>
-        </div>
-        <div className="flex items-center justify-between border-t mb-4 border-purple-500/20 pt-1">
-          <span>Net profit per item:</span>
-          <span className="font-mono text-purple-300">{format((sell * (1 - bazaarTaxRate)) - buy, 2)} coins</span>
-        </div>
-        <div className="h-3"></div>
-        <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Profit Rates:</div>
-        <div className="flex items-center justify-between">
-          <span>Profit per hour:</span>
-          <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * (1 - bazaarTaxRate), 0)} coins/hour</span>
-        </div>
-        {query.horizonHours && (
-          <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
-            <span>Total profit ({query.horizonHours}h):</span>
-            <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours * (1 - bazaarTaxRate), 0)} coins</span>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function RiskWarning({ riskPct }: { riskPct: number }) {
-  return (
-    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <AlertCircle className="h-4 w-4 text-amber-400" />
-        <span className="font-medium text-amber-300">Risk Warning</span>
-      </div>
-      <div className="text-xs text-muted-foreground">
-        This flip has a <span className="text-amber-300">{riskPct}% risk score</span>. Market conditions can change quickly - monitor your orders closely.
-      </div>
-    </div>
-  )
-}
-
