@@ -33,7 +33,6 @@ export default function Dashboard() {
   )
   const topFlips = flips?.items ?? []
 
-  const profitable = metrics?.profitableItems
   const lastFetch = metrics?.lastFetch ? new Date(metrics.lastFetch) : null
   const updated = lastFetch ? lastFetch.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : null
 
@@ -47,20 +46,20 @@ export default function Dashboard() {
             Welcome back
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Hi, {firstName}. Here&apos;s what&apos;s worth flipping.
+            Hi, {firstName}. Ready to spot your next Bazaar flip?
           </h1>
           <p className="text-muted-foreground max-w-2xl">
-            {profitable !== undefined
-              ? `${profitable.toLocaleString()} items are profitable right now.`
-              : 'Live Hypixel Bazaar prices, scored for profit.'}{' '}
-            Jump straight in, or browse the market yourself.
+            Watch Hypixel SkyBlock prices, find reliable buy/sell gaps, and flip items with confidence.
           </p>
-          <div className="flex flex-wrap gap-3 pt-1">
+          <div className="flex flex-wrap gap-3 pt-2">
             <Button asChild size="lg">
               <Link href="/dashboard/strategies/flipping"><TrendingUp className="h-4 w-4" />Find Flips</Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href="/dashboard/strategies/manipulation"><Crosshair className="h-4 w-4" />Manipulation</Link>
+              <Link href="/dashboard/bazaar-items"><Boxes className="h-4 w-4" />Browse Market</Link>
+            </Button>
+            <Button asChild variant="ghost" size="lg" className="text-muted-foreground hover:text-foreground">
+              <Link href="/dashboard/skyblock-items"><Layers className="h-4 w-4" />Item Catalog</Link>
             </Button>
           </div>
         </div>
