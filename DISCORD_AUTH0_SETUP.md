@@ -132,6 +132,19 @@ function (user, context, callback) {
    - Verify Discord app has correct scopes
    - Check Auth0 connection permissions
 
+4. **Too many Auth0/consent pages on social login**
+   - On the **API** (Applications → APIs → your API → Settings), enable
+     **"Allow Skipping User Consent"**.
+   - Make sure the application is **first-party** (Applications → your app →
+     it should not be marked third-party). Consent is only forced for
+     third-party apps or when skipping is off.
+   - **Keep "Allow Offline Access" ENABLED** on the API. It controls whether
+     Auth0 issues **refresh tokens** (the `offline_access` scope). nextjs-auth0 v4
+     uses the refresh token to renew the short-lived access token **silently,
+     server-side**, so the user isn't bounced back to login. Disabling it does
+     **not** remove consent screens (that's "Allow Skipping User Consent") and
+     will break silent renewal — leave it on.
+
 ### Debug Steps:
 
 1. Check browser console for errors
@@ -141,18 +154,22 @@ function (user, context, callback) {
 
 ## 📱 Usage in Code
 
-```typescript
-import { useAuth0 } from '@auth0/auth0-react'
+> The app uses **`@auth0/nextjs-auth0` v4** (server sessions), not the old
+> `@auth0/auth0-react` SPA library. Login is a link to the middleware-mounted
+> `/auth/login` route; the access token stays server-side.
 
-const { loginWithRedirect } = useAuth0()
+```tsx
+import { useUser } from '@auth0/nextjs-auth0'
 
-// Login with Discord
-const handleDiscordLogin = () => {
-  loginWithRedirect({
-    connection: 'discord',
-    appState: { returnTo: window.location.origin }
-  })
-}
+// In a client component
+const { user, isLoading } = useUser()
+
+// Login with a specific social connection (skips the connection picker)
+<a href="/auth/login?connection=discord">Continue with Discord</a>
+<a href="/auth/login?connection=google-oauth2">Continue with Google</a>
+
+// Logout
+<a href="/auth/logout">Sign out</a>
 ```
 
 ## 🎉 Success!

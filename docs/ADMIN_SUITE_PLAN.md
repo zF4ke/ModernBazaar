@@ -29,20 +29,26 @@ This plan delivers an admin analytics and user-management suite for Modern Bazaa
    - `LEMONSQUEEZY_WEBHOOK_SECRET=...` (replaces `stripe.webhook-secret` usage)
 6. **Backend work:** Add a sibling to the existing Stripe handler — a `POST /api/v1/billing/webhook/lemonsqueezy` controller that verifies the `X-Signature` HMAC, maps the variant ID → plan slug, and calls the existing `SubscriptionService.applyStripeWebhook(...)` logic (generalize/rename it to `applyProviderWebhook(...)`). Reuse `UserSubscription` (`stripeCustomerId`/`stripeSubscriptionId` columns hold the Lemon Squeezy customer/subscription IDs). The webhook route stays public in `SecurityConfig.java`, exactly like the current Stripe webhook.
 
-> Migration note: keep the existing Stripe webhook path intact behind `billing.enabled`; add Lemon Squeezy in parallel so nothing already wired breaks. No `UserSubscription` schema change is required — only ID semantics change.
+> Note: **Stripe has been removed.** Lemon Squeezy is the only payment provider.
+> The `stripe-java` dependency, `BillingWebhookController`, the `stripe.*` config and
+> the `/webhook/stripe` route are gone. The `UserSubscription.stripe*` / `Plan.stripePriceId`
+> DB columns are kept and **reused as generic provider ids** (LS customer / subscription / variant).
 
 ### Status — what's built vs. owner-blocked
 
-**Built (code is in place, dormant until `BILLING_ENABLED=true`):**
-- `LemonSqueezyWebhookController` — `POST /api/v1/billing/webhook/lemonsqueezy`, verifies `X-Signature` HMAC-SHA256, maps `variant_id` → plan (via `plan.stripe_price_id`), reads `meta.custom_data.user_id`, calls `SubscriptionService.applyStripeWebhook(...)`. Route is public in `SecurityConfig`.
-- Config keys `billing.enabled` (now `${BILLING_ENABLED:false}`) and `lemonsqueezy.webhook-secret` in both `application.yml` and `application-docker.yml`; env stubs in `infra/.env`.
-- Frontend `UpgradeButton` (`dashboard/components/upgrade-button.tsx`) opens the LS hosted checkout for a plan with `checkout[custom][user_id]=<auth0 sub>` so the webhook can attribute it; falls back to `/#pricing` until URLs are set. Wired into the profile "Upgrade plan" button.
+**Built (dormant until `BILLING_ENABLED=true`):**
+- `LemonSqueezyWebhookController` — `POST /api/v1/billing/webhook/lemonsqueezy`. **Fails closed**: rejects unsigned requests when billing is on (verifies the normalized `X-Signature` HMAC-SHA256). Maps `variant_id` → plan (via `plan.stripe_price_id`), reads `meta.custom_data.user_id`, calls `SubscriptionService.applyProviderWebhook(...)`. Increments referral conversions idempotently (per referred user) on `subscription_created`. Route is public in `SecurityConfig`.
+- Config keys `billing.enabled` (`${BILLING_ENABLED:false}`) and `lemonsqueezy.webhook-secret` in both `application.yml` and `application-docker.yml`; env stubs in `infra/.env`.
+- Frontend `UpgradeButton` (`dashboard/components/upgrade-button.tsx`) opens the LS hosted checkout with `checkout[custom][user_id]=<auth0 sub>`; falls back to `/#pricing` until URLs are set. Wired into the profile "Upgrade plan" button.
+- **Phase 3 shipped**: discount codes (`AdminDiscountController` + `DiscountService`) and referrals (`AdminReferralController` + `ReferralService`, with the `referral_conversion` idempotency table). Admin pages at `/dashboard/admin/discounts` and `/referrals`.
 
 **Owner-blocked (needs the Lemon Squeezy account — paste these and redeploy):**
 1. `infra/.env`: set `BILLING_ENABLED=true` and `LEMONSQUEEZY_WEBHOOK_SECRET=<signing secret>`.
 2. `plan.stripe_price_id` for `flipper` and `elite` rows = their LS **variant IDs**.
 3. Dashboard env: `NEXT_PUBLIC_LS_CHECKOUT_FLIPPER` / `NEXT_PUBLIC_LS_CHECKOUT_ELITE` = the per-product checkout links.
 4. Point the LS webhook at `https://<api-host>/api/v1/billing/webhook/lemonsqueezy`.
+
+See [COSTS.md](COSTS.md) for the fee math on these plans.
 
 ## 3. Phase 1 — Admin Analytics Dashboard (read-only, build first)
 
