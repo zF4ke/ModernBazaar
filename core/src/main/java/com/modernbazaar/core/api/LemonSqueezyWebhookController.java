@@ -82,9 +82,15 @@ public class LemonSqueezyWebhookController {
 
             // Attribute the referrer on the first subscription (ref carried through
             // checkout). Idempotent per referred user, so a replayed signed event
-            // cannot inflate conversion counts.
+            // cannot inflate conversion counts. Best-effort: a referral failure (e.g.
+            // a benign duplicate-insert race) must NOT fail the already-applied
+            // subscription, which would make the provider retry the whole event.
             if ("subscription_created".equals(event)) {
-                referralService.recordConversion(root.path("meta").path("custom_data").path("ref").asText(null), userId);
+                try {
+                    referralService.recordConversion(root.path("meta").path("custom_data").path("ref").asText(null), userId);
+                } catch (Exception refErr) {
+                    log.warn("Referral conversion failed for user {} (continuing): {}", userId, refErr.getMessage());
+                }
             }
         } catch (Exception e) {
             log.error("Error processing Lemon Squeezy webhook", e);
