@@ -132,7 +132,7 @@ export default function LandingPage() {
                 </span>
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto md:mx-0">
-                Modern Bazaar reads the market for you and tells you the exact move: what to flip, how much to buy and when to sell, all sized to your budget. It practically teaches you to trade as you go.
+                Handcrafted tools with real-time pricing and clear, budget-aware scores so you can flip with confidence.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start items-center pt-1">
                 <Button asChild size="lg" className="px-8 py-3 text-lg transform hover:scale-[1.02] active:scale-[0.98] transition-all">
@@ -352,7 +352,7 @@ export default function LandingPage() {
                 </Badge>
               </div>
               <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-500/15 blur-3xl" />
-              <CardHeader className="text-center space-y-4 relative z-10">
+              <CardHeader className="text-center space-y-4 pt-9 relative z-10">
                 <div className="mx-auto w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
                   <Zap className="h-6 w-6 text-purple-400" />
                 </div>
