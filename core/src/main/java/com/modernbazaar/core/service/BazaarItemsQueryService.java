@@ -46,6 +46,7 @@ public class BazaarItemsQueryService {
         /* guard-rails for page */
         if (page < 0) page = 0;
         if (limit <= 0) limit = 25;
+        if (limit > 200) limit = 200; // cap so one request can't scan the whole table (cost/DoS guard)
         int offset = page * limit;
 
         /* 1️⃣ single query: page of IDs + total */

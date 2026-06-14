@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { RefreshCw, Database, Clock, Trash2, Server, Wifi, Activity, Settings } from "lucide-react"
+import { RefreshCw, Database, Clock, Trash2, Server, Wifi, Activity, Settings, Power } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { StatusCard } from "@/components/status-card"
@@ -71,6 +71,29 @@ export default function AdminSettingsPage() {
 
   // Use the admin access hook
   const { hasAdminAccess, loading: adminLoading, error } = useAdminAccess()
+
+  // Maintenance mode (kill switch)
+  const { data: maint, refetch: refetchMaint } = useBackendQuery<{ enabled: boolean }>(
+    "/api/admin/maintenance",
+    { enabled: hasAdminAccess, requireAuth: true, queryKey: ["maintenance"] }
+  )
+  const [maintBusy, setMaintBusy] = useState(false)
+  const toggleMaintenance = async (next: boolean) => {
+    if (next && !window.confirm("Turn ON maintenance mode? This makes the API return 503 for ALL non-admin users — the site goes down for everyone but admins.")) return
+    setMaintBusy(true)
+    try {
+      await fetchWithBackendUrl("/api/admin/maintenance", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: next }),
+      })
+      await refetchMaint()
+      toast({ title: next ? "Maintenance mode ON" : "Maintenance mode OFF", description: next ? "The site is now down for non-admins." : "The site is back up." })
+    } catch (e) {
+      toast({ title: "Error", description: (e as Error).message, variant: "destructive" })
+    } finally {
+      setMaintBusy(false)
+    }
+  }
 
   const handleSaveSettings = () => {
     // Store API endpoint in localStorage
@@ -184,6 +207,29 @@ export default function AdminSettingsPage() {
           <p className="text-muted-foreground">System configuration and management</p>
         </div>
       </div>
+
+      {/* Maintenance mode — kill switch */}
+      <Card className={maint?.enabled ? "border-red-500/50 bg-red-500/5" : "border-amber-500/30"}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Power className={`h-5 w-5 ${maint?.enabled ? "text-red-400" : "text-amber-400"}`} />
+            Maintenance mode
+            {maint?.enabled && <Badge variant="outline" className="ml-1 border-red-500/40 text-red-400">SITE DOWN</Badge>}
+          </CardTitle>
+          <CardDescription>
+            Emergency kill switch. When on, the API returns 503 for every non-admin request (admins keep access so you can turn it back off). Takes effect instantly — no redeploy.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="maintenance-toggle">{maint?.enabled ? "The site is currently DOWN for users" : "The site is up"}</Label>
+              <p className="text-sm text-muted-foreground">Use this if something goes wrong (bad deploy, abuse, data issue).</p>
+            </div>
+            <Switch id="maintenance-toggle" checked={!!maint?.enabled} disabled={maintBusy} onCheckedChange={toggleMaintenance} />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* System Status */}
       <Card>
