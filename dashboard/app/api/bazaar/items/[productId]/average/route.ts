@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { BazaarItemHourAverage } from "@/types/bazaar"
 import { fetchFromBackend } from "@/lib/api"
+import { isBackendError } from "@/types/errors"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ productId: string }> }) {
   const resolvedParams = await params
@@ -11,19 +12,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const authHeader = request.headers.get('authorization') || undefined
     const token = authHeader?.replace(/^Bearer\s+/i, '')
 
-    const averageOrError: BazaarItemHourAverage | { status: number; [key: string]: any } = await fetchFromBackend(
-      request, 
+    const result = await fetchFromBackend(
+      request,
       `/api/bazaar/items/${encodeURIComponent(productId)}/average`,
       {},
       token
     )
 
-    if (typeof (averageOrError as any)?.status === 'number' && (averageOrError as any).status >= 400) {
-      return NextResponse.json(averageOrError as any, { status: (averageOrError as any).status })
+    if (isBackendError(result)) {
+      return NextResponse.json(result, { status: result.status })
     }
-    
+
     // Cache for 4.5 minutes (slightly less than backend's 5 minutes)
-    const response = NextResponse.json(averageOrError as BazaarItemHourAverage)
+    const response = NextResponse.json(result as BazaarItemHourAverage)
     response.headers.set('Cache-Control', 'public, s-maxage=270, stale-while-revalidate=60')
     return response
   } catch (error) {

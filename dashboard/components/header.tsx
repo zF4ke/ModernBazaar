@@ -2,7 +2,7 @@
 
 import { Moon, Sun, LogIn, LogOut, User, Settings, ChevronDown, Wifi, WifiOff } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { useBackendHealthContext } from '@/components/backend-health-provider'
 import { useAdminAccess } from '@/hooks/use-admin-access'
 import { Shield } from 'lucide-react'
@@ -38,7 +38,8 @@ export function Header() {
   const { setTheme, theme } = useTheme()
   const pathname = usePathname()
   const router = useRouter()
-  const { loginWithRedirect, logout, isAuthenticated, user, isLoading } = useAuth0()
+  const { user, isLoading } = useUser()
+  const isAuthenticated = !!user
   const { isOnline } = useBackendHealthContext()
   const { hasAdminAccess } = useAdminAccess()
 
@@ -187,7 +188,7 @@ export function Header() {
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem 
                 className="cursor-pointer text-red-400 hover:text-red-300 focus:text-red-300 hover:bg-accent focus:bg-accent"
-                onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                onClick={() => window.location.href = "/auth/logout"}
               >
                 <LogOut className="h-4 w-4 mr-1" />
                 Sign Out

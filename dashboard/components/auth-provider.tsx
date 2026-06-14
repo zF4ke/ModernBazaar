@@ -1,47 +1,16 @@
 "use client"
 
-import { Auth0Provider } from '@auth0/auth0-react'
+import { Auth0Provider } from '@auth0/nextjs-auth0'
 
 interface AuthProviderProps {
   children: React.ReactNode
 }
 
+/**
+ * Client provider for nextjs-auth0 v4. Exposes the session user to `useUser()`.
+ * All Auth0 configuration lives server-side in lib/auth0.ts; the browser only
+ * ever sees the (non-sensitive) user profile via /auth/profile.
+ */
 export function AuthProvider({ children }: AuthProviderProps) {
-  const domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN
-  const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID
-  const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE
-  // Compute redirect URI at runtime so it matches current origin
-  const redirectUri = typeof window !== 'undefined'
-    ? `${window.location.origin}/auth/callback`
-    : (process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI
-      ? `${process.env.NEXT_PUBLIC_AUTH0_REDIRECT_URI}/auth/callback`
-      : undefined)
-
-  if (!domain || !clientId || !audience) {
-    throw new Error(
-      'Missing required Auth0 environment variables. Please set NEXT_PUBLIC_AUTH0_DOMAIN, NEXT_PUBLIC_AUTH0_CLIENT_ID, and NEXT_PUBLIC_AUTH0_AUDIENCE.'
-    )
-  }
-
-  return (
-    <Auth0Provider
-      domain={domain}
-      clientId={clientId}
-      authorizationParams={{
-        audience: audience,
-        redirect_uri: redirectUri,
-        scope: 'openid profile email offline_access'
-      }}
-      cacheLocation="localstorage"
-      useRefreshTokens
-      useRefreshTokensFallback
-      // We manually handle callbacks in pages; prevent double-handling here
-      skipRedirectCallback
-      // Force single audience configuration
-      // Remove onRedirectCallback to avoid conflicts with manual handling
-      // The callback pages will handle the redirect manually
-    >
-      {children}
-    </Auth0Provider>
-  )
+  return <Auth0Provider>{children}</Auth0Provider>
 }

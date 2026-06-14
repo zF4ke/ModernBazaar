@@ -77,14 +77,17 @@ management:
 # --- Feature Flags / Toggles ---
 # Controle explícito para evitar ativação não intencional em ambientes novos.
 billing:
-  enabled: false   # habilitar somente quando Stripe configurado
+  enabled: ${BILLING_ENABLED:false}   # habilitar somente quando o provedor de pagamento estiver configurado
 
 # Auth (resource server) - configurar em runtime
 auth:
-  mock-enabled: false  # true: usa decoder stub quando jwks-uri ausente
+  # DANGER: true makes the app trust ANY token with full admin scopes. Local dev only.
+  mock-enabled: ${AUTH_MOCK_ENABLED:false}
   jwks-uri: ${AUTH_JWKS_URI:}
   issuer-uri: ${AUTH_ISSUER_URI:}
   audience: ${AUTH_AUDIENCE:}
+  # Comma-separated Auth0 subs granted manage:plans (admin) server-side. Bootstrap only.
+  admin-user-subs: ${ADMIN_USER_SUBS:}
 
 # Auth0 Management API - for automatic role assignment
 auth0:
@@ -93,9 +96,10 @@ auth0:
     client-id: ${AUTH_MANAGEMENT_CLIENT_ID:}
     client-secret: ${AUTH_MANAGEMENT_CLIENT_SECRET:}
 
-# Stripe
-stripe:
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+# Lemon Squeezy (Merchant of Record - handles VAT/sales tax). Our only payment provider.
+lemonsqueezy:
+  webhook-secret: ${LEMONSQUEEZY_WEBHOOK_SECRET:}
+  api-key: ${LEMONSQUEEZY_API_KEY:}   # for server-side actions (e.g. cancelling a subscription)
 
 
 skyblock:

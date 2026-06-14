@@ -11,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -70,6 +72,21 @@ public class SubscriptionController {
             throw e;
         }
     }
+
+    /**
+     * Cancels the authenticated user's subscription, recording feedback about why.
+     * Cancels on Lemon Squeezy when configured; access continues until the period end.
+     */
+    @PostMapping(path = "/me/subscription/cancel", consumes = "application/json")
+    @RateLimiter(name = "subscriptionEndpoint")
+    public SubscriptionResponseDTO cancelMySubscription(@AuthenticationPrincipal Jwt jwt,
+                                                        @RequestBody CancelRequest body) {
+        String userId = jwt.getSubject();
+        log.info("Cancellation requested by user {} (reason={})", userId, body.reason());
+        return subscriptionService.requestCancellation(userId, body.reason(), body.comment());
+    }
+
+    public record CancelRequest(String reason, String comment) {}
 
     /**
      * Retrieves all active subscription plans available to users.

@@ -1,422 +1,144 @@
 "use client"
 
 import Link from 'next/link'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
-import { StatusCard } from "@/components/status-card"
-import { MarketInsightCard } from "@/components/market-trend-chart"
-import { TrendingUp, Boxes, Layers, Sparkles, BarChart3, DollarSign, Target, Activity, ArrowRight, Zap, Timer, Users, LineChart, Server, Lightbulb, Hammer, Coins, ArrowRightLeft, Shield, Shuffle } from "lucide-react"
+import {
+  TrendingUp, Boxes, Layers, Sparkles, ArrowRight, Crosshair, Lock,
+} from "lucide-react"
 import { useBackendQuery } from "@/hooks/use-backend-query"
+import { useHasPermission } from "@/hooks/use-has-permission"
+import { PERMISSIONS } from "@/constants/permissions"
 import type { SystemMetrics } from "@/types/metrics"
-import type { BazaarItemsResponse } from "@/types/bazaar"
-import { FeatureCard } from '@/components/feature-card'
+import type { FlipOpportunity, PagedResponse } from "@/types/strategies"
 import { GradientSection } from '@/components/gradient-section'
-import { TokenTest } from '@/components/token-test'
+import { OpportunityFeed } from './_components/opportunity-feed'
 
 export default function Dashboard() {
-  const { user } = useAuth0()
+  const { user } = useUser()
   const firstName = user?.name?.split(' ')[0] ?? 'Trader'
 
-  // Fetch system metrics
-  const { data: metrics, isLoading: metricsLoading } = useBackendQuery<SystemMetrics>(
+  const { data: metrics } = useBackendQuery<SystemMetrics>(
     '/api/metrics',
-    { 
-      refetchInterval: 30000, // Refresh every 30 seconds
-      queryKey: ['metrics'],
-      requireAuth: false
-    }
+    { refetchInterval: 30000, queryKey: ['metrics'], requireAuth: false }
   )
 
-  // Fetch bazaar items data once for market insights
-  const { data: bazaarItemsData, isLoading: bazaarItemsLoading } = useBackendQuery<BazaarItemsResponse>(
-    '/api/bazaar/items?limit=10&sort=spreaddesc',
-    {
-      refetchInterval: 300000, // Refresh every 5 minutes
-      queryKey: ['market-insights'],
-      requireAuth: true
-    }
-  )
+  // Tiered access: only fetch/show the flips feed if this account owns the tool,
+  // otherwise we'd leak premium data to lower tiers.
+  const { hasPermission: canFlip, loading: permLoading } = useHasPermission(PERMISSIONS.USE_BAZAAR_FLIPPING)
 
-  const formatPercentage = (value: number) => `${value.toFixed(2)}%`
-  const formatCurrency = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 2 })
-  const formatNumber = (value: number) => value.toLocaleString('en-US')
+  const { data: flips, isLoading: flipsLoading } = useBackendQuery<PagedResponse<FlipOpportunity>>(
+    '/api/strategies/flipping?sort=score&limit=6&horizonHours=1',
+    { refetchInterval: 60000, queryKey: ['top-flips'], requireAuth: true, enabled: canFlip }
+  )
+  const topFlips = flips?.items ?? []
+
+  const lastFetch = metrics?.lastFetch ? new Date(metrics.lastFetch) : null
+  const updated = lastFetch ? lastFetch.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : null
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
+      {/* Welcome */}
       <GradientSection variant="hero" padding="md" backdropBlur="none">
         <div className="relative z-10 flex flex-col gap-4">
           <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Sparkles className="h-4 w-4"/>
+            <Sparkles className="h-4 w-4" />
             Welcome back
           </div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
             Hi, {firstName}. Ready to spot your next Bazaar flip?
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground max-w-2xl">
             Watch Hypixel SkyBlock prices, find reliable buy/sell gaps, and flip items with confidence.
           </p>
           <div className="flex flex-wrap gap-3 pt-2">
-            <Button asChild size="lg" className="transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-              <Link href="/dashboard/bazaar-items">
-                <Boxes className="h-4 w-4" />
-                Browse Market
-              </Link>
+            <Button asChild size="lg">
+              <Link href="/dashboard/strategies/flipping"><TrendingUp className="h-4 w-4" />Find Flips</Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="transform transition-all duration-200">
-              <Link href="/dashboard/skyblock-items">
-                <Layers className="h-4 w-4" />
-                Item Catalog
-              </Link>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/dashboard/bazaar-items"><Boxes className="h-4 w-4" />Browse Market</Link>
             </Button>
-            <Button asChild variant="secondary" size="lg" className="transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-              <Link href="/dashboard/strategies/flipping">
-                <TrendingUp className="h-4 w-4" />
-                Find Flips
-              </Link>
+            <Button asChild variant="ghost" size="lg" className="text-muted-foreground hover:text-foreground">
+              <Link href="/dashboard/skyblock-items"><Layers className="h-4 w-4" />Item Catalog</Link>
             </Button>
           </div>
         </div>
       </GradientSection>
 
-      {/* Market Overview */}
-      <section className="space-y-6">
-        <div className="space-y-1">
-          <h2 className="text-xl md:text-2xl font-semibold">Market Overview</h2>
-          <p className="text-muted-foreground text-sm">
-            Get a quick snapshot of the Hypixel SkyBlock Bazaar market
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {metricsLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i}>
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-3">
-                    <Skeleton className="h-10 w-10 rounded-full" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-5 w-16" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <>
-              <StatusCard
-                title="Total Items"
-                icon={Boxes}
-                value={formatNumber(metrics?.totalItems || 0)}
-                iconColorClass="text-blue-600 dark:text-blue-400"
-                bgColorClass="bg-blue-100 dark:bg-blue-900/20"
-              />
-              <StatusCard
-                title="Profitable Items"
-                icon={Target}
-                value={formatNumber(metrics?.profitableItems || 0)}
-                iconColorClass="text-green-600 dark:text-green-400"
-                bgColorClass="bg-green-100 dark:bg-green-900/20"
-              />
-              <StatusCard
-                title="Avg. Profit Margin"
-                icon={DollarSign}
-                value={formatCurrency(metrics?.avgProfitMargin || 0)}
-                iconColorClass="text-amber-600 dark:text-amber-400"
-                bgColorClass="bg-amber-100 dark:bg-amber-900/20"
-              />
-              <StatusCard
-                title="Market Activity"
-                icon={Activity}
-                value={`${Math.round(metrics?.marketActivityScore || 0)}/100`}
-                iconColorClass="text-purple-600 dark:text-purple-400"
-                bgColorClass="bg-purple-100 dark:bg-purple-900/20"
-              />
-            </>
-          )}
-        </div>
-
-        {/* Market Insight Cards */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {bazaarItemsLoading ? (
-            // Show loading skeletons
-            Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="backdrop-blur-sm">
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Skeleton className="h-4 w-4" />
-                      <Skeleton className="h-4 w-24" />
-                    </div>
-                    <div className="space-y-1">
-                      <Skeleton className="h-8 w-16" />
-                      <Skeleton className="h-3 w-32" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : bazaarItemsData ? (
-            <>
-              <MarketInsightCard
-                title="Market Activity"
-                description="Average active orders across top items"
-                metric="activity"
-                itemsData={bazaarItemsData}
-                isLoading={bazaarItemsLoading}
-              />
-              <MarketInsightCard
-                title="Price Volatility"
-                description="Current market price spread analysis"
-                metric="volatility"
-                itemsData={bazaarItemsData}
-                isLoading={bazaarItemsLoading}
-              />
-              <MarketInsightCard
-                title="Opportunities"
-                description="Items with profitable trading potential"
-                metric="opportunities"
-                itemsData={bazaarItemsData}
-                isLoading={bazaarItemsLoading}
-              />
-            </>
-          ) : null}
-        </div>
-      </section>
-
-      {/* Strategies */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl md:text-2xl font-semibold">Strategies</h2>
-            <p className="text-sm text-muted-foreground">Explore current and upcoming trading features</p>
+      {/* Top flips right now — gated by the flipping tool */}
+      {canFlip || permLoading ? (
+        <section className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-xl md:text-2xl font-semibold">Top flips right now</h2>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live
+                </span>
+                {updated && <span>· updated {updated}</span>}
+              </div>
+            </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard/strategies/flipping">Open Flipping <ArrowRight className="h-4 w-4 ml-1" /></Link>
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard/strategies">
-              View All <ArrowRight className="h-4 w-4 ml-1" />
-            </Link>
-          </Button>
-        </div>
+          <OpportunityFeed items={topFlips} isLoading={flipsLoading || permLoading} />
+        </section>
+      ) : (
+        <section className="relative overflow-hidden rounded-xl border bg-card p-8 text-center">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-500/20 blur-3xl" />
+          <div className="relative mx-auto flex max-w-md flex-col items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15">
+              <Lock className="h-5 w-5 text-emerald-400" />
+            </div>
+            <h2 className="text-xl font-semibold">Unlock Bazaar Flipping</h2>
+            <p className="text-sm text-muted-foreground">
+              See the top flips ranked by profit per hour, plus the full flipping toolkit with budget sizing, risk flags and fill-time estimates.
+            </p>
+            <Button asChild className="mt-1">
+              <Link href="/dashboard/profile">Upgrade <ArrowRight className="h-4 w-4 ml-1" /></Link>
+            </Button>
+          </div>
+        </section>
+      )}
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 auto-rows-fr">
-          <FeatureCard backgroundStyle="glass">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Shuffle className="h-4 w-4 text-emerald-500" />
-                <h3 className="text-base font-semibold">Bazaar Flipping</h3>
-              </div>
-                              <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/40">Released</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Discover quick buy/sell opportunities with intelligent scoring and risk assessment.
-            </p>
-            <div className="flex gap-2 mt-auto">
-              <Button asChild size="sm" className="w-full bg-white/10 hover:bg-white/15 text-white border-white/20 transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200">
-                <Link href="/dashboard/strategies/flipping">Open Strategy</Link>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white">
-                <Link href="/dashboard/strategies?tab=bazaar-flipping">Learn More</Link>
-              </Button>
-            </div>
-          </FeatureCard>
-          
-          <FeatureCard backgroundStyle="glass" className="opacity-60">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Hammer className="h-4 w-4 text-blue-500" />
-                <h3 className="text-base font-semibold">Craft Flipping</h3>
-              </div>
-              <Badge variant="outline" className="bg-slate-500/10 text-slate-300 border-slate-500/20">Coming soon</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Profit from crafting items by analyzing material costs vs. final prices.
-            </p>
-            <div className="flex gap-2 mt-auto">
-              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
-                Coming Soon
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                <Link href="/dashboard/strategies?tab=craft-flipping">Learn More</Link>
-              </Button>
-            </div>
-          </FeatureCard>
-          
-          <FeatureCard backgroundStyle="glass" className="opacity-60">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Coins className="h-4 w-4 text-amber-500" />
-                <h3 className="text-base font-semibold">NPC Flipping</h3>
-              </div>
-              <Badge variant="outline" className="bg-slate-500/10 text-slate-300 border-slate-500/20">Coming soon</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Maximize profits from daily NPC limits by finding the highest margin items.
-            </p>
-            <div className="flex gap-2 mt-auto">
-              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
-                Coming Soon
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                <Link href="/dashboard/strategies?tab=npc-flipping">Learn More</Link>
-              </Button>
-            </div>
-          </FeatureCard>
-          
-          <FeatureCard backgroundStyle="glass" className="opacity-60">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-purple-500" />
-                <h3 className="text-base font-semibold">Bazaar Manipulation</h3>
-              </div>
-              <Badge variant="outline" className="bg-slate-500/10 text-slate-300 border-slate-500/20">Planned</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Set market prices and manipulate supply to create profitable opportunities.
-            </p>
-            <div className="flex gap-2 mt-auto">
-              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
-                In Planning
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                <Link href="/dashboard/strategies?tab=bazaar-manipulation">Learn More</Link>
-              </Button>
-            </div>
-          </FeatureCard>
-          
-          <FeatureCard backgroundStyle="glass" className="opacity-60">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-rose-500" />
-                <h3 className="text-base font-semibold">Budget Planner</h3>
-              </div>
-              <Badge variant="outline" className="bg-slate-500/10 text-slate-300 border-slate-500/20">Planned</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Allocate coins across strategies with risk-adjusted projections.
-            </p>
-            <div className="flex gap-2 mt-auto">
-              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
-                In Planning
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                <Link href="/dashboard/strategies?tab=budget-planner">Learn More</Link>
-              </Button>
-            </div>
-          </FeatureCard>
-          
-          <FeatureCard backgroundStyle="glass" className="opacity-60">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-indigo-500" />
-                <h3 className="text-base font-semibold">Auction House</h3>
-              </div>
-              <Badge variant="outline" className="bg-slate-500/10 text-slate-300 border-slate-500/20">Considering</Badge>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Snipe and flip AH items using live listings and historical trends.
-            </p>
-            <div className="flex gap-2 mt-auto">
-              <Button size="sm" className="w-full bg-white/10 text-white border-white/20 cursor-not-allowed opacity-50" disabled>
-                Considering
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full border-0 bg-black/30 text-white hover:bg-black/60 hover:text-white cursor-not-allowed opacity-50" disabled>
-                <Link href="/dashboard/strategies?tab=auction-house">Learn More</Link>
-              </Button>
-            </div>
-          </FeatureCard>
-        </div>
+      {/* Explore */}
+      <section className="grid gap-4 sm:grid-cols-3">
+        <ExploreLink href="/dashboard/strategies/manipulation" icon={Crosshair} accent="text-blue-400" tint="bg-blue-500/15"
+          title="Manipulation" subtitle="Corner thin markets" />
+        <ExploreLink href="/dashboard/bazaar-items" icon={Boxes} accent="text-violet-400" tint="bg-violet-500/15"
+          title="Bazaar Items" subtitle="Every live price" />
+        <ExploreLink href="/dashboard/skyblock-items" icon={Layers} accent="text-amber-400" tint="bg-amber-500/15"
+          title="Item Catalog" subtitle="Browse all items" />
       </section>
-
-      {/* About the Project */}
-      <section className="space-y-6">
-        <h2 className="text-xl md:text-2xl font-semibold">Why I Built This</h2>
-        <Card>
-          <CardHeader className="space-y-3">
-            <CardTitle className="text-xl font-semibold text-primary">
-              Building a SkyBlock Bazaar analytics tool
-            </CardTitle>
-            <CardDescription className="text-base leading-relaxed">
-              What started as a simple Bazaar data collector has grown into a market analysis tool. Built to learn modern development practices while solving a real problem.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-3">
-                <p className="text-sm font-medium flex items-center gap-2">
-                  <LineChart className="h-4 w-4 text-primary" />
-                  What this does
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Fetches Hypixel Bazaar data every few minutes and stores it intelligently
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Analyzes price patterns and identifies profitable trading opportunities
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="h-1 h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Provides tools and strategies for different trading approaches
-                  </li>
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <p className="text-sm font-medium flex items-center gap-2">
-                  <Server className="h-4 w-4 text-primary" />
-                  Technical stack
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Java/Spring Boot backend with PostgreSQL storage
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Next.js dashboard with real-time charts and analytics
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="h-1 rounded-full bg-primary mt-2 shrink-0" />
-                    Dockerized infrastructure with monitoring (Prometheus, Grafana)
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="rounded-lg bg-muted/50 p-4 border-l-4 border-primary">
-              <div className="flex items-start gap-3">
-                <Lightbulb className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Currently working on</p>
-                  <p className="text-sm text-muted-foreground">
-                    Improving the flipping strategy algorithms, adding more sophisticated risk assessment,
-                    and planning ML-based price prediction features. The next feature should be Bazaar Manipulation.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t text-xs text-muted-foreground">
-              <p>Personal project • Not affiliated with Hypixel • Built for learning and fun 💜</p>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Token Test Section - Remove this after debugging */}
-      {/* <section className="space-y-6">
-        <div className="space-y-1">
-          <h2 className="text-xl md:text-2xl font-semibold">Debug: Token Refresh Test</h2>
-          <p className="text-muted-foreground text-sm">
-            Test Auth0 token refresh functionality - remove this section after debugging
-          </p>
-        </div>
-        <TokenTest />
-      </section> */}
     </div>
-   )
- }
+  )
+}
+
+function ExploreLink({
+  href, icon: Icon, accent, tint, title, subtitle,
+}: {
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  accent: string
+  tint: string
+  title: string
+  subtitle: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-xl border bg-card p-4 transition-colors hover:border-border/80 hover:bg-muted/30"
+    >
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tint}`}>
+        <Icon className={`h-5 w-5 ${accent}`} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-medium">{title}</div>
+        <div className="text-xs text-muted-foreground">{subtitle}</div>
+      </div>
+      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/30 transition-all group-hover:translate-x-0.5 group-hover:text-muted-foreground" />
+    </Link>
+  )
+}

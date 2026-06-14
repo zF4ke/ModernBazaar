@@ -10,7 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { RefreshCw, Database, Clock, Trash2, Server, Wifi, Activity, Settings } from "lucide-react"
+import { RefreshCw, Database, Clock, Trash2, Server, Wifi, Activity, Settings, Power, Check } from "lucide-react"
+
+const BACKEND_PRESETS = [
+  { label: "Local", url: "http://localhost:8080", disabled: false, note: "your machine" },
+  { label: "Production", url: "", disabled: true, note: "not deployed yet" },
+]
 import { useToast } from "@/hooks/use-toast"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { StatusCard } from "@/components/status-card"
@@ -50,7 +55,7 @@ export default function AdminSettingsPage() {
   const { toast } = useToast()
   const [pruningEnabled, setPruningEnabled] = useState(true)
   const [pruningDays, setPruningDays] = useState("30")
-  const [apiEndpoint, setApiEndpoint] = useState("http://188.166.192.72:8080")
+  const [apiEndpoint, setApiEndpoint] = useState("http://localhost:8080")
   const [skyblockRefreshDays, setSkyblockRefreshDays] = useState(30)
 
   // Skyblock refresh queries
@@ -72,6 +77,29 @@ export default function AdminSettingsPage() {
   // Use the admin access hook
   const { hasAdminAccess, loading: adminLoading, error } = useAdminAccess()
 
+  // Maintenance mode (kill switch)
+  const { data: maint, refetch: refetchMaint } = useBackendQuery<{ enabled: boolean }>(
+    "/api/admin/maintenance",
+    { enabled: hasAdminAccess, requireAuth: true, queryKey: ["maintenance"] }
+  )
+  const [maintBusy, setMaintBusy] = useState(false)
+  const toggleMaintenance = async (next: boolean) => {
+    if (next && !window.confirm("Turn ON maintenance mode? This makes the API return 503 for ALL non-admin users — the site goes down for everyone but admins.")) return
+    setMaintBusy(true)
+    try {
+      await fetchWithBackendUrl("/api/admin/maintenance", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: next }),
+      })
+      await refetchMaint()
+      toast({ title: next ? "Maintenance mode ON" : "Maintenance mode OFF", description: next ? "The site is now down for non-admins." : "The site is back up." })
+    } catch (e) {
+      toast({ title: "Error", description: (e as Error).message, variant: "destructive" })
+    } finally {
+      setMaintBusy(false)
+    }
+  }
+
   const handleSaveSettings = () => {
     // Store API endpoint in localStorage
     localStorage.setItem("apiEndpoint", apiEndpoint)
@@ -84,6 +112,14 @@ export default function AdminSettingsPage() {
       title: "Settings Saved",
       description: "Backend API endpoint updated. Testing connection...",
     })
+  }
+
+  const selectPreset = (url: string) => {
+    setApiEndpoint(url)
+    localStorage.setItem("apiEndpoint", url)
+    refetchHealth()
+    refetchMetrics()
+    toast({ title: "Backend switched", description: url })
   }
 
   // Load API endpoint from localStorage
@@ -184,6 +220,29 @@ export default function AdminSettingsPage() {
           <p className="text-muted-foreground">System configuration and management</p>
         </div>
       </div>
+
+      {/* Maintenance mode — kill switch */}
+      <Card className={maint?.enabled ? "border-red-500/50 bg-red-500/5" : "border-amber-500/30"}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Power className={`h-5 w-5 ${maint?.enabled ? "text-red-400" : "text-amber-400"}`} />
+            Maintenance mode
+            {maint?.enabled && <Badge variant="outline" className="ml-1 border-red-500/40 text-red-400">SITE DOWN</Badge>}
+          </CardTitle>
+          <CardDescription>
+            Emergency kill switch. When on, the API returns 503 for every non-admin request (admins keep access so you can turn it back off). Takes effect instantly — no redeploy.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="maintenance-toggle">{maint?.enabled ? "The site is currently DOWN for users" : "The site is up"}</Label>
+              <p className="text-sm text-muted-foreground">Use this if something goes wrong (bad deploy, abuse, data issue).</p>
+            </div>
+            <Switch id="maintenance-toggle" checked={!!maint?.enabled} disabled={maintBusy} onCheckedChange={toggleMaintenance} />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* System Status */}
       <Card>
@@ -314,42 +373,48 @@ export default function AdminSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* Performance Settings */}
+      {/* Backend connection */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Performance Settings
+            <Server className="h-5 w-5" />
+            Backend connection
           </CardTitle>
-          <CardDescription>Configure API connection and performance options</CardDescription>
+          <CardDescription>Which backend the dashboard talks to. Saved in your browser; switch anytime.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="api-endpoint">Backend API Endpoint</Label>
-            <Input
-              id="api-endpoint"
-              value={apiEndpoint}
-              onChange={(e) => setApiEndpoint(e.target.value)}
-              placeholder="http://188.166.192.72:8080"
-            />
-            <p className="text-sm text-muted-foreground">
-              The URL of the backend API server. Changes take effect immediately after saving.
-            </p>
-            {apiEndpoint !== "http://188.166.192.72:8080" && (
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                Currently using: {apiEndpoint}
-              </p>
-            )}
+          <div className="grid gap-2 sm:grid-cols-2">
+            {BACKEND_PRESETS.map((p) => {
+              const active = apiEndpoint === p.url
+              return (
+                <button
+                  key={p.label}
+                  type="button"
+                  disabled={p.disabled}
+                  onClick={() => selectPreset(p.url)}
+                  className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${p.disabled ? "cursor-not-allowed opacity-50" : "hover:border-foreground/30"} ${active ? "border-primary bg-primary/5" : ""}`}
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">{p.label} <span className="text-xs font-normal text-muted-foreground">· {p.note}</span></div>
+                    <div className="truncate font-mono text-xs text-muted-foreground">{p.url || "not configured"}</div>
+                  </div>
+                  {active && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                </button>
+              )
+            })}
           </div>
+
+          <details className="text-sm">
+            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Custom endpoint</summary>
+            <div className="mt-2 flex gap-2">
+              <Input value={apiEndpoint} onChange={(e) => setApiEndpoint(e.target.value)} placeholder="http://localhost:8080" className="font-mono text-sm" />
+              <Button variant="outline" onClick={handleSaveSettings}>Save</Button>
+            </div>
+          </details>
+
+          <p className="text-xs text-muted-foreground">Active: <span className="font-mono text-foreground">{apiEndpoint || "default"}</span></p>
         </CardContent>
       </Card>
-
-      {/* Save Settings */}
-      <div className="flex justify-end">
-        <Button onClick={handleSaveSettings} className="w-full md:w-auto">
-          Save Settings
-        </Button>
-      </div>
     </div>
   )
 }

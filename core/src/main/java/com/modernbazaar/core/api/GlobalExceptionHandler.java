@@ -11,7 +11,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -102,6 +101,27 @@ public class GlobalExceptionHandler {
                 null
         );
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Handles invalid arguments (e.g. out-of-range discount percent, bad extend days).
+     *
+     * @param ex The exception indicating an invalid argument
+     * @param request The web request that caused it
+     * @return ResponseEntity with 400 error details
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    protected ResponseEntity<ErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex,
+            WebRequest request) {
+
+        ErrorResponse body = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                null
+        );
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
     /**

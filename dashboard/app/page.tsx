@@ -9,10 +9,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { FeatureCard } from "@/components/feature-card"
-import { ExpandableFeatureCard, Accent, ExpandableFeatureGrid } from "@/components/expandable-feature-card"
 import { GradientSection } from "@/components/gradient-section"
-import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Target, DollarSign, Activity } from "lucide-react"
+import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Plus, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Crosshair, Target, DollarSign, Activity } from "lucide-react"
 import { useBackendHealthContext } from '@/components/backend-health-provider'
+import { BrandMark } from "@/components/brand-mark"
+
+const LIVE_STRATEGIES = [
+  {
+    title: "Bazaar Flipping", icon: Shuffle,
+    accent: "text-blue-400", tint: "bg-blue-500/15", glow: "bg-blue-500/25", ring: "ring-blue-500/30",
+    blurb: "A handcrafted formula, tested over thousands of flips, that ranks every item by profit per hour.",
+    points: [
+      "Spread, real volume, competition and price swings, all in one score",
+      "Tells you how much to buy for your budget",
+      "Risk flags and fill-time estimates so you don't get stuck",
+    ],
+  },
+  {
+    title: "Bazaar Manipulation", icon: Crosshair,
+    accent: "text-purple-300", tint: "bg-purple-500/15", glow: "bg-purple-500/25", ring: "ring-purple-400/40",
+    blurb: "This is where the absurd money is. Take control of a thin market's supply, set your own price, and follow the exact playbook to pull it off.",
+    points: [
+      "Find the thin markets you can fully control on your budget",
+      "Cost to corner, how high you can push the price, and your profit",
+      "Know exactly how much you stand to make and when to cash out",
+    ],
+  },
+]
+
+const SOON_STRATEGIES = [
+  { title: "Craft Flipping", icon: Hammer, points: ["Compare craft cost to sell price", "How many to craft for your budget", "Profit after fees and time to sell"] },
+  { title: "NPC Flipping", icon: Coins, points: ["Best items for the daily NPC limit", "How to spend your 200M cap", "Buy low, sell straight to NPCs"] },
+  { title: "Budget Planner", icon: DollarSign, points: ["Split your coins across strategies", "Matched to your risk and limits", "See when your coins free up"] },
+  { title: "Auction House", icon: ArrowRightLeft, points: ["Snipe underpriced listings", "Fair bid and buyout prices", "Expected profit and time to sell"] },
+]
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
@@ -68,9 +98,7 @@ export default function LandingPage() {
       )}>
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Boxes className="h-5 w-5 text-primary-foreground" />
-            </div>
+            <BrandMark className="h-8 w-8 rounded-lg" />
             <span className="font-semibold text-lg">Modern Bazaar</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
@@ -93,13 +121,13 @@ export default function LandingPage() {
           <div className="grid items-center gap-10 md:grid-cols-2">
             <div className="space-y-6 text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium">
-                <Trophy className="h-4 w-4" />
-                SkyBlock's best trading toolkit
+                <LineChart className="h-4 w-4" />
+                Real-time Hypixel Bazaar analytics
               </div>
               <h1 className="text-3xl md:text-5xl font-bold tracking-tight">
                 Flip smarter in the{' '}
                 <br></br>
-                <span className="bg-gradient-to-r from-primary to-primary/75 bg-clip-text text-transparent">
+                <span className="text-primary">
                   Hypixel Bazaar
                 </span>
               </h1>
@@ -165,140 +193,60 @@ export default function LandingPage() {
         </div>
       </GradientSection>
 
-      {/* What You Get */}
-      <section className="py-12 px-4 cursor-default">
+      {/* What you get */}
+      <section className="py-12 px-4">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center space-y-3 mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold">What You Get</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">An explainable scoring system that adapts to your budget, competition, and fill times.</p>
+          <div className="space-y-3 mb-10 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold">What you get</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              You don't need to know the meta. Modern Bazaar reads the market and walks you through the exact move, step by step, sized to your coins. Two tools are live now, more on the way.
+            </p>
           </div>
-          <ExpandableFeatureGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Core features */}
-            <ExpandableFeatureCard
-              id="bazaar"
-              accent="emerald"
-              icon={<Shuffle className="h-4 w-4 text-emerald-500" />}
-              title="Bazaar Flipping"
-              status="released"
-              summary={<span>Discover quick flips with budget-aware, competition and fill-time scoring.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Your copilot for day-to-day flips: it tells you what to do, when to do it, and why.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Position sizing</Accent>: exactly how much to buy/sell for your budget.</li>
-                    <li><Accent>Projected P/L</Accent>: expected coins and downside with clear risk flags.</li>
-                    <li><Accent>Manipulation shields</Accent>: detects spoofing/spreads and limits exposure.</li>
-                    <li><Accent>Fill-time ETA</Accent>: realistic time windows for buys and sells to complete.</li>
-                  </ul>
-                </div>
-              }
-            />
-            
-            
 
-            {/* Coming soon */}
-            <ExpandableFeatureCard
-              id="craft"
-              className="opacity-90"
-              accent="blue"
-              icon={<Hammer className="h-4 w-4 text-blue-500" />}
-              title="Craft Flipping"
-              status="coming"
-              summary={<span>Profit from crafting by scoring material baskets against sale prices, factoring in demand and fill time.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Choose recipes with confidence: the copilot balances cost, demand, and your coin limits.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Smart materials</Accent>: optimizes basket sources and warns on inflated inputs.</li>
-                    <li><Accent>Exact quantities</Accent>: tells you how many to craft for your budget and risk.</li>
-                    <li><Accent>Profit clarity</Accent>: net-after-fees estimates and sensitivity to price swings.</li>
-                    <li><Accent>Time-aware</Accent>: expected sell-through times factored into your plan.</li>
+          {/* Live tools — the two that matter */}
+          <div className="grid gap-5 md:grid-cols-2">
+            {LIVE_STRATEGIES.map((s) => (
+              <div key={s.title} className={`group relative overflow-hidden rounded-2xl border bg-card p-6 ring-1 ${s.ring} transition-transform hover:-translate-y-0.5`}>
+                <div className={`pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-60 ${s.glow}`} />
+                <div className="relative">
+                  <div className="mb-4 flex items-center gap-3">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${s.tint}`}>
+                      <s.icon className={`h-5 w-5 ${s.accent}`} />
+                    </div>
+                    <h3 className="text-xl font-medium leading-tight">{s.title}</h3>
+                  </div>
+                  <p className="mb-4 text-sm text-muted-foreground">{s.blurb}</p>
+                  <ul className="space-y-2">
+                    {s.points.map((p, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                        <Check className={`h-4 w-4 mt-0.5 shrink-0 ${s.accent}`} />
+                        <span>{p}</span>
+                      </li>
+                    ))}
                   </ul>
+                  <Link href="/dashboard" className={`mt-5 inline-flex items-center gap-1 text-sm font-semibold ${s.accent} hover:gap-1.5 transition-all`}>
+                    Explore {s.title} <ArrowRight className="h-4 w-4" />
+                  </Link>
                 </div>
-              }
-            />
-            
-            <ExpandableFeatureCard
-              id="npc"
-              className="opacity-90"
-              accent="amber"
-              icon={<Coins className="h-4 w-4 text-amber-500" />}
-              title="NPC Flipping"
-              status="coming"
-              summary={<span>Maximize daily-limit profits with budget-aware scoring that targets the highest NPC margins.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Plan your caps like a pro: the assistant sequences buys/sells to squeeze the most from limits.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Route planning</Accent>: prioritized items based on margin, availability, and limits.</li>
-                    <li><Accent>Budget fit</Accent>: allocates coins across items for best risk-adjusted return.</li>
-                    <li><Accent>Risk callouts</Accent>: flags manipulation and volatile windows to avoid.</li>
-                    <li><Accent>Timing</Accent>: clear expectations for how long each step takes.</li>
-                  </ul>
-                </div>
-              }
-            />
-            
-            <ExpandableFeatureCard
-              id="manipulation"
-              className="opacity-90"
-              accent="purple"
-              icon={<Shield className="h-4 w-4 text-purple-500" />}
-              title="Bazaar Manipulation"
-              status="planned"
-              summary={<span>Set prices and shape supply with risk controls and timeline-aware execution.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Model scenarios before you act: understand liquidity needs, risk, and expected payoff over time.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Playbook guidance</Accent>: step-by-step "what, when, how much".</li>
-                    <li><Accent>Guardrails</Accent>: exposure caps, stop conditions, and anomaly detection.</li>
-                    <li><Accent>Timeline</Accent>: staged orders with fill-time windows and unwind paths.</li>
-                  </ul>
-                </div>
-              }
-            />
+              </div>
+            ))}
+          </div>
 
-            <ExpandableFeatureCard
-              id="budget"
-              className="opacity-90"
-              accent="emerald"
-              icon={<DollarSign className="h-4 w-4 text-emerald-500" />}
-              title="Budget Planner"
-              status="planned"
-              summary={<span>Allocate coins across strategies using risk-adjusted, fill-time-aware projections.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Personal to your constraints: the copilot tunes ideas to your coins and preferences.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Allocation advice</Accent>: how much to place in each strategy right now.</li>
-                    <li><Accent>Risk fit</Accent>: respects your max drawdown, concentration, and cooldown settings.</li>
-                    <li><Accent>Cashflow timing</Accent>: when coins unlock based on fill-time expectations.</li>
-                  </ul>
+          {/* Coming soon */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {SOON_STRATEGIES.map((s) => (
+              <div key={s.title} className="rounded-xl border bg-card/60 p-4 opacity-80">
+                <div className="mb-2 flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                    <s.icon className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <h4 className="text-sm font-medium">{s.title}</h4>
+                  <span className="ml-auto text-[11px] text-muted-foreground">Soon</span>
                 </div>
-              }
-            />
-
-            <ExpandableFeatureCard
-              id="ah"
-              className="opacity-90"
-              accent="rose"
-              icon={<ArrowRightLeft className="h-4 w-4 text-rose-500" />}
-              title="Auction House"
-              status="planned"
-              summary={<span>Snipe and flip using live listings and history, scored by budget, competition, and time to sell.</span>}
-              details={
-                <div className="space-y-2">
-                  <p>Turn signals into action: the assistant calls the trades and sizes them for your wallet.</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li><Accent>Entry timing</Accent>: when to place the bid or buyout.</li>
-                    <li><Accent>Size + price</Accent>: how many and at what price is reasonable.</li>
-                    <li><Accent>Outcome preview</Accent>: expected profit, risk, and sell-through time.</li>
-                  </ul>
-                </div>
-              }
-            />
-          </ExpandableFeatureGrid>
+                <p className="text-xs text-muted-foreground">{s.points[0]}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -312,58 +260,34 @@ export default function LandingPage() {
       <section id="pricing" className="py-16 px-4 cursor-default">
         <div className="container mx-auto max-w-6xl">
           <div className="space-y-3 mb-6">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-              <h2 className="text-2xl md:text-3xl font-bold">Fair, simple pricing</h2>
-              <div className="flex justify-center md:justify-end">
-                <Button asChild variant="ghost" className="text-muted-foreground hover:text-foreground">
-                  <Link href="/pricing/compare">Compare plans</Link>
-                </Button>
-              </div>
-            </div>
-            <p className="text-muted-foreground max-w-2xl">Choose your plan. Upgrade anytime.</p>
+            <h2 className="text-2xl md:text-3xl font-bold">Fair, simple pricing</h2>
+            <p className="text-muted-foreground max-w-2xl">Start free, upgrade when you&apos;re ready. Each tier pays for itself the first flip it finds that you&apos;d have walked past.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Starter Plan */}
-            <Card className="relative h-full flex flex-col border-2 hover:border-yellow-500/60 transition-all duration-200 hover:shadow-lg">
+            {/* Free Plan */}
+            <Card className="relative h-full flex flex-col border-2 hover:border-zinc-500/60 transition-all duration-200 hover:shadow-lg">
               <CardHeader className="text-center space-y-4">
-                <div className="mx-auto w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                  <Boxes className="h-6 w-6 text-yellow-500" />
+                <div className="mx-auto w-12 h-12 rounded-lg bg-zinc-500/20 flex items-center justify-center">
+                  <Boxes className="h-6 w-6 text-zinc-400" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Starter</CardTitle>
-                  <CardDescription>Kickstart your trading</CardDescription>
+                  <CardTitle className="text-xl">Free</CardTitle>
+                  <CardDescription>Get a feel for the market</CardDescription>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-3xl font-bold">$5.99</div>
-                  <div className="text-sm text-muted-foreground">per month</div>
+                  <div className="text-3xl font-bold">$0</div>
+                  <div className="text-sm text-muted-foreground">forever</div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 flex-1 flex flex-col">
-                <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Flip finder (core features)</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Real-time pricing</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Explainable scores</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">24h history & volatility</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Favorites & pin</span>
-                  </li>
+                <ul className="space-y-2.5 flex-1 text-muted-foreground">
+                  <li className="flex items-center gap-2.5 text-sm"><Check className="h-4 w-4 shrink-0 text-muted-foreground/50" /><span>Live Bazaar prices</span></li>
+                  <li className="flex items-center gap-2.5 text-sm"><Check className="h-4 w-4 shrink-0 text-muted-foreground/50" /><span>Full item catalog</span></li>
+                  <li className="flex items-center gap-2.5 text-sm"><Check className="h-4 w-4 shrink-0 text-muted-foreground/50" /><span>Favorites &amp; search</span></li>
                 </ul>
-                <Button asChild className="mt-4 w-full border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10" variant="outline">
-                  <Link href="/dashboard">Choose Starter</Link>
+                <Button asChild className="mt-4 w-full" variant="outline">
+                  <Link href="/dashboard">Start free</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -376,180 +300,136 @@ export default function LandingPage() {
                   Most Popular
                 </Badge>
               </div>
-                {/* Trading Icons Background - diagonal lines with subtle glow */}
-                <div className="absolute inset-0 pointer-events-none opacity-20">
+                {/* Trading icons background - diagonal lines with subtle glow */}
+                <div className="absolute inset-0 pointer-events-none opacity-20 overflow-hidden rounded-[inherit]">
                   {(() => {
                     const icons = [
-                      { icon: TrendingUp, size: 'h-6 w-6', color: 'text-blue-400/60' },
-                      { icon: BarChart3, size: 'h-6 w-6', color: 'text-blue-400/60' },
-                      { icon: LineChart, size: 'h-6 w-6', color: 'text-blue-400/60' },
-                      { icon: Activity,  size: 'h-6 w-6', color: 'text-blue-400/60' },
-                      { icon: Target,    size: 'h-6 w-6', color: 'text-blue-400/60' },
-                      { icon: Zap,       size: 'h-6 w-6', color: 'text-blue-400/60' }
-                    ];
-
-                    // Parallel diagonal lines (slash direction) across full card
-                    const lineCount = 7;
-                    const itemsPerLine = 7;
-                    const cMin = -10;   // TL border
-                    const cMax = 199; // BR border
-                    const cStep = (cMax - cMin) / (lineCount - 1);
-
-                    const positions: Array<{ top: string; left: string; iconIndex: number }> = [];
-
-                                         // Keep main content area clear (icon, title, text)
-                     const excludeZones = [
-                        { top: 5, bottom: 45, left: 25, right: 70 },
-                        { top: 45, bottom: 90, left: 5, right: 60 },
-                        { top: 90, bottom: 96, left: 5, right: 80 },
-                     ]
-
+                      { icon: TrendingUp, size: 'h-6 w-6' },
+                      { icon: BarChart3, size: 'h-6 w-6' },
+                      { icon: LineChart, size: 'h-6 w-6' },
+                      { icon: Activity, size: 'h-6 w-6' },
+                      { icon: Target, size: 'h-6 w-6' },
+                      { icon: Zap, size: 'h-6 w-6' },
+                    ]
+                    const lineCount = 7
+                    const itemsPerLine = 7
+                    const cMin = -10
+                    const cMax = 199
+                    const cStep = (cMax - cMin) / (lineCount - 1)
+                    const excludeZones = [
+                      { top: 5, bottom: 45, left: 25, right: 70 },
+                      { top: 45, bottom: 90, left: 5, right: 60 },
+                      { top: 90, bottom: 96, left: 5, right: 80 },
+                    ]
+                    const positions: Array<{ top: string; left: string; iconIndex: number }> = []
                     for (let li = 0; li < lineCount; li++) {
-                      const c = cMin + li * cStep;
-                      const xMin = -14;
-                      const xMax = 114;
-                      const xStep = (xMax - xMin) / (itemsPerLine + 1);
-
-                                             for (let k = 1; k <= itemsPerLine; k++) {
-                         const x = xMin + k * xStep;
-                         const y = -x + c; // y = -x + c (45°)
-                         if (x < 0 || x > 100 || y < 0 || y > 100) continue;
-                        //  if (y >= exclude.top && y <= exclude.bottom && x >= exclude.left && x <= exclude.right) continue;
-                        //  if (y >= excludeBottom.top && y <= excludeBottom.bottom && x >= excludeBottom.left && x <= excludeBottom.right) continue;
-                        let excluded = false;
-                        for (const exclude of excludeZones) {
-                          if (y >= exclude.top && y <= exclude.bottom && x >= exclude.left && x <= exclude.right) {
-                            excluded = true;
-                          }
+                      const c = cMin + li * cStep
+                      const xMin = -14
+                      const xMax = 114
+                      const xStep = (xMax - xMin) / (itemsPerLine + 1)
+                      for (let k = 1; k <= itemsPerLine; k++) {
+                        const x = xMin + k * xStep
+                        const y = -x + c
+                        if (x < 0 || x > 100 || y < 0 || y > 100) continue
+                        let excluded = false
+                        for (const z of excludeZones) {
+                          if (y >= z.top && y <= z.bottom && x >= z.left && x <= z.right) excluded = true
                         }
-                        if (excluded) continue;
-
-                        // Mix icon types along each line deterministically
-                        const iconIndex = (li * 2 + k) % icons.length;
-                        positions.push({ top: `${y}%`, left: `${x}%`, iconIndex });
+                        if (excluded) continue
+                        positions.push({ top: `${y}%`, left: `${x}%`, iconIndex: (li * 2 + k) % icons.length })
                       }
                     }
-
                     return positions.map((pos, index) => {
-                      const iconData = icons[pos.iconIndex];
-                      const IconComponent = iconData.icon;
-
+                      const IconComponent = icons[pos.iconIndex].icon
                       return (
-                        <div
-                          key={index}
-                          className={`absolute ${iconData.size}`}
-                          style={{
-                            top: pos.top,
-                            left: pos.left,
-                            transform: 'translate(-50%, -50%)'
-                          }}
-                        >
-                          <IconComponent className={`${iconData.color} drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] filter blur-[0.5px]`} />
+                        <div key={index} className={`absolute ${icons[pos.iconIndex].size}`}
+                          style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}>
+                          <IconComponent className="text-blue-400/60 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] filter blur-[0.5px]" />
                         </div>
-                      );
-                    });
+                      )
+                    })
                   })()}
                 </div>
-                
-                {/* Background gradient overlays */}
-                <div className="absolute inset-0 pointer-events-none" style={{
-                  background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.01) 0%, rgba(59, 130, 246, 0.01) 40%, transparent 70%)'
-                }}></div>
-                <div className="absolute inset-0 pointer-events-none" style={{
-                  background: 'radial-gradient(ellipse at top right, rgba(59, 130, 246, 0.01) 0%, rgba(59, 130, 246, 0.0) 40%, transparent 70%)'
-                }}></div>
-                <div className="absolute inset-0 pointer-events-none" style={{
-                  background: 'radial-gradient(ellipse at top left, rgba(59, 130, 246, 0.0) 0%, rgba(59, 130, 246, 0.0) 40%, transparent 70%)'
-                }}></div>
+                {/* glow */}
+                <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-blue-500/25 blur-3xl" />
               <CardHeader className="text-center space-y-4 py-8 relative z-10">
                 <div className="mx-auto w-12 h-12 rounded-lg bg-primary/20 flex items-center justify-center">
                   <TrendingUp className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <CardTitle className="text-xl">Flipper</CardTitle>
-                  <CardDescription>For serious traders</CardDescription>
+                  <CardDescription>Find flips worth doing</CardDescription>
                 </div>
-                <div className="space-y-1">
-                  <div className="text-sm"></div>
-                  <div className="text-center text-3xl flex justify-center items-center">
-                    <span className="font-bold">$9.99</span>
-                    <span className="line-through text-muted-foreground/80 text-sm ml-1">$12.99</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2 text-xs text-green-400">Save 23%</div>
+                <div className="space-y-2">
+                  <div className="text-3xl font-bold">$9.99</div>
+                  <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 flex-1 flex flex-col relative z-10">
-                <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Everything in Starter</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Advanced filters & tuning</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Trading presets</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Deeper history & volatility</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Market insights dashboard</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Explainable scoring details</span>
-                  </li>
-                </ul>
-                <Button asChild className="w-full border-primary/30 text-primary hover:bg-primary/10" variant="outline">
+              <CardContent className="flex-1 flex flex-col relative z-10">
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 text-base font-bold text-blue-400"><Shuffle className="h-4 w-4 shrink-0" />Bazaar Flipping</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">A handcrafted formula, tested over thousands of flips, that ranks every item by profit per hour.</p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Budget sizing</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Tell it your budget and get exactly what to buy, how much, and at what price.</p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Filters &amp; presets</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Tune the finder to your playstyle and save your setups.</p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Deeper price history</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">More history to spot the patterns before everyone else.</p>
+                  </div>
+                </div>
+                <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
+                  <Plus className="h-4 w-4 shrink-0" /><span>Everything in Free</span>
+                </div>
+                <Button asChild className="mt-5 w-full">
                   <Link href="/dashboard">Choose Flipper</Link>
                 </Button>
               </CardContent>
             </Card>
 
             {/* Elite Plan */}
-            <Card className="relative h-full flex flex-col border-2 hover:border-purple-500/60 transition-all duration-200 hover:shadow-lg">
-              <CardHeader className="text-center space-y-4">
+            <Card className="relative h-full flex flex-col border-2 border-purple-400/30 hover:border-purple-400/60 transition-all duration-200 hover:shadow-lg">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-20">
+                <Badge className="bg-purple-500 text-white px-3 py-1 shadow-lg hover:bg-purple-500">
+                  <Trophy className="h-3 w-3 mr-1" />
+                  For Experts
+                </Badge>
+              </div>
+              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-purple-400/15 blur-3xl" />
+              <CardHeader className="text-center space-y-4 pt-9 relative z-10">
                 <div className="mx-auto w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                  <Zap className="h-6 w-6 text-purple-500" />
+                  <Zap className="h-6 w-6 text-purple-300" />
                 </div>
                 <div>
                   <CardTitle className="text-xl">Elite</CardTitle>
-                  <CardDescription>For power users</CardDescription>
+                  <CardDescription>Move the market yourself</CardDescription>
                 </div>
                 <div className="space-y-2">
                   <div className="text-3xl font-bold">$25.99</div>
                   <div className="text-sm text-muted-foreground">per month</div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 flex-1 flex flex-col">
-                <ul className="space-y-3 flex-1">
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Everything in Flipper</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Extended history & metrics</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Advanced risk breakdowns</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Customizable scoring weights</span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span className="text-sm">Priority support</span>
-                  </li>
-                </ul>
-                <Button asChild className="mt-4 w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10" variant="outline">
+              <CardContent className="flex-1 flex flex-col relative z-10">
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <div className="flex items-center gap-2 text-base font-bold text-purple-400"><Crosshair className="h-4 w-4 shrink-0" />Bazaar Manipulation</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Where the real money is. Take control of the supply, set your own price, and follow the full play: cost to corner, how high to push it, and exactly when to cash out.</p>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold">Priority support</div>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">Questions go straight to the founder, not a ticket queue.</p>
+                  </div>
+                </div>
+                <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
+                  <Plus className="h-4 w-4 shrink-0" /><span>Everything in Flipper</span>
+                </div>
+                <Button asChild className="mt-5 w-full border-purple-400/40 text-purple-200 hover:bg-purple-400/10" variant="outline">
                   <Link href="/dashboard">Choose Elite</Link>
                 </Button>
               </CardContent>
@@ -574,45 +454,39 @@ export default function LandingPage() {
             <CardContent className="p-6">
               <Accordion type="multiple">
                 <AccordionItem value="what-it-is">
-                  <AccordionTrigger>What this is</AccordionTrigger>
+                  <AccordionTrigger>What is this?</AccordionTrigger>
                   <AccordionContent>
-                    A practical set of tools to monitor Bazaar prices and spot steady opportunities. It favors clarity over hype.
+                    A dashboard that watches Hypixel Bazaar prices and points out flips actually worth doing. I got tired of eyeballing prices and tabbing in and out of the game, so I built this.
                   </AccordionContent>
                 </AccordionItem>
-                <AccordionItem value="what-it-isnt">
-                  <AccordionTrigger>What this isn’t</AccordionTrigger>
+                <AccordionItem value="profit">
+                  <AccordionTrigger>Will it make me money?</AccordionTrigger>
                   <AccordionContent>
-                    A guarantee of profit or a magic signal generator. Markets move. Use judgement and trade responsibly.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="privacy">
-                  <AccordionTrigger>Privacy & ethics</AccordionTrigger>
-                  <AccordionContent>
-                    No gimmicks. No spam. I want this to be useful, respectful, and fun, just like I'd want for myself.
+                    Maybe, but it&apos;s not magic. It surfaces good setups and does the math; the market still does what it wants. Think of it as a head start, not a guarantee.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="how-it-ranks">
-                  <AccordionTrigger>How are flips ranked?</AccordionTrigger>
+                  <AccordionTrigger>How does it pick flips?</AccordionTrigger>
                   <AccordionContent>
-                    Scores blend spread, volume, fill-rate, and risk. You can choose presets (fast, default, stable) or tune filters to match your style.
+                    It looks at the spread, how much actually trades each hour, how crowded the item is, and how jumpy the price has been, then ranks by expected profit per hour after tax. You can sort by raw profit instead if you&apos;d rather.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="data-refresh">
-                  <AccordionTrigger>How real-time is the data?</AccordionTrigger>
+                  <AccordionTrigger>How fresh is the data?</AccordionTrigger>
                   <AccordionContent>
-                    Market data is kept near real-time. The backend fetches Hypixel Bazaar frequently and aggregates it so you can act with fresh information.
+                    It pulls from Hypixel about once a minute, so prices are usually within a minute or two of live.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="getting-started">
-                  <AccordionTrigger>How do I get started?</AccordionTrigger>
+                  <AccordionTrigger>How do I start?</AccordionTrigger>
                   <AccordionContent>
-                    Open the dashboard, pick a preset, set basic filters (min volume, margin), and sort by score or profit/hour. Favor items with steady volume and reasonable spreads.
+                    Open the dashboard, set your budget, and look at the top of the Flipping list. Start with items that trade a lot, since they fill faster and are harder to get stuck in.
                   </AccordionContent>
                 </AccordionItem>
                 <AccordionItem value="roadmap">
-                  <AccordionTrigger>What’s next?</AccordionTrigger>
+                  <AccordionTrigger>What&apos;s coming?</AccordionTrigger>
                   <AccordionContent>
-                    Better risk metrics, richer history, and more strategy tooling. Your feedback shapes what comes first.
+                    Craft and NPC flipping, a budget planner, and auction-house tools. What I build next mostly comes down to what people ask for.
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -631,9 +505,9 @@ export default function LandingPage() {
       {/* CTA (simple) */}
       <section className="px-4 py-12 mb-12">
         <div className="container mx-auto max-w-3xl text-center">
-          <h2 className="text-2xl md:text-3xl font-bold">Ready to flip with confidence?</h2>
+          <h2 className="text-2xl md:text-3xl font-bold">Stop guessing prices.</h2>
           <p className="text-muted-foreground mt-2">
-            See spread, volume, and risk at a glance. Understand the why, then execute.
+            See what&apos;s actually worth flipping right now, and how much you stand to make.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mt-5">
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg px-8 py-3 text-base font-medium">
@@ -665,7 +539,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t">
         <div className="container mx-auto px-4 py-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm text-muted-foreground">© 2025 Modern Bazaar. All rights reserved. 💜</div>
+          <div className="text-sm text-muted-foreground">© 2026 Modern Bazaar. All rights reserved. 💜</div>
           <div className="flex items-center gap-4 text-sm">
             <Link href="/terms" className="hover:underline">Terms of Service</Link>
             <Link href="/privacy" className="hover:underline">Privacy Policy</Link>

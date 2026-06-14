@@ -1,9 +1,10 @@
 "use client"
 
-import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User, Boxes } from "lucide-react"
+import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User, Boxes, Crosshair, Ticket, Share2 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAdminAccess } from "@/hooks/use-admin-access"
+import { BrandMark } from "@/components/brand-mark"
 
 import {
   Sidebar,
@@ -42,6 +43,7 @@ export function AppSidebar() {
       items: [
         { title: "Strategies", url: "/dashboard/strategies", icon: Compass },
         { title: "Flipping", url: "/dashboard/strategies/flipping", icon: Shuffle },
+        { title: "Manipulation", url: "/dashboard/strategies/manipulation", icon: Crosshair },
       ],
     },
     {
@@ -54,6 +56,10 @@ export function AppSidebar() {
     ...(hasAdminAccess ? [{
       label: "Admin",
       items: [
+        { title: "Analytics", url: "/dashboard/admin/analytics", icon: BarChart3 },
+        { title: "Users", url: "/dashboard/admin/users", icon: User },
+        { title: "Discounts", url: "/dashboard/admin/discounts", icon: Ticket },
+        { title: "Referrals", url: "/dashboard/admin/referrals", icon: Share2 },
         { title: "Plans", url: "/dashboard/admin/plans", icon: Shield },
         { title: "Endpoints", url: "/dashboard/admin/endpoints", icon: Code },
         { title: "Settings", url: "/dashboard/admin/settings", icon: Settings },
@@ -69,12 +75,10 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Package className="h-4 w-4" />
-          </div>
+        <div className="flex items-center gap-2.5 px-2 py-2">
+          <BrandMark className="h-8 w-8 rounded-lg" />
           <div className="flex flex-col gap-0.5 leading-none">
-            <span className="font-semibold">Modern Bazaar</span>
+            <span className="font-semibold tracking-tight">Modern Bazaar</span>
             <span className="text-xs text-muted-foreground">Trading Dashboard</span>
           </div>
         </div>

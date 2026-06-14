@@ -2,6 +2,7 @@ package com.modernbazaar.core.repository;
 
 import com.modernbazaar.core.domain.BazaarItemSnapshot;
 import com.modernbazaar.core.repository.projection.PagedIdRow;
+import com.modernbazaar.core.repository.projection.SellSideAggregateRow;
 import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -121,6 +122,28 @@ public interface BazaarProductSnapshotRepository
                                                         @Param("minSpread") Double minSpread,
                                                         @Param("limit")    int limit,
                                                         @Param("offset")   int offset);
+
+    /**
+     * Aggregates the visible sell-side order book of the latest snapshot per product.
+     * Returns total standing sell units and the total coins needed to insta-buy them all
+     * (the cost to "corner" the market). Items with no sell orders are omitted.
+     */
+    @Query(value = """
+        with latest as (
+          select distinct on (s.product_id) s.id as snap_id, s.product_id as pid
+          from   bazaar_product_snapshot s
+          where  s.product_id in (:ids)
+          order  by s.product_id, s.fetched_at desc
+        )
+        select l.pid                                          as productId,
+               coalesce(sum(oe.amount), 0)                    as units,
+               coalesce(sum(oe.amount * oe.price_per_unit), 0) as cost
+        from   latest l
+               join bazaar_order_entry oe
+                 on oe.snapshot_id = l.snap_id and oe.side = 'SELL'
+        group  by l.pid
+        """, nativeQuery = true)
+    List<SellSideAggregateRow> aggregateLatestSellSide(@Param("ids") Collection<String> ids);
 
     @Query(value = "select max(fetched_at) from bazaar_product_snapshot", nativeQuery = true)
     Optional<Instant> findLatestFetchTime();

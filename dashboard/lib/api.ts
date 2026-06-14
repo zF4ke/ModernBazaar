@@ -39,45 +39,73 @@ export async function fetchWithBackendUrl(url: string, options: RequestInit = {}
  * @returns Promise that resolves to the parsed JSON response from the backend
  * @throws Error if the backend request fails or returns an error status
  */
+/**
+ * Server-only: get the current user's Auth0 access token from the session cookie
+ * (nextjs-auth0 v4). Dynamically imported so the server-only auth client never
+ * leaks into client bundles. Returns undefined when there is no session.
+ */
+async function getSessionAccessToken(): Promise<string | undefined> {
+  try {
+    const { auth0 } = await import("@/lib/auth0")
+    const { token } = await auth0.getAccessToken()
+    return token ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Resolve the backend base URL. SECURITY: never trust a client-sent x-backend-url
+ * in production — the server attaches the user's access token to this request, so
+ * honoring an attacker-controlled host would exfiltrate the token (SSRF). The
+ * override is only allowed outside production for local dev convenience.
+ */
+function resolveBackendUrl(request: Request): string {
+  const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
+  if (process.env.NODE_ENV !== "production") {
+    return (request.headers.get("x-backend-url") || DEFAULT_BACKEND_URL).replace(/\/+$/, "")
+  }
+  return DEFAULT_BACKEND_URL.replace(/\/+$/, "")
+}
+
 export async function fetchFromBackend(
-  request: Request, 
-  endpoint: string, 
+  request: Request,
+  endpoint: string,
   options: RequestInit = {},
   accessToken?: string
 ) {
-  const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
-  let backendUrl = request.headers.get('x-backend-url') || DEFAULT_BACKEND_URL
-  
-  // Clean up the backend URL - ensure it doesn't end with a slash
-  backendUrl = backendUrl.replace(/\/+$/, '')
-  
+  const backendUrl = resolveBackendUrl(request)
+
   // Ensure endpoint starts with a slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-  
+
   // Construct the full URL
   const fullUrl = `${backendUrl}${cleanEndpoint}`
-  
+
+  // Acquire the access token from the session if the caller didn't pass one.
+  const token = accessToken ?? (await getSessionAccessToken())
+
   try {
     // Validate URL before making the request
     new URL(fullUrl) // This will throw if URL is invalid
-    
+
     const response = await fetch(fullUrl, {
       method: options.method ? options.method : "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       ...options,
     })
 
     if (!response.ok) {
-      // For 401/403, return parsed body so caller can surface permission info
+      // For 401/403, return parsed body so caller can surface permission info.
+      // Read the body exactly once (an empty 401 body would make a second read throw).
       if (response.status === 401 || response.status === 403) {
+        const text = await response.text()
         try {
-          const body = await response.json()
-          return { status: response.status, ...body }
+          return { status: response.status, ...JSON.parse(text) }
         } catch {
-          const text = await response.text()
           return { status: response.status, error: `Backend request failed with status: ${response.status}`, details: text }
         }
       }
@@ -123,18 +151,17 @@ export async function postFetchFromBackend(
   options: RequestInit = {},
   accessToken?: string
 ) {
-  const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
-  let backendUrl = request.headers.get('x-backend-url') || DEFAULT_BACKEND_URL
-  
-  // Clean up the backend URL - ensure it doesn't end with a slash
-  backendUrl = backendUrl.replace(/\/+$/, '')
-  
+  const backendUrl = resolveBackendUrl(request)
+
   // Ensure endpoint starts with a slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-  
+
   // Construct the full URL
   const fullUrl = `${backendUrl}${cleanEndpoint}`
-  
+
+  // Acquire the access token from the session if the caller didn't pass one.
+  const token = accessToken ?? (await getSessionAccessToken())
+
   try {
     // Validate URL before making the request
     new URL(fullUrl) // This will throw if URL is invalid
@@ -143,21 +170,18 @@ export async function postFetchFromBackend(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       ...options,
     })
 
     if (!response.ok) {
-      // For 401/403, return parsed body so caller can surface permission info
+      // For 401/403, forward the body so the caller can surface permission info.
+      // Read the body exactly once (an empty 401 body would make a second read throw).
       if (response.status === 401 || response.status === 403) {
-        try {
-          const body = await response.json()
-          return new Response(JSON.stringify(body), { status: response.status })
-        } catch {
-          const text = await response.text()
-          return new Response(JSON.stringify({ error: `Backend request failed with status: ${response.status}`, details: text }), { status: response.status })
-        }
+        const text = await response.text()
+        const payload = text || JSON.stringify({ error: `Backend request failed with status: ${response.status}` })
+        return new Response(payload, { status: response.status, headers: { "content-type": "application/json" } })
       }
       throw new Error(`Backend request failed with status: ${response.status}`)
     }

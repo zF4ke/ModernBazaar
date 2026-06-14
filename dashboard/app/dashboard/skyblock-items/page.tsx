@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { FeatureCard } from "@/components/feature-card"
 import { GradientSection } from "@/components/gradient-section"
@@ -22,6 +24,26 @@ import { useDebounce } from "@/hooks/use-debounce"
 import { LoginCheck } from "@/components/login-check"
 
 // Fetch handled by useBackendQuery (auth by default)
+
+/** Hypixel SkyBlock rarity colors for the tier badge. */
+const TIER_COLOR: Record<string, string> = {
+  COMMON: "border-zinc-500/40 text-zinc-300",
+  UNCOMMON: "border-green-500/40 text-green-400",
+  RARE: "border-blue-500/40 text-blue-400",
+  EPIC: "border-purple-500/40 text-purple-400",
+  LEGENDARY: "border-amber-500/40 text-amber-400",
+  MYTHIC: "border-fuchsia-500/40 text-fuchsia-400",
+  SPECIAL: "border-red-500/40 text-red-400",
+  VERY_SPECIAL: "border-red-500/40 text-red-400",
+  SUPREME: "border-red-500/40 text-red-400",
+  UNOBTAINABLE: "border-rose-500/40 text-rose-400",
+}
+
+const fmtNpc = (n: number | null | undefined) =>
+  n === null || n === undefined ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: 0 })
+
+const titleCase = (s: string) =>
+  s ? s.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : s
 
 export default function SkyblockItemsPage() {
   const [query, setQuery] = useState<SkyblockItemQuery>({ 
@@ -385,15 +407,21 @@ export default function SkyblockItemsPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      Loading skyblock items...
-                    </TableCell>
-                  </TableRow>
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <TableRow key={`skeleton-${i}`}>
+                      {Array.from({ length: 8 }).map((__, c) => (
+                        <TableCell key={c}><Skeleton className="h-4 w-full max-w-[120px]" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
                 ) : itemsArray.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8">
-                      No skyblock items found
+                    <TableCell colSpan={8} className="py-12">
+                      <div className="flex flex-col items-center gap-2 text-center text-muted-foreground">
+                        <Layers className="h-8 w-8 opacity-40" />
+                        <p className="text-sm">No items match your filters.</p>
+                        <Button onClick={resetFilters} variant="outline" size="sm" className="mt-1">Reset filters</Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -401,12 +429,18 @@ export default function SkyblockItemsPage() {
                     <TableRow key={item.id}>
                       <TableCell className="font-mono text-xs break-all max-w-[200px]">{item.id}</TableCell>
                       <TableCell className="break-words max-w-[150px]">{item.name}</TableCell>
-                      <TableCell className="break-words max-w-[120px]">{item.material}</TableCell>
-                      <TableCell className="break-words max-w-[100px]">{item.color}</TableCell>
-                      <TableCell className="break-words max-w-[120px]">{item.category}</TableCell>
-                      <TableCell className="break-words max-w-[100px]">{item.tier}</TableCell>
-                      <TableCell className="break-words max-w-[120px]">{item.npcSellPrice ?? "-"}</TableCell>
-                      <TableCell className="text-xs break-words max-w-[150px]">{item.lastRefreshed ? new Date(item.lastRefreshed).toLocaleString() : "-"}</TableCell>
+                      <TableCell className="break-words max-w-[120px] text-muted-foreground">{item.material}</TableCell>
+                      <TableCell className="break-words max-w-[100px] text-muted-foreground">{item.color}</TableCell>
+                      <TableCell className="break-words max-w-[120px] text-muted-foreground">{titleCase(item.category)}</TableCell>
+                      <TableCell className="max-w-[110px]">
+                        {item.tier ? (
+                          <Badge variant="outline" className={`text-[10px] ${TIER_COLOR[item.tier] || "border-zinc-600 text-zinc-400"}`}>
+                            {titleCase(item.tier)}
+                          </Badge>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="break-words max-w-[120px] font-mono text-right">{fmtNpc(item.npcSellPrice)}</TableCell>
+                      <TableCell className="text-xs break-words max-w-[150px] text-muted-foreground">{item.lastRefreshed ? new Date(item.lastRefreshed).toLocaleDateString() : "—"}</TableCell>
                     </TableRow>
                   ))
                 )}

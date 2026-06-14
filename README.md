@@ -67,15 +67,15 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
 - [x] Responsive layout, tooltips, zoom/pan, smooth animations
 - [x] Advanced filtering and search features
 - [x] 48-hour average card with frontend caching
-- [x] Auth0 authentication with Discord, GitHub, and Google
+- [x] Auth0 authentication (nextjs-auth0 v4, server sessions) with Discord, GitHub, and Google
 - [x] Custom login page design
-- [x] Stripe subscription integration with 2/4 plans:
-  - [x] Free plan
-  - [x] Starter plan
-  - [ ] Flipper plan
-  - [ ] Elite plan
+- [x] Subscriptions via **Lemon Squeezy (Merchant of Record)** — handles VAT/sales tax. Three tiers:
+  - [x] Free plan ($0)
+  - [x] Flipper plan — Bazaar Flipping finder
+  - [x] Elite plan — adds Bazaar Manipulation
+  - Webhook + checkout scaffold in place; activate by adding the Lemon Squeezy keys (see [docs/COSTS.md](docs/COSTS.md) and [docs/ADMIN_SUITE_PLAN.md](docs/ADMIN_SUITE_PLAN.md))
 - [x] Modern gradient-based UI design system
-- [x] Admin management pages for plans and endpoints
+- [x] **Admin suite**: analytics, user management, discount codes, referrals, plans, endpoints
 - [x] Profile page with user management
 
 **Trading strategies, services and endpoints**
@@ -89,7 +89,10 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
     - [x] Caching and performance optimizations
 - [ ] NPC Flipping
 - [ ] Craft Flipping
-- [ ] Bazaar Manipulation
+- [x] Bazaar Manipulation
+    - [x] Manipulation Service and Scorer (corner-cost, break-even-after-tax, inflated buy/sell orders, doublings, sell-through ETA)
+    - [x] `GET /api/strategies/manipulation` endpoint with budget/ROI/tax/ratio filters
+    - [x] Manipulation route with step-by-step plan cards
 - [ ] Budget Planner
 - [ ] Auction House
 
@@ -111,6 +114,26 @@ Core health: http://localhost:8080/actuator/health
 Dashboard:   http://localhost:3000  
 Prometheus:   http://localhost:9090  
 Grafana:      http://localhost:3000
+
+## 🔑 Becoming an admin
+
+Admin pages (analytics, users, discounts, referrals) require the `manage:plans`
+scope. The simplest way to grant yourself admin is the allowlist:
+
+1. Sign in, open **/dashboard/profile**, and copy your user id (the Auth0 `sub`,
+   e.g. `google-oauth2|123…`).
+2. Put it in `infra/.env` as `ADMIN_USER_SUBS=google-oauth2|123…` (comma-separated
+   for multiple), then restart core (`docker compose -f infra/docker-compose.yml -p modernbazaar up -d core`).
+3. Sign out/in so a fresh token is issued. The Admin section appears in the sidebar.
+
+The production-grade alternative is Auth0 RBAC: enable RBAC + "Add Permissions in
+the Access Token" on the API, create a `manage:plans` permission and an Admin role,
+and assign it to your user. The allowlist is meant for bootstrapping the first admin.
+
+## 💸 Running costs
+
+Auth0 and Lemon Squeezy both have costs that scale with usage. See
+[docs/COSTS.md](docs/COSTS.md) for fee math and break-even calculations as the app grows.
 
 ## License
 

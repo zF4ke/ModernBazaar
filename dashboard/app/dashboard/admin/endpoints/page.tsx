@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -831,39 +831,54 @@ const CategorySection = ({
 }
 
 const ENDPOINTS: EndpointInfo[] = [
-  // Health endpoints
-  { path: '/api/health', method: 'GET', description: 'Health check endpoint', category: 'System', requiresAuth: false },
-  // Metrics endpoints
-  { path: '/api/metrics', method: 'GET', description: 'Get system metrics', category: 'System', requiresAuth: true },
-  
-  // Admin endpoints
+  // System
+  { path: '/api/health', method: 'GET', description: 'Health check', category: 'System', requiresAuth: false },
+  { path: '/api/status', method: 'GET', description: 'Public status (maintenance flag)', category: 'System', requiresAuth: false },
+  { path: '/api/metrics', method: 'GET', description: 'System metrics', category: 'System', requiresAuth: true },
+
+  // Account
+  { path: '/api/me/setup', method: 'POST', description: 'Provision the user (free plan + role)', category: 'User', requiresAuth: true },
+  { path: '/api/me/subscription', method: 'GET', description: 'Current subscription', category: 'User', requiresAuth: true },
+  { path: '/api/me/subscription/cancel', method: 'POST', description: 'Cancel subscription (with feedback)', category: 'User', requiresAuth: true },
+  { path: '/api/me/permissions', method: 'GET', description: 'Current permissions', category: 'User', requiresAuth: true },
+
+  // Admin — analytics & users
   { path: '/api/admin/check-access', method: 'GET', description: 'Check admin access', category: 'Admin', requiresAuth: true },
-  { path: '/api/admin/plans', method: 'GET', description: 'List all subscription plans', category: 'Admin', requiresAuth: true },
-  { path: '/api/admin/plans', method: 'POST', description: 'Create new subscription plan', category: 'Admin', requiresAuth: true },
-  { path: '/api/admin/plans/test-plan/activate', method: 'POST', description: 'Activate a plan', category: 'Admin', requiresAuth: true },
-  { path: '/api/admin/plans/test-plan/deactivate', method: 'POST', description: 'Deactivate a plan', category: 'Admin', requiresAuth: true },
-  
-  // User endpoints
-  { path: '/api/me/subscription', method: 'GET', description: 'Get user subscription info', category: 'User', requiresAuth: true },
-  { path: '/api/me/setup', method: 'POST', description: 'Setup new user with free plan and role', category: 'User', requiresAuth: true },
-  
-  // Plans endpoints
-  { path: '/api/plans', method: 'GET', description: 'List available plans', category: 'Plans', requiresAuth: false },
-  
-  // Bazaar endpoints
-  { path: '/api/bazaar/items', method: 'GET', description: 'Get bazaar items', category: 'Bazaar', requiresAuth: true },
-  { path: '/api/bazaar/items/DIAMOND_SPREADING', method: 'GET', description: 'Get specific bazaar item', category: 'Bazaar', requiresAuth: true },
-  { path: '/api/bazaar/items/DIAMOND_SPREADING/history', method: 'GET', description: 'Get item price history', category: 'Bazaar', requiresAuth: true },
-  
-  // Skyblock endpoints
-  { path: '/api/skyblock/items', method: 'GET', description: 'Get skyblock items', category: 'Skyblock', requiresAuth: true },
-  
-  // Strategies endpoints
-  { path: '/api/strategies/flipping', method: 'GET', description: 'Get flipping strategies', category: 'Strategies', requiresAuth: true }
+  { path: '/api/admin/analytics/summary', method: 'GET', description: 'Analytics summary', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/users', method: 'GET', description: 'List users', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/users/plan', method: 'POST', description: 'Set a user\'s plan', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/users/extend', method: 'POST', description: 'Extend a user\'s period', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/maintenance', method: 'GET', description: 'Maintenance-mode state', category: 'Admin', requiresAuth: true },
+
+  // Admin — plans
+  { path: '/api/admin/plans', method: 'GET', description: 'List plans', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/plans', method: 'POST', description: 'Create a plan', category: 'Admin', requiresAuth: true },
+
+  // Admin — discounts & referrals
+  { path: '/api/admin/discounts', method: 'GET', description: 'List discount codes', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/discounts', method: 'POST', description: 'Create a discount code', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/referrals', method: 'GET', description: 'List referral codes', category: 'Admin', requiresAuth: true },
+  { path: '/api/admin/referrals', method: 'POST', description: 'Create a referral code', category: 'Admin', requiresAuth: true },
+
+  // Billing
+  { path: '/api/v1/billing/webhook/lemonsqueezy', method: 'POST', description: 'Lemon Squeezy webhook (signature-verified)', category: 'Billing', requiresAuth: false },
+
+  // Public
+  { path: '/api/plans', method: 'GET', description: 'Public list of plans', category: 'Plans', requiresAuth: false },
+
+  // Market data
+  { path: '/api/bazaar/items', method: 'GET', description: 'Bazaar items', category: 'Bazaar', requiresAuth: true },
+  { path: '/api/bazaar/items/DIAMOND_SPREADING', method: 'GET', description: 'A specific bazaar item', category: 'Bazaar', requiresAuth: true },
+  { path: '/api/skyblock/items', method: 'GET', description: 'Skyblock items', category: 'Skyblock', requiresAuth: true },
+
+  // Strategies
+  { path: '/api/strategies/flipping', method: 'GET', description: 'Bazaar Flipping opportunities', category: 'Strategies', requiresAuth: true },
+  { path: '/api/strategies/manipulation', method: 'GET', description: 'Bazaar Manipulation opportunities', category: 'Strategies', requiresAuth: true },
 ]
 
 export default function AdminEndpointsPage() {
-  const { isAuthenticated, getAccessTokenSilently, isLoading: authLoading, user, error: auth0Error } = useAuth0()
+  const { user, isLoading: authLoading } = useUser()
+  const isAuthenticated = !!user
   const { toast } = useToast()
   const [endpointTests, setEndpointTests] = useState<Record<string, EndpointTest>>({})
   const [selectedEndpoint, setSelectedEndpoint] = useState<string>('')
@@ -980,12 +995,10 @@ export default function AdminEndpointsPage() {
 
       if (isAuthenticated) {
         try {
-          const token = await getAccessTokenSilently()
           const authorizedResponse = await fetch(endpoint.path, {
             method: endpoint.method,
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              'Content-Type': 'application/json'
             },
             body: testRequestBody
           })
@@ -1077,7 +1090,7 @@ export default function AdminEndpointsPage() {
         variant: "destructive"
       })
     }
-  }, [isAuthenticated, getAccessTokenSilently, toast])
+  }, [isAuthenticated, toast])
 
   const [isTestingAll, setIsTestingAll] = useState(false)
   const [testingProgress, setTestingProgress] = useState(0)
@@ -1131,12 +1144,6 @@ export default function AdminEndpointsPage() {
           })
           return
         }
-      }
-
-      // Add auth token if user is authenticated
-      if (isAuthenticated) {
-        const token = await getAccessTokenSilently()
-        headers['Authorization'] = `Bearer ${token}`
       }
 
       const options: RequestInit = {
@@ -1231,11 +1238,6 @@ export default function AdminEndpointsPage() {
         </div>
         <div className="space-y-4">
           <p>You need to login to access this page.</p>
-          {auth0Error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-800 text-sm">Auth0 Error: {auth0Error.message}</p>
-            </div>
-          )}
           <div className="pt-4">
             <Button 
               onClick={() => window.location.reload()} 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { useBackendQuery } from './use-backend-query'
 import { useOfflineGuard } from './use-offline-guard'
 
@@ -28,7 +28,8 @@ export function useAdminAccess(options: UseAdminAccessOptions = {}): UseAdminAcc
     onAccessDenied
   } = options
 
-  const { isAuthenticated } = useAuth0()
+  const { user } = useUser()
+  const isAuthenticated = !!user
   const { guard } = useOfflineGuard()
   const [hasAdminAccess, setHasAdminAccess] = useState(false)
   const [loading, setLoading] = useState(true)
