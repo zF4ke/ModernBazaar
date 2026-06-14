@@ -1,5 +1,11 @@
 # Modern Bazaar — Admin Suite & Payments Plan
 
+> **STATUS: IMPLEMENTED — kept as the design reference** (code comments point here for
+> the discount/referral/payments design). The suite is built: analytics, users,
+> discounts, referrals, and the Lemon Squeezy billing scaffold. For current operational
+> steps see [LEMON_SQUEEZY_SETUP.md](LEMON_SQUEEZY_SETUP.md), [TIERS.md](TIERS.md),
+> [COSTS.md](COSTS.md), and [MONEY_LOSS_AUDIT.md](MONEY_LOSS_AUDIT.md).
+
 ## 1. Executive Summary
 
 This plan delivers an admin analytics and user-management suite for Modern Bazaar plus a payments stack chosen to keep the solo founder out of the tax-compliance business. We adopt **Lemon Squeezy as Merchant of Record** so VAT/sales-tax registration, filing, and remittance disappear entirely, at a flat 5% + $0.50/transaction. We build in three phases — read-only analytics first (no side effects, immediate business value), then user management backed by Auth0 + the local DB, then discount codes and referrals wired into Lemon Squeezy webhooks. Every endpoint reuses the existing `SCOPE_manage:plans` security model in `SecurityConfig.java` and the established Next.js admin proxy pattern under `app/dashboard/admin/*`.
