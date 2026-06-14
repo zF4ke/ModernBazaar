@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { useUser } from '@auth0/nextjs-auth0'
 import { Button } from "@/components/ui/button"
 import {
-  TrendingUp, Boxes, Layers, Sparkles, ArrowRight, Shuffle, Crosshair,
+  TrendingUp, Boxes, Layers, Sparkles, ArrowRight, Crosshair, Lock,
 } from "lucide-react"
 import { useBackendQuery } from "@/hooks/use-backend-query"
+import { useHasPermission } from "@/hooks/use-has-permission"
+import { PERMISSIONS } from "@/constants/permissions"
 import type { SystemMetrics } from "@/types/metrics"
 import type { FlipOpportunity, PagedResponse } from "@/types/strategies"
 import { GradientSection } from '@/components/gradient-section'
@@ -21,9 +23,13 @@ export default function Dashboard() {
     { refetchInterval: 30000, queryKey: ['metrics'], requireAuth: false }
   )
 
+  // Tiered access: only fetch/show the flips feed if this account owns the tool,
+  // otherwise we'd leak premium data to lower tiers.
+  const { hasPermission: canFlip, loading: permLoading } = useHasPermission(PERMISSIONS.USE_BAZAAR_FLIPPING)
+
   const { data: flips, isLoading: flipsLoading } = useBackendQuery<PagedResponse<FlipOpportunity>>(
     '/api/strategies/flipping?sort=score&limit=6&horizonHours=1',
-    { refetchInterval: 60000, queryKey: ['top-flips'], requireAuth: true }
+    { refetchInterval: 60000, queryKey: ['top-flips'], requireAuth: true, enabled: canFlip }
   )
   const topFlips = flips?.items ?? []
 
@@ -60,25 +66,43 @@ export default function Dashboard() {
         </div>
       </GradientSection>
 
-      {/* Top flips right now */}
-      <section className="space-y-4">
-        <div className="flex items-end justify-between gap-4">
-          <div className="space-y-1">
-            <h2 className="text-xl md:text-2xl font-semibold">Top flips right now</h2>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live
-              </span>
-              {updated && <span>· updated {updated}</span>}
+      {/* Top flips right now — gated by the flipping tool */}
+      {canFlip || permLoading ? (
+        <section className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div className="space-y-1">
+              <h2 className="text-xl md:text-2xl font-semibold">Top flips right now</h2>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Live
+                </span>
+                {updated && <span>· updated {updated}</span>}
+              </div>
             </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard/strategies/flipping">Open Flipping <ArrowRight className="h-4 w-4 ml-1" /></Link>
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard/strategies/flipping">Open Flipping <ArrowRight className="h-4 w-4 ml-1" /></Link>
-          </Button>
-        </div>
-        <OpportunityFeed items={topFlips} isLoading={flipsLoading} />
-      </section>
+          <OpportunityFeed items={topFlips} isLoading={flipsLoading || permLoading} />
+        </section>
+      ) : (
+        <section className="relative overflow-hidden rounded-xl border bg-card p-8 text-center">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-500/20 blur-3xl" />
+          <div className="relative mx-auto flex max-w-md flex-col items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/15">
+              <Lock className="h-5 w-5 text-emerald-400" />
+            </div>
+            <h2 className="text-xl font-semibold">Unlock Bazaar Flipping</h2>
+            <p className="text-sm text-muted-foreground">
+              See the top flips ranked by profit per hour, plus the full flipping toolkit with budget sizing, risk flags and fill-time estimates.
+            </p>
+            <Button asChild className="mt-1">
+              <Link href="/dashboard/profile">Upgrade <ArrowRight className="h-4 w-4 ml-1" /></Link>
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Explore */}
       <section className="grid gap-4 sm:grid-cols-3">
