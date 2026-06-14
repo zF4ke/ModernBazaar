@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { BazaarItemsResponse } from "@/types/bazaar"
 import { fetchFromBackend } from "@/lib/api"
+import { isBackendError } from "@/types/errors"
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization') || undefined
     const token = authHeader?.replace(/^Bearer\s+/i, '')
 
-    const response: BazaarItemsResponse | { status: number; [key: string]: any } = await fetchFromBackend(
+    const result = await fetchFromBackend(
       request,
       endpoint,
       {},
@@ -22,12 +23,12 @@ export async function GET(request: NextRequest) {
     )
 
     // If backend returned an error payload with a status, propagate it
-    if (typeof (response as any)?.status === 'number' && (response as any).status >= 400) {
-      return NextResponse.json(response as any, { status: (response as any).status })
+    if (isBackendError(result)) {
+      return NextResponse.json(result, { status: result.status })
     }
 
     // Cache for 45 seconds (slightly less than backend's 60 seconds)
-    const nextResponse = NextResponse.json(response as BazaarItemsResponse)
+    const nextResponse = NextResponse.json(result as BazaarItemsResponse)
     nextResponse.headers.set('Cache-Control', 'public, s-maxage=45, stale-while-revalidate=30')
     return nextResponse
   } catch (error) {

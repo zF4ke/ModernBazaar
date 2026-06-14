@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { BazaarItemHourSummary } from "@/types/bazaar"
 import { fetchFromBackend, buildQueryParams } from "@/lib/api"
+import { isBackendError } from "@/types/errors"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ productId: string }> }) {
   const resolvedParams = await params
@@ -28,19 +29,19 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const authHeader = request.headers.get('authorization') || undefined
     const token = authHeader?.replace(/^Bearer\s+/i, '')
 
-    const historyOrError: BazaarItemHourSummary[] | { status: number; [key: string]: any } = await fetchFromBackend(
-      request, 
+    const result = await fetchFromBackend(
+      request,
       fullEndpoint,
       {},
       token
     )
 
-    if (typeof (historyOrError as any)?.status === 'number' && (historyOrError as any).status >= 400) {
-      return NextResponse.json(historyOrError as any, { status: (historyOrError as any).status })
+    if (isBackendError(result)) {
+      return NextResponse.json(result, { status: result.status })
     }
-    
+
     // Cache for 55 seconds (slightly less than backend's 60 seconds)
-    const response = NextResponse.json(historyOrError as BazaarItemHourSummary[])
+    const response = NextResponse.json(result as BazaarItemHourSummary[])
     response.headers.set('Cache-Control', 'public, s-maxage=55, stale-while-revalidate=30')
     return response
   } catch (error) {

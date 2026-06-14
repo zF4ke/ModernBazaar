@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import type { BazaarItemHourSummary } from "@/types/bazaar"
 import { fetchFromBackend } from "@/lib/api"
+import { isBackendError } from "@/types/errors"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ productId: string }> }) {
   const resolvedParams = await params
@@ -17,14 +18,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const authHeader = request.headers.get('authorization') || undefined
     const token = authHeader?.replace(/^Bearer\s+/i, '')
 
-    const snapshotsOrError: BazaarItemHourSummary[] | { status: number; [key: string]: any } = await fetchFromBackend(request, endpoint, {}, token)
+    const result = await fetchFromBackend(request, endpoint, {}, token)
 
-    if (typeof (snapshotsOrError as any)?.status === 'number' && (snapshotsOrError as any).status >= 400) {
-      return NextResponse.json(snapshotsOrError as any, { status: (snapshotsOrError as any).status })
+    if (isBackendError(result)) {
+      return NextResponse.json(result, { status: result.status })
     }
-    
+
     // Cache for 30 seconds (snapshots change frequently)
-    const response = NextResponse.json(snapshotsOrError as BazaarItemHourSummary[])
+    const response = NextResponse.json(result as BazaarItemHourSummary[])
     response.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=15')
     return response
   } catch (error) {
