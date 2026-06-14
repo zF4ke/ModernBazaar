@@ -184,12 +184,7 @@ function ToolCard({
           <Icon className={`h-5 w-5 ${accent}`} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold">{title}</h3>
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Live
-            </span>
-          </div>
+          <h3 className="text-base font-semibold">{title}</h3>
         </div>
       </div>
       <p className="text-sm text-muted-foreground mb-4 flex-1">{description}</p>

@@ -196,9 +196,7 @@ export default function LandingPage() {
                     <s.icon className={`h-4 w-4 ${s.color}`} />
                   </div>
                   <h3 className="text-base font-semibold">{s.title}</h3>
-                  <span className={`ml-auto text-[10px] font-medium uppercase tracking-wide ${s.live ? "text-emerald-400" : "text-muted-foreground"}`}>
-                    {s.live ? "Live" : "Soon"}
-                  </span>
+                  {!s.live && <span className="ml-auto text-[11px] text-muted-foreground">Soon</span>}
                 </div>
                 <ul className="space-y-2">
                   {s.points.map((p, i) => (

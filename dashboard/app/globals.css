@@ -61,11 +61,11 @@
   }
   .dark {
     /* Cool-slate dark theme with elevated surfaces (cards lifted above the page). */
-    --background: 240 6% 5%;
+    --background: 240 8% 4%;
     --foreground: 0 0% 98%;
-    --card: 240 5% 9%;
+    --card: 240 6% 11%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 5% 9%;
+    --popover: 240 6% 11%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
     --primary-foreground: 240 6% 8%;
@@ -77,9 +77,9 @@
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 16%;
-    --input: 240 5% 16%;
-    --ring: 0 0% 55%;
+    --border: 240 6% 18%;
+    --input: 240 6% 18%;
+    --ring: 217 91% 60%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
