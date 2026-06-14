@@ -35,16 +35,24 @@ import java.util.stream.Collectors;
  *   • ↓ liquidez ⇒ ↓ score (fator multiplicativo)
  *
  * Fórmula simplificada - BACK TO BASICS
- * 1. profitScore = log10(profitPerHour + 1) - DOMINANT FACTOR
+ * 1. profitScore = log10(reasonableProfitPerHour + 1) - DOMINANT FACTOR
  * 2. spreadBonus = min(0.8, spreadPct * 12) - moderate bonus (cap ~6.7% spread)
  * 3. baseScore = profitScore * (1 + spreadBonus)
- * 4. riskPenalty = riskScore * 0.1 (or 0 if disabled) - very light penalty (max 10% reduction)
- * 5. competitionPenalty = min(0.05, churn * 0.0005) (or 0 if disabled) - very light penalty
+ * 4. riskPenalty = riskScore * 0.1 (or 0 if disabled) - very light score penalty (max 10% reduction)
+ * 5. competitionPenalty = min(0.10, effectiveChurn * 0.0007) (or 0 if disabled) - very light penalty
  * 6. liquidityFactor = min(1.0, throughputPerHour / 8.0) - need 8 units/hour minimum
  * 7. finalScore = baseScore * (1 - riskPenalty) * (1 - competitionPenalty) * liquidityFactor
  *
+ * Risk acts in TWO places (by design): it risk-adjusts the per-item margin
+ * (profitPerItem = spread * (1 - riskScore)) AND applies the light score penalty above.
+ * Both are gated by disableRiskPenalties so the toggle truly exposes raw profit.
+ *
+ * Tax note: profit here is PRE-TAX. The bazaar selling tax (~1.125%) is uniform across
+ * items, so it does not affect ranking; it is applied at the presentation layer (the
+ * dashboard's tax-rate selector) when showing expected coins.
+ *
  * Scoring Toggles:
- * - disableRiskPenalties: Completely removes risk penalty from calculation
+ * - disableRiskPenalties: removes BOTH the margin risk-discount and the score penalty
  * - disableCompetitionPenalties: Completely removes competition penalty from calculation
  * - These allow seeing raw profit potential without risk/competition considerations
  *
@@ -223,7 +231,9 @@ public class FlippingScorer {
         // Total quantity we can trade over the entire horizon
         double totalQty = unitsPerHour * horizon;
         double plannedUnitsPerHour = unitsPerHour;
-        double profitPerItem = Math.max(0.0, spread * (1.0 - riskScore));
+        // Risk-adjust the per-item margin, but honor the toggle so "raw profit" is truly raw.
+        double riskDiscount = Boolean.TRUE.equals(disableRiskPenalties) ? 1.0 : (1.0 - riskScore);
+        double profitPerItem = Math.max(0.0, spread * riskDiscount);
         double profitPerHour = Math.max(0.0, profitPerItem * plannedUnitsPerHour);
 
         // Balance adjustment: prefer supply >= demand
