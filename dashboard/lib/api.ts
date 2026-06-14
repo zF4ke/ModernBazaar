@@ -39,33 +39,51 @@ export async function fetchWithBackendUrl(url: string, options: RequestInit = {}
  * @returns Promise that resolves to the parsed JSON response from the backend
  * @throws Error if the backend request fails or returns an error status
  */
+/**
+ * Server-only: get the current user's Auth0 access token from the session cookie
+ * (nextjs-auth0 v4). Dynamically imported so the server-only auth client never
+ * leaks into client bundles. Returns undefined when there is no session.
+ */
+async function getSessionAccessToken(): Promise<string | undefined> {
+  try {
+    const { auth0 } = await import("@/lib/auth0")
+    const { token } = await auth0.getAccessToken()
+    return token ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
 export async function fetchFromBackend(
-  request: Request, 
-  endpoint: string, 
+  request: Request,
+  endpoint: string,
   options: RequestInit = {},
   accessToken?: string
 ) {
   const DEFAULT_BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080"
   let backendUrl = request.headers.get('x-backend-url') || DEFAULT_BACKEND_URL
-  
+
   // Clean up the backend URL - ensure it doesn't end with a slash
   backendUrl = backendUrl.replace(/\/+$/, '')
-  
+
   // Ensure endpoint starts with a slash
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
-  
+
   // Construct the full URL
   const fullUrl = `${backendUrl}${cleanEndpoint}`
-  
+
+  // Acquire the access token from the session if the caller didn't pass one.
+  const token = accessToken ?? (await getSessionAccessToken())
+
   try {
     // Validate URL before making the request
     new URL(fullUrl) // This will throw if URL is invalid
-    
+
     const response = await fetch(fullUrl, {
       method: options.method ? options.method : "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       ...options,
     })
@@ -134,7 +152,10 @@ export async function postFetchFromBackend(
   
   // Construct the full URL
   const fullUrl = `${backendUrl}${cleanEndpoint}`
-  
+
+  // Acquire the access token from the session if the caller didn't pass one.
+  const token = accessToken ?? (await getSessionAccessToken())
+
   try {
     // Validate URL before making the request
     new URL(fullUrl) // This will throw if URL is invalid
@@ -143,7 +164,7 @@ export async function postFetchFromBackend(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       ...options,
     })

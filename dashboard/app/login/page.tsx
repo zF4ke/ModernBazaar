@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -11,25 +10,11 @@ import {
 } from 'lucide-react'
 
 export default function CustomLoginPage() {
-  const { loginWithRedirect } = useAuth0()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSocialLogin = async (connection: string) => {
     setIsLoading(true)
-    try {
-      await loginWithRedirect({
-        authorizationParams: {
-          connection,
-          // Explicitly include audience so Auth0 issues a Refresh Token
-          audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
-          scope: 'openid profile email offline_access'
-        },
-        appState: { returnTo: '/dashboard' }
-      })
-    } catch (error) {
-      console.error('Login error:', error)
-      setIsLoading(false)
-    }
+    window.location.href = `/auth/login?connection=${connection}&returnTo=/dashboard`
   }
 
   return (

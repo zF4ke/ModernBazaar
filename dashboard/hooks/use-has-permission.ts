@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { useAdminAccess } from './use-admin-access'
 import { useBackendQuery } from './use-backend-query'
 import { useOfflineGuard } from './use-offline-guard'
@@ -23,7 +23,8 @@ const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
  * @param requiredPermissions - Array of permissions to check (user needs ALL of them)
  */
 export function useHasPermission(requiredPermissions: Permission | Permission[]): UseHasPermissionReturn {
-  const { isAuthenticated } = useAuth0()
+  const { user } = useUser()
+  const isAuthenticated = !!user
   const { hasAdminAccess } = useAdminAccess()
   const { guard } = useOfflineGuard()
   const [hasPermission, setHasPermission] = useState(false)

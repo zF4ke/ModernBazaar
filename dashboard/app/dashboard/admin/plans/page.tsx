@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,8 @@ interface CreatePlanForm {
 }
 
 export default function AdminPlansPage() {
-  const { isAuthenticated, getAccessTokenSilently, isLoading: authLoading, user, error: auth0Error } = useAuth0()
+  const { user, isLoading: authLoading } = useUser()
+  const isAuthenticated = !!user
   const { toast } = useToast()
   const [plans, setPlans] = useState<Plan[]>([])
   const [creating, setCreating] = useState(false)
@@ -43,12 +44,7 @@ export default function AdminPlansPage() {
     }
 
     try {
-      const token = await getAccessTokenSilently()
-      const response = await fetch('/api/admin/plans', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
+      const response = await fetch('/api/admin/plans')
       
       if (response.ok) {
         const data = await response.json()
@@ -68,7 +64,7 @@ export default function AdminPlansPage() {
         variant: "destructive"
       })
     }
-  }, [isAuthenticated, getAccessTokenSilently, toast])
+  }, [isAuthenticated, toast])
 
   // Use the admin access hook
   const { hasAdminAccess, loading: adminLoading, error } = useAdminAccess()
@@ -92,13 +88,11 @@ export default function AdminPlansPage() {
 
     try {
       setCreating(true)
-      const token = await getAccessTokenSilently()
-      
+
       const response = await fetch('/api/admin/plans', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(form)
       })
@@ -138,14 +132,10 @@ export default function AdminPlansPage() {
 
   const togglePlanStatus = async (slug: string, active: boolean) => {
     try {
-      const token = await getAccessTokenSilently()
       const endpoint = active ? 'activate' : 'deactivate'
-      
+
       const response = await fetch(`/api/admin/plans/${slug}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        method: 'POST'
       })
 
       if (response.ok) {
@@ -211,11 +201,6 @@ export default function AdminPlansPage() {
         </div>
         <div className="space-y-4">
           <p>You need to login to access this page.</p>
-          {auth0Error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-800 text-sm">Auth0 Error: {auth0Error.message}</p>
-            </div>
-          )}
           <div className="pt-4">
             <Button 
               onClick={() => window.location.reload()} 

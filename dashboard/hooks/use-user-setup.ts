@@ -1,195 +1,55 @@
 "use client"
 
-import { useEffect, useState, useRef } from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useEffect, useRef, useState } from 'react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { useOfflineGuard } from './use-offline-guard'
 
 /**
- * Hook que garante que novos utilizadores são configurados (plano free) de forma idempotente.
- * Removido o uso de localStorage (pode haver múltiplas contas no mesmo browser).
- * Agora o controlo de tentativa é apenas em memória e isolado por userId (sub).
+ * Ensures a freshly-logged-in user is provisioned (free plan) exactly once.
+ *
+ * nextjs-auth0 v4 keeps the session and access token server-side and refreshes
+ * tokens automatically, so the old SPA token-refresh dance is gone: we simply
+ * POST /api/me/setup once per user. The proxy route attaches the access token
+ * from the session, so no client-side token handling is needed.
  */
 export function useUserSetup() {
-  const { user, isAuthenticated, getAccessTokenSilently, loginWithRedirect, logout, handleRedirectCallback } = useAuth0()
+  const { user } = useUser()
+  const { guard } = useOfflineGuard()
   const [isSetupComplete, setIsSetupComplete] = useState(false)
   const [isSettingUp, setIsSettingUp] = useState(false)
-  const [isRefreshingToken, setIsRefreshingToken] = useState(false)
-  const [persistedDone, setPersistedDone] = useState(false)
-  const setupAttemptedRef = useRef(false) // tentativa para o user atual na sessão
-  const currentUserIdRef = useRef<string | null>(null) // qual user foi processado
-  const tokenRefreshDoneRef = useRef(false)
-  const pageReloadedRef = useRef(false)
-  const { guard } = useOfflineGuard()
-
-  // Helper para decodificar payload JWT de forma resiliente
-  function decodeJwtPayload(token: string): any | null {
-    try {
-      const [, payloadB64] = token.split('.')
-      if (!payloadB64) return null
-      // padding
-      const norm = payloadB64.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (payloadB64.length % 4)) % 4)
-      const json = atob(norm)
-      return JSON.parse(json)
-    } catch {
-      return null
-    }
-  }
-
-  // Minimal token refresh: single attempt; if missing RT, redirect once to mint it
-  const refreshTokenSimple = async (force?: boolean) => {
-    const doForce = force ?? false
-    if (!doForce && tokenRefreshDoneRef.current) return
-    tokenRefreshDoneRef.current = true
-    setIsRefreshingToken(true)
-    try {
-      // Use default getAccessTokenSilently without custom params to avoid conflicts
-      const freshToken = await getAccessTokenSilently()
-      const payload = decodeJwtPayload(freshToken)
-      const permissions = payload?.permissions as string[] | undefined
-      if (!permissions || permissions.length === 0) {
-        console.log('Permissions not present in fresh token yet.')
-        tokenRefreshDoneRef.current = false
-      } else {
-        markSetupDonePersistent()
-        tokenRefreshDoneRef.current = true
-      }
-    } catch (err: any) {
-      const code = err?.error || err?.code || ''
-      const desc = err?.error_description || err?.message || ''
-      if (String(code).includes('missing_refresh_token') || String(desc).includes('Missing Refresh Token')) {
-        console.log('Missing refresh token — redirecting once to mint RT')
-        if (typeof window !== 'undefined' && window.self === window.top) {
-          try {
-            await loginWithRedirect({
-              appState: { returnTo: '/dashboard' }
-              // Remove custom authorizationParams - let Auth0Provider handle it
-            })
-          } catch (e) {
-            console.error('Login redirect failed:', e)
-          }
-        }
-      } else {
-        console.log('Token refresh failed:', code || err)
-      }
-      tokenRefreshDoneRef.current = false
-    } finally {
-      setIsRefreshingToken(false)
-    }
-  }
-
-  // Reset automático quando troca de utilizador
-  useEffect(() => {
-    const sub = user?.sub || null
-    if (sub !== currentUserIdRef.current) {
-      currentUserIdRef.current = sub
-      setupAttemptedRef.current = false
-      tokenRefreshDoneRef.current = false
-      setIsSetupComplete(false)
-      setIsSettingUp(false)
-      setIsRefreshingToken(false)
-    }
-  }, [user?.sub])
-
-  // Ler flag persistida quando user disponível
-  useEffect(() => {
-    if (!user?.sub) return
-    try {
-      const key = `mb_user_setup_done_${user.sub}`
-      if (localStorage.getItem(key) === '1') {
-        setPersistedDone(true)
-        setupAttemptedRef.current = true
-        tokenRefreshDoneRef.current = true
-        setIsSetupComplete(true)
-      }
-    } catch {}
-  }, [user?.sub])
-
-  function markSetupDonePersistent() {
-    if (!user?.sub) return
-    const key = `mb_user_setup_done_${user.sub}`
-    // try { localStorage.setItem(key, '1') } catch {}
-    setPersistedDone(true)
-  }
+  const attemptedForUser = useRef<string | null>(null)
 
   useEffect(() => {
-    const ensureUserSetup = async () => {
-      if (!user || !isAuthenticated) return
-      if (isSettingUp || isSetupComplete) return
-      if (setupAttemptedRef.current) { setIsSetupComplete(true); return }
+    const sub = user?.sub
+    if (!sub) return
+    if (attemptedForUser.current === sub) return
+    attemptedForUser.current = sub
 
+    const ensureSetup = async () => {
       try {
+        guard()
         setIsSettingUp(true)
-        const isNewUser = (user.loginsCount === 1 || user.loginsCount === undefined) && !persistedDone
-        if (isNewUser) {
-          setupAttemptedRef.current = true
-          const token = await getAccessTokenSilently().catch(e => { console.log('⚠️ Falha token inicial:', e); return null })
-          guard()
-          await new Promise(r => setTimeout(r, 200))
-          const response = await fetch('/api/me/setup', {
-            method: 'POST',
-            headers: token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' }
-          })
-          if (!response.ok) {
-            console.log('⚠️ Setup backend falhou:', response.status)
-            setIsSetupComplete(false)
-            tokenRefreshDoneRef.current = false // permitir nova tentativa futura
-            return
-          }
-          // console.log('✅ Setup concluído, a refrescar token...')
-          // markSetupDonePersistent() // marcar logo após setup backend
-          // tokenRefreshDoneRef.current = false // garantir polling mesmo se corrida anterior marcou
-          console.log('Setup concluído, a refrescar token...')
-          markSetupDonePersistent()
-          tokenRefreshDoneRef.current = false
-          
-          // Force token refresh to get new permissions immediately
-          // Use handleRedirectCallback to properly establish the session
-          try {
-            console.log('Estabelecendo sessão com handleRedirectCallback...')
-            
-            // Check if we have auth parameters in the URL
-            const urlParams = new URLSearchParams(window.location.search)
-            const hasAuthParams = urlParams.has('code') && urlParams.has('state')
-            
-            if (hasAuthParams) {
-              // Complete the authentication flow to establish the session
-              await handleRedirectCallback()
-              console.log('Sessão estabelecida com sucesso')
-            } else {
-              // If no auth params, the session should already be established
-              console.log('Sessão já estabelecida, obtendo token...')
-            }
-            
-            // Now get a fresh token with new permissions
-            const token = await getAccessTokenSilently({
-              cacheMode: 'off'
-            })
-            console.log('Token refresh após setup concluído com sucesso')
-          } catch (refreshError: any) {
-            console.error('Erro no refresh do token após setup:', refreshError)
-            // Continue anyway - the setup was successful
-          }
-          
-          setIsSetupComplete(true)
-        } else {
-          console.log('👤 Utilizador existente; skip setup')
-          setIsSetupComplete(true)
-        }
+        // Idempotent on the backend: returns OK for existing users too.
+        const response = await fetch('/api/me/setup', { method: 'POST' })
+        setIsSetupComplete(response.ok)
+        if (!response.ok) attemptedForUser.current = null // allow a retry next mount
       } catch (err) {
-        console.error('❌ Erro setup utilizador:', err)
+        // Backend offline (guard throws) or network error: retry on next session.
+        attemptedForUser.current = null
         setIsSetupComplete(false)
       } finally {
         setIsSettingUp(false)
       }
     }
-    ensureUserSetup()
-  }, [user, isAuthenticated, getAccessTokenSilently, isSetupComplete, isSettingUp])
+
+    ensureSetup()
+  }, [user?.sub, guard])
 
   return {
     isSetupComplete,
     isSettingUp,
-    isRefreshingToken,
-    needsSetup: (user?.loginsCount === 1 || user?.loginsCount === undefined) && !isSetupComplete && !persistedDone,
-    refreshToken: () => refreshTokenSimple(true)
+    isRefreshingToken: false,
+    needsSetup: !!user && !isSetupComplete,
+    refreshToken: async () => {},
   }
 }

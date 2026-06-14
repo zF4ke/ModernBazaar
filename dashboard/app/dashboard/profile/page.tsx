@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -30,7 +30,8 @@ import { useBackendQuery } from '@/hooks/use-backend-query'
 import { LoginCheck } from '@/components/login-check'
 
 export default function ProfilePage() {
-  const { user, logout, isAuthenticated } = useAuth0()
+  const { user } = useUser()
+  const isAuthenticated = !!user
 
   const { data: subscription, isLoading: subscriptionLoading } = useBackendQuery<{
     planName: string
@@ -70,7 +71,7 @@ export default function ProfilePage() {
             <p className="text-muted-foreground">Manage your account settings and preferences</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}>
+        <Button variant="outline" size="sm" onClick={() => { window.location.href = "/auth/logout" }}>
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out
         </Button>

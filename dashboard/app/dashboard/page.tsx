@@ -1,7 +1,7 @@
 "use client"
 
 import Link from 'next/link'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,10 +14,9 @@ import type { SystemMetrics } from "@/types/metrics"
 import type { BazaarItemsResponse } from "@/types/bazaar"
 import { FeatureCard } from '@/components/feature-card'
 import { GradientSection } from '@/components/gradient-section'
-import { TokenTest } from '@/components/token-test'
 
 export default function Dashboard() {
-  const { user } = useAuth0()
+  const { user } = useUser()
   const firstName = user?.name?.split(' ')[0] ?? 'Trader'
 
   // Fetch system metrics
@@ -406,17 +405,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </section>
-
-      {/* Token Test Section - Remove this after debugging */}
-      {/* <section className="space-y-6">
-        <div className="space-y-1">
-          <h2 className="text-xl md:text-2xl font-semibold">Debug: Token Refresh Test</h2>
-          <p className="text-muted-foreground text-sm">
-            Test Auth0 token refresh functionality - remove this section after debugging
-          </p>
-        </div>
-        <TokenTest />
-      </section> */}
     </div>
    )
  }

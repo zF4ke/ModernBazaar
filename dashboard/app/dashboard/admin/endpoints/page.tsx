@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -863,7 +863,8 @@ const ENDPOINTS: EndpointInfo[] = [
 ]
 
 export default function AdminEndpointsPage() {
-  const { isAuthenticated, getAccessTokenSilently, isLoading: authLoading, user, error: auth0Error } = useAuth0()
+  const { user, isLoading: authLoading } = useUser()
+  const isAuthenticated = !!user
   const { toast } = useToast()
   const [endpointTests, setEndpointTests] = useState<Record<string, EndpointTest>>({})
   const [selectedEndpoint, setSelectedEndpoint] = useState<string>('')
@@ -980,12 +981,10 @@ export default function AdminEndpointsPage() {
 
       if (isAuthenticated) {
         try {
-          const token = await getAccessTokenSilently()
           const authorizedResponse = await fetch(endpoint.path, {
             method: endpoint.method,
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
+              'Content-Type': 'application/json'
             },
             body: testRequestBody
           })
@@ -1077,7 +1076,7 @@ export default function AdminEndpointsPage() {
         variant: "destructive"
       })
     }
-  }, [isAuthenticated, getAccessTokenSilently, toast])
+  }, [isAuthenticated, toast])
 
   const [isTestingAll, setIsTestingAll] = useState(false)
   const [testingProgress, setTestingProgress] = useState(0)
@@ -1131,12 +1130,6 @@ export default function AdminEndpointsPage() {
           })
           return
         }
-      }
-
-      // Add auth token if user is authenticated
-      if (isAuthenticated) {
-        const token = await getAccessTokenSilently()
-        headers['Authorization'] = `Bearer ${token}`
       }
 
       const options: RequestInit = {
@@ -1231,11 +1224,6 @@ export default function AdminEndpointsPage() {
         </div>
         <div className="space-y-4">
           <p>You need to login to access this page.</p>
-          {auth0Error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-800 text-sm">Auth0 Error: {auth0Error.message}</p>
-            </div>
-          )}
           <div className="pt-4">
             <Button 
               onClick={() => window.location.reload()} 

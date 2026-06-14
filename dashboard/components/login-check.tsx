@@ -1,7 +1,7 @@
 "use client"
 
 import { ReactNode } from 'react'
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertTriangle, LogIn, ArrowRight } from "lucide-react"
@@ -25,7 +25,8 @@ export function LoginCheck({
   icon,
   children
 }: LoginCheckProps) {
-  const { isAuthenticated, isLoading, loginWithRedirect } = useAuth0()
+  const { user, isLoading } = useUser()
+  const isAuthenticated = !!user
 
   // Show loading state
   if (isLoading) {
@@ -109,7 +110,7 @@ export function LoginCheck({
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                 <Button 
-                  onClick={() => loginWithRedirect()} 
+                  onClick={() => { window.location.href = "/auth/login" }}
                   size="lg" 
                   className="bg-primary hover:bg-primary/90 text-primary-foreground transform hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shadow-lg px-8 py-3 text-base font-medium text-white"
                 >

@@ -1,6 +1,6 @@
 import { useQuery, UseQueryOptions } from "@tanstack/react-query"
 import { fetchWithBackendUrl } from "@/lib/api"
-import { useAuth0 } from '@auth0/auth0-react'
+import { useUser } from '@auth0/nextjs-auth0'
 
 /**
  * Helper function to determine if an error should be suppressed from logging/retrying
@@ -53,20 +53,19 @@ export function useBackendQuery<T>(
 ) {
   // Default to authenticated requests; pass requireAuth: false to opt out
   const { queryKey = [], enabled = true, requireAuth = true, ...queryOptions } = options
-  const { getAccessTokenSilently, isAuthenticated } = useAuth0()
+  // nextjs-auth0 v4: auth state comes from the session cookie. The proxy routes
+  // attach the access token server-side, so the browser never handles a token.
+  const { user } = useUser()
+  const isAuthenticated = !!user
   const apiEndpoint = typeof window !== 'undefined'
     ? localStorage.getItem('apiEndpoint') || 'default'
     : 'default'
-  
+
   return useQuery<T>({
     queryKey: [endpoint, apiEndpoint, requireAuth ? 'auth' : 'anon', ...queryKey],
     queryFn: async () => {
-      let token: string | undefined
-      if (requireAuth) {
-        if (!isAuthenticated) throw new Error('Not authenticated')
-        token = await getAccessTokenSilently()
-      }
-      const response = await fetchWithBackendUrl(endpoint, {}, token)
+      if (requireAuth && !isAuthenticated) throw new Error('Not authenticated')
+      const response = await fetchWithBackendUrl(endpoint)
       if (!response.ok) {
         // Create an error with the status code for better error handling
         const error = new Error(`Failed to fetch ${endpoint}`)
