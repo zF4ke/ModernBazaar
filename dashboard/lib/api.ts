@@ -99,13 +99,13 @@ export async function fetchFromBackend(
     })
 
     if (!response.ok) {
-      // For 401/403, return parsed body so caller can surface permission info
+      // For 401/403, return parsed body so caller can surface permission info.
+      // Read the body exactly once (an empty 401 body would make a second read throw).
       if (response.status === 401 || response.status === 403) {
+        const text = await response.text()
         try {
-          const body = await response.json()
-          return { status: response.status, ...body }
+          return { status: response.status, ...JSON.parse(text) }
         } catch {
-          const text = await response.text()
           return { status: response.status, error: `Backend request failed with status: ${response.status}`, details: text }
         }
       }
@@ -176,15 +176,12 @@ export async function postFetchFromBackend(
     })
 
     if (!response.ok) {
-      // For 401/403, return parsed body so caller can surface permission info
+      // For 401/403, forward the body so the caller can surface permission info.
+      // Read the body exactly once (an empty 401 body would make a second read throw).
       if (response.status === 401 || response.status === 403) {
-        try {
-          const body = await response.json()
-          return new Response(JSON.stringify(body), { status: response.status })
-        } catch {
-          const text = await response.text()
-          return new Response(JSON.stringify({ error: `Backend request failed with status: ${response.status}`, details: text }), { status: response.status })
-        }
+        const text = await response.text()
+        const payload = text || JSON.stringify({ error: `Backend request failed with status: ${response.status}` })
+        return new Response(payload, { status: response.status, headers: { "content-type": "application/json" } })
       }
       throw new Error(`Backend request failed with status: ${response.status}`)
     }
