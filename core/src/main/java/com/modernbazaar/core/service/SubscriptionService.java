@@ -1,5 +1,7 @@
 package com.modernbazaar.core.service;
 
+import com.modernbazaar.core.api.dto.AdminCancellationDTO;
+import com.modernbazaar.core.api.dto.PagedResponseDTO;
 import com.modernbazaar.core.api.dto.SubscriptionResponseDTO;
 import com.modernbazaar.core.domain.Plan;
 import com.modernbazaar.core.domain.SubscriptionCancellation;
@@ -10,6 +12,8 @@ import com.modernbazaar.core.repository.UserSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,6 +61,20 @@ public class SubscriptionService {
         if (plan.equals("flipper") || plan.equals("elite")) scopes.add("use:bazaar-flipping");
         if (plan.equals("elite")) scopes.add("use:bazaar-manipulation");
         return scopes;
+    }
+
+    /**
+     * Admin churn view: cancellation feedback, newest first, paginated. One row per
+     * cancellation request (the "why they left" captured in {@link #requestCancellation}).
+     */
+    @Transactional(readOnly = true)
+    public PagedResponseDTO<AdminCancellationDTO> listCancellations(int page, int limit) {
+        if (limit <= 0) limit = 50;
+        if (page < 0) page = 0;
+        var rows = cancellationRepository.findAll(
+                PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt")));
+        return PagedResponseDTO.fromPage(rows.map(c -> new AdminCancellationDTO(
+                c.getId(), c.getUserId(), c.getPlanSlug(), c.getReason(), c.getComment(), c.getCreatedAt())));
     }
 
     public boolean isEntitled(String userId, String scope) {
