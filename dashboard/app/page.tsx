@@ -13,6 +13,7 @@ import { GradientSection } from "@/components/gradient-section"
 import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Plus, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Crosshair, Target, DollarSign, Activity } from "lucide-react"
 import { useBackendHealthContext } from '@/components/backend-health-provider'
 import { BrandMark } from "@/components/brand-mark"
+import { UpgradeButton, useUpgrade } from "@/components/upgrade-button"
 
 const LIVE_STRATEGIES = [
   {
@@ -49,6 +50,7 @@ export default function LandingPage() {
   const { isOnline } = useBackendHealthContext()
   const tiltRef = useRef<HTMLDivElement | null>(null)
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({})
+  const { resumeFromQuery, isLoading: authLoading } = useUpgrade()
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -59,6 +61,12 @@ export default function LandingPage() {
       return
     }
   }, [])
+
+  // Continue a "Choose <plan>" the user started while logged out, once we're back
+  // from /auth/login and auth has resolved.
+  useEffect(() => {
+    if (!authLoading) resumeFromQuery()
+  }, [authLoading, resumeFromQuery])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 0)
@@ -391,9 +399,7 @@ export default function LandingPage() {
                 <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
                   <Plus className="h-4 w-4 shrink-0" /><span>Everything in Free</span>
                 </div>
-                <Button asChild className="mt-5 w-full">
-                  <Link href="/dashboard">Choose Flipper</Link>
-                </Button>
+                <UpgradeButton plan="flipper" className="mt-5 w-full">Choose Flipper</UpgradeButton>
               </CardContent>
             </Card>
 
@@ -437,9 +443,7 @@ export default function LandingPage() {
                 <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
                   <Plus className="h-4 w-4 shrink-0" /><span>Everything in Flipper</span>
                 </div>
-                <Button asChild className="mt-5 w-full border-purple-400/40 text-purple-200 hover:bg-purple-400/10" variant="outline">
-                  <Link href="/dashboard">Choose Elite</Link>
-                </Button>
+                <UpgradeButton plan="elite" variant="outline" className="mt-5 w-full border-purple-400/40 text-purple-200 hover:bg-purple-400/10">Choose Elite</UpgradeButton>
               </CardContent>
             </Card>
           </div>

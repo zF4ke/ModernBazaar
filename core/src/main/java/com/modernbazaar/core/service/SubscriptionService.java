@@ -153,8 +153,13 @@ public class SubscriptionService {
             return;
         }
         var plan = planOpt.get();
-        var sub = userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId)
-                .orElse(UserSubscription.builder()
+        var existing = userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId);
+        // Capture the prior subscription BEFORE we overwrite the row — if a different,
+        // still-active subscription is being replaced, it's an orphan that keeps billing.
+        String priorSubId = existing.map(UserSubscription::getStripeSubscriptionId).orElse(null);
+        boolean priorActive = existing.map(s -> "active".equalsIgnoreCase(s.getStatus())).orElse(false);
+
+        var sub = existing.orElse(UserSubscription.builder()
                         .userId(userId)
                         .build());
         sub.setPlanSlug(plan.getSlug());
@@ -163,6 +168,25 @@ public class SubscriptionService {
         sub.setStatus(status == null ? "active" : status);
         sub.setCurrentPeriodEnd(periodEndEpoch == null ? null : OffsetDateTime.ofInstant(Instant.ofEpochSecond(periodEndEpoch), ZoneOffset.UTC));
         userSubscriptionRepository.save(sub);
+
+        // Safety net against double billing: the user checked out again (a NEW subscription)
+        // instead of changing plans, while a DIFFERENT subscription was still active. The
+        // hosted checkout can't extend/merge, so the old one would keep charging — and once
+        // we overwrite the row above we'd lose its id. Cancel the orphan on Lemon Squeezy
+        // now. Best-effort; on failure we log loudly so it can be cancelled by hand.
+        boolean replacingDifferentActiveSub = priorActive
+                && priorSubId != null && !priorSubId.isBlank()
+                && subscriptionId != null && !priorSubId.equals(subscriptionId)
+                && "active".equalsIgnoreCase(sub.getStatus());
+        if (replacingDifferentActiveSub) {
+            if (cancelOnLemonSqueezy(priorSubId)) {
+                log.warn("Duplicate subscription for user={}: new sub {} replaced still-active old sub {} — cancelled the old one on Lemon Squeezy to prevent double billing.",
+                        userId, subscriptionId, priorSubId);
+            } else {
+                log.error("DOUBLE-BILLING RISK user={}: new sub {} replaced still-active old sub {} but it could NOT be cancelled (no LEMONSQUEEZY_API_KEY or API error). Cancel sub {} manually in Lemon Squeezy.",
+                        userId, subscriptionId, priorSubId, priorSubId);
+            }
+        }
 
         // Entitlement follows billing: grant the plan's Auth0 role (which carries the
         // feature scopes) while active — or within a still-paid cancelled period — and

@@ -59,7 +59,7 @@ export default function ProfilePage() {
   const has = (scope: string) => (perms?.permissions as string[] | undefined)?.includes(scope) ?? false
 
   const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'U'
-  const slug = (subscription?.planSlug || 'free').toLowerCase()
+  const slug = (subscription?.planSlug || subscription?.planName || 'free').toLowerCase()
   const tier = TIER[slug as keyof typeof TIER] ?? TIER.free
   const planName = subscription?.planName || tier.label
   const isPaid = slug === 'flipper' || slug === 'elite'
@@ -120,14 +120,8 @@ export default function ProfilePage() {
 
         {/* ── Plan & billing ───────────────────────────────────── */}
         <div className="rounded-2xl border bg-card p-6 md:p-7">
-          <div className="mb-5 flex items-center justify-between">
+          <div className="mb-5">
             <h2 className="text-sm font-medium text-muted-foreground">Plan &amp; billing</h2>
-            {isPaid && !subLoading && (
-              <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${canceled ? 'text-amber-400' : 'text-emerald-400'}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${canceled ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                {canceled ? 'Ending soon' : 'Active'}
-              </span>
-            )}
           </div>
 
           {subLoading ? (
@@ -140,13 +134,18 @@ export default function ProfilePage() {
                   <span className="text-sm text-muted-foreground">plan</span>
                 </div>
                 <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                  {isPaid && periodEnd ? (
-                    <>
-                      <Calendar className="h-4 w-4 shrink-0" />
-                      {canceled
-                        ? <span><span className="font-medium text-foreground">{daysLeft} days</span> of access left, ending {periodEnd.toLocaleDateString()}</span>
-                        : <span>Renews in <span className="font-medium text-foreground">{daysLeft} days</span>, on {periodEnd.toLocaleDateString()}</span>}
-                    </>
+                  {isPaid ? (
+                    periodEnd ? (
+                      <>
+                        <Calendar className="h-4 w-4 shrink-0" />
+                        {canceled
+                          ? <span><span className="font-medium text-foreground">{daysLeft} days</span> of access left, ending {periodEnd.toLocaleDateString()}</span>
+                          : <span>Renews in <span className="font-medium text-foreground">{daysLeft} days</span>, on {periodEnd.toLocaleDateString()}</span>}
+                      </>
+                    ) : (
+                      // Paid plan with no billing period (e.g. admin-granted) — NOT free.
+                      <span>You're on the <span className="font-medium text-foreground">{planName}</span> plan with full access.</span>
+                    )
                   ) : (
                     <span>You're on the free plan. Upgrade to unlock the scored finder and the manipulation engine.</span>
                   )}
@@ -196,13 +195,15 @@ export default function ProfilePage() {
                     ))}
                   </div>
                   <Textarea placeholder="Anything we could've done better? (optional)" value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setShowCancel(false)}>Keep my plan</Button>
-                    <Button variant="destructive" size="sm" onClick={submitCancel} disabled={busy}>
-                      {busy ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Cancelling…</> : 'Confirm cancellation'}
-                    </Button>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">You'll keep full access until {periodEnd?.toLocaleDateString() ?? 'the end of your billing period'}.</p>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setShowCancel(false)}>Keep my plan</Button>
+                      <Button variant="destructive" size="sm" onClick={submitCancel} disabled={busy}>
+                        {busy ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Cancelling…</> : 'Confirm cancellation'}
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">You'll keep full access until {periodEnd?.toLocaleDateString() ?? 'the end of your billing period'}.</p>
                 </div>
               )}
             </div>
@@ -234,7 +235,7 @@ export default function ProfilePage() {
                   </div>
                   <h3 className="font-semibold">{t.name}</h3>
                   <p className="mt-0.5 text-sm leading-snug text-muted-foreground">{t.desc}</p>
-                  <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground">
+                  <span className="mt-auto pt-3 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors group-hover:text-foreground">
                     {unlocked ? 'Open' : 'Unlock'} <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                   </span>
                 </Link>

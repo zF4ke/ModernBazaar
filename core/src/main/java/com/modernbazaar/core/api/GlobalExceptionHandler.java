@@ -153,11 +153,19 @@ public class GlobalExceptionHandler {
             Exception ex,
             WebRequest request) {
 
+        // Log the full stack trace server-side — this is the ONLY place the internal
+        // detail should live. Without it an unexpected 500 is invisible in the logs.
+        log.error("Unhandled exception for {}: {}", request.getDescription(false), ex.getMessage(), ex);
+
+        // Do NOT echo ex.getMessage() to the client. Unexpected exceptions leak
+        // internals (SQL errors, NPE class names, cache/SpEL config, stack details);
+        // the dashboard forwards error bodies to the browser, so this would be an
+        // information-disclosure sink. Return a generic envelope; the detail is in the log.
         ErrorResponse body = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "An unexpected error occurred",
-                ex.getMessage()
+                null
         );
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }

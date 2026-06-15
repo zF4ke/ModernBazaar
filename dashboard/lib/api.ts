@@ -99,17 +99,17 @@ export async function fetchFromBackend(
     })
 
     if (!response.ok) {
-      // For 401/403, return parsed body so caller can surface permission info.
-      // Read the body exactly once (an empty 401 body would make a second read throw).
-      if (response.status === 401 || response.status === 403) {
-        const text = await response.text()
-        try {
-          return { status: response.status, ...JSON.parse(text) }
-        } catch {
-          return { status: response.status, error: `Backend request failed with status: ${response.status}`, details: text }
-        }
+      // Return the parsed error envelope (with status) for ALL backend errors so
+      // callers can surface the real message — 401/403 permission info AND the
+      // backend's GlobalExceptionHandler 500 body (which carries ex.getMessage()
+      // in `details`). Read the body exactly once (an empty body would make a
+      // second read throw).
+      const text = await response.text()
+      try {
+        return { status: response.status, ...JSON.parse(text) }
+      } catch {
+        return { status: response.status, error: `Backend request failed with status: ${response.status}`, details: text }
       }
-      throw new Error(`Backend request failed with status: ${response.status}`)
     }
 
     return await response.json()

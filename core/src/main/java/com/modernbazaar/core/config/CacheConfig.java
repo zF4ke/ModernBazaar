@@ -80,6 +80,12 @@ public class CacheConfig {
                         .maximumSize(10_000)
                         .build());
 
+        CaffeineCache manipulationOpportunitiesCache = new CaffeineCache("manipulationOpportunities",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(2, TimeUnit.MINUTES) // mirror flip opportunities TTL
+                        .maximumSize(10_000)
+                        .build());
+
         // Use SimpleCacheManager to manage multiple caches
         SimpleCacheManager cacheManager = new SimpleCacheManager();
         cacheManager.setCaches(Arrays.asList(
@@ -90,7 +96,8 @@ public class CacheConfig {
                 financeAveragesCache,
                 flipOpportunitiesCache,
                 flipOpportunitiesAdvancedCache,
-                liveViewSnapshotsCache
+                liveViewSnapshotsCache,
+                manipulationOpportunitiesCache
         ));
 
         return cacheManager;
