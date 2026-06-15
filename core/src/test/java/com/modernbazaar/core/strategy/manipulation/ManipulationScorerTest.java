@@ -27,7 +27,15 @@ class ManipulationScorerTest {
                 50.0,     // supplyPerHour
                 BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, // 0.01125
                 2.0,      // roi
-                2.0);     // sellWallFactor
+                2.0,      // sellWallFactor
+                0.0);     // riskScore (not manipulated)
+    }
+
+    /** Same as {@link #baseInputs()} but with one field overridden, for terse gating tests. */
+    private static Inputs inputs(double demand, double supply, int unitsCost1000, double riskScore) {
+        long units = unitsCost1000;
+        return new Inputs(1000.0, 500.0, units, units * 1000.0,
+                demand, supply, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0, riskScore);
     }
 
     @Test
@@ -75,25 +83,67 @@ class ManipulationScorerTest {
 
     @Test
     void demandSupplyRatio_isCapped() {
-        Inputs noSellers = new Inputs(1000.0, 500.0, 1000L, 1_000_000.0,
-                200.0, 0.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0);
+        Inputs noSellers = inputs(200.0, 0.0, 1000, 0.0);
         Plan p = scorer.plan(noSellers);
         assertThat(p.demandSupplyRatio()).isEqualTo(5.0); // MAX_RATIO when supply == 0
     }
 
     @Test
+    void baseCase_scoresPositively() {
+        // A healthy target — real demand, believable climb, unspiked price — must survive.
+        assertThat(scorer.plan(baseInputs()).score()).isGreaterThan(0.0);
+    }
+
+    @Test
     void noDemand_yieldsZeroScore() {
-        Inputs noDemand = new Inputs(1000.0, 500.0, 1000L, 1_000_000.0,
-                0.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0);
+        Inputs noDemand = inputs(0.0, 50.0, 1000, 0.0);
         Plan p = scorer.plan(noDemand);
         assertThat(p.score()).isEqualTo(0.0);
         assertThat(p.estimatedSellThroughHours()).isNull();
     }
 
     @Test
+    void demandBelowFloor_isGated() {
+        // 0.5 buys/hour: a real positive demand, but far too thin to offload onto -> gated.
+        assertThat(scorer.plan(inputs(0.5, 50.0, 1000, 0.0)).score()).isEqualTo(0.0);
+    }
+
+    @Test
+    void alreadyManipulated_isGated() {
+        // High RiskToolkit score = price already in an atypical/spiked regime -> gated,
+        // even though the paper profit and demand look fine. This is the SMARTY_PANTS case.
+        assertThat(scorer.plan(inputs(200.0, 50.0, 1000, 0.90)).score()).isEqualTo(0.0);
+    }
+
+    @Test
+    void higherRisk_belowGate_scoresLower() {
+        double low  = scorer.plan(inputs(200.0, 50.0, 1000, 0.10)).score();
+        double high = scorer.plan(inputs(200.0, 50.0, 1000, 0.60)).score();
+        assertThat(high).isGreaterThan(0.0);
+        assertThat(high).isLessThan(low);
+    }
+
+    @Test
+    void fantasyPriceClimb_tooManyDoublings_isGated() {
+        // avgBuyCost 5,000,000 vs a tiny 10,000 top bid: the buy order would have to climb
+        // ~10 doublings to reach the inflated target — fantasy — so it's gated out.
+        Inputs detached = new Inputs(5_000_000.0, 10_000.0, 1L, 5_000_000.0,
+                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0, 0.0);
+        Plan p = scorer.plan(detached);
+        assertThat(p.buyOrderDoublingSteps()).isGreaterThan(6);
+        assertThat(p.score()).isEqualTo(0.0);
+    }
+
+    @Test
+    void sellThroughBeyondHorizon_isGated() {
+        // 1000 units at 1 buy/hour = ~1000h to offload -> capital tied up too long -> gated.
+        assertThat(scorer.plan(inputs(1.0, 50.0, 1000, 0.0)).score()).isEqualTo(0.0);
+    }
+
+    @Test
     void noSupplyToCorner_yieldsZeroPlan() {
         Inputs empty = new Inputs(1000.0, 500.0, 0L, 0.0,
-                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0);
+                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0, 0.0);
         Plan p = scorer.plan(empty);
         assertThat(p.score()).isEqualTo(0.0);
         assertThat(p.totalProfit()).isEqualTo(0.0);
@@ -103,7 +153,7 @@ class ManipulationScorerTest {
     void higherProfit_scoresHigher() {
         Plan small = scorer.plan(baseInputs());
         Inputs bigger = new Inputs(1000.0, 500.0, 10_000L, 10_000_000.0,
-                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0);
+                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0, 0.0);
         Plan large = scorer.plan(bigger);
         assertThat(large.score()).isGreaterThan(small.score());
     }
@@ -111,7 +161,7 @@ class ManipulationScorerTest {
     @Test
     void invalidTaxAndRoi_fallBackToDefaults() {
         Inputs bad = new Inputs(1000.0, 500.0, 1000L, 1_000_000.0,
-                200.0, 50.0, Double.NaN, 0.5, 0.5); // tax NaN, roi<1, wall<=1
+                200.0, 50.0, Double.NaN, 0.5, 0.5, 0.0); // tax NaN, roi<1, wall<=1
         Plan p = scorer.plan(bad);
         // roi falls back to 2.0 -> net profit per unit == avgCost
         assertThat(p.netProfitPerUnit()).isCloseTo(1000.0, within(1e-6));

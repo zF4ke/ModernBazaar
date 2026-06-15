@@ -37,17 +37,53 @@ import java.util.stream.Collectors;
  * The core math lives in the pure {@link #plan(Inputs)} method (no I/O) so it is unit
  * testable; {@link #list} only loads data and assembles DTOs.
  *
- * Score (transparent, profit-dominant)
- * - profitScore   = log10(totalProfit + 1)            — dominant
- * - ratioFactor   = clamp(demandSupplyRatio / 2, 0, 1.5)
- * - score         = profitScore * (0.5 + ratioFactor)
- * - Gated to 0 when: invalid prices, no cornerable supply, no demand, or non-positive profit.
+ * Score (transparent, profit discounted by how realistic the play actually is)
+ * - profitScore    = log10(totalProfit + 1)                  — the prize, compressed
+ * - demandQuality  = throughput(demand) * (0.5 + 0.5*imbalance) — can you actually offload?
+ * - realism        = exp(-doublings / DECAY)                 — is the bid-climb believable?
+ * - manipPenalty   = 1 - W*riskScore                         — is it already manipulated?
+ * - score          = profitScore * demandQuality * realism * manipPenalty
+ *
+ * The factors are multiplicative so any single fatal flaw collapses the score: a fat
+ * paper profit on an item with no real buyers, an absurd price-climb, or an already
+ * spiked/atypical price no longer ranks #1.
+ *
+ * Hard-gated to 0 when: invalid prices, no cornerable supply, non-positive profit,
+ * demand below {@link #MIN_DEMAND_PER_HOUR} (can't offload), more than
+ * {@link #MAX_DOUBLINGS} bid-doublings (fantasy climb), riskScore at/above
+ * {@link #MAX_RISK_SCORE} (already manipulated), or sell-through beyond
+ * {@link #MAX_SELL_THROUGH_HOURS} (capital tied up too long).
+ *
+ * Not yet modelled (needs data we don't currently have): NPC-shop-buyable items
+ * (infinite supply at a fixed price → uncornerable) and craftable/mergeable items
+ * (an alternative supply that caps the price). See {@code npcSellPrice} on
+ * SkyblockItem — it's a sell-to-NPC price, NOT a shop-buyable flag, so it can't
+ * stand in for either. Tracked as a follow-up.
  */
 @Component
 public class ManipulationScorer {
 
     /** demandSupplyRatio is capped here to avoid runaway values when supply ≈ 0. */
     private static final double MAX_RATIO = 5.0;
+
+    // ── Scoring tunables ─────────────────────────────────────────────────────
+    /** Absolute demand floor: below this many insta-buys/hour you can't reliably
+     *  offload the cornered stock, so the play is gated out regardless of paper profit. */
+    private static final double MIN_DEMAND_PER_HOUR = 1.0;
+    /** Demand at which the throughput factor reaches 0.5 (saturating, never hard-capped). */
+    private static final double DEMAND_HALF_SAT = 10.0;
+    /** demand/supply imbalance that counts as "fully supply-starved" for the bonus. */
+    private static final double RATIO_REFERENCE = 2.0;
+    /** Beyond this many bid-doublings the climb to the inflated buy order is fantasy → gate. */
+    private static final int MAX_DOUBLINGS = 6;
+    /** realism = exp(-doublings / DOUBLING_DECAY): 0 doublings→1, ~2.5→0.37, 6→0.09. */
+    private static final double DOUBLING_DECAY = 2.5;
+    /** At/above this RiskToolkit score the item is already in an atypical/spiked regime → gate. */
+    private static final double MAX_RISK_SCORE = 0.85;
+    /** manipPenalty = 1 - RISK_PENALTY_WEIGHT * riskScore (so risk 0→1.0, risk 0.5→0.55). */
+    private static final double RISK_PENALTY_WEIGHT = 0.9;
+    /** Don't surface plays that take longer than this to fully sell through at current demand. */
+    private static final double MAX_SELL_THROUGH_HOURS = 72.0;
 
     private final RiskToolkit riskToolkit;
     private final BazaarProductSnapshotRepository snapRepo;
@@ -78,7 +114,8 @@ public class ManipulationScorer {
             double supplyPerHour,      // avg units insta-sold / hour
             double taxRate,            // selling tax, e.g. 0.01125
             double roi,                // buy-order inflation vs minResell (>= 1)
-            double sellWallFactor      // sell order = targetBuyOrder * factor (> 1)
+            double sellWallFactor,     // sell order = targetBuyOrder * factor (> 1)
+            double riskScore           // RiskToolkit 0..1: how already-manipulated/atypical the price is
     ) {}
 
     public record Plan(
@@ -138,20 +175,40 @@ public class ManipulationScorer {
                 : (demand > 0 ? MAX_RATIO : 0.0);
 
         Double sellThroughHours = demand > 0 ? (supplyUnits / demand) : null;
+        double risk = clamp(in.riskScore, 0.0, 1.0);
 
-        // Gating: needs real buyers to dump onto and a positive expected profit.
-        double score;
-        if (demand <= 0 || totalProfit <= 0) {
-            score = 0.0;
-        } else {
-            double profitScore = safeLog10(totalProfit + 1.0);
-            double ratioFactor = clamp(ratio / 2.0, 0.0, 1.5);
-            double s = profitScore * (0.5 + ratioFactor);
-            score = Double.isFinite(s) && s > 0 ? s : 0.0;
-        }
+        double score = scoreOf(totalProfit, demand, ratio, doublings, risk, sellThroughHours);
 
         return new Plan(avgBuyCost, minResell, targetBuyOrder, suggestedSellOrder,
                 doublings, netProfitPerUnit, totalProfit, ratio, sellThroughHours, score);
+    }
+
+    /**
+     * Profit discounted by how realistic the manipulation actually is. Hard gates first
+     * (any single fatal flaw disqualifies), then a multiplicative blend so the prize only
+     * survives when there are real buyers, a believable price-climb and a non-spiked price.
+     */
+    private static double scoreOf(double totalProfit, double demand, double ratio,
+                                  int doublings, double riskScore, Double sellThroughHours) {
+        // Hard gates — these are the items the old formula wrongly ranked #1.
+        if (totalProfit <= 0) return 0.0;
+        if (demand < MIN_DEMAND_PER_HOUR) return 0.0;                       // no real buyers to dump onto
+        if (doublings > MAX_DOUBLINGS) return 0.0;                         // bid must climb too far to be believable
+        if (riskScore >= MAX_RISK_SCORE) return 0.0;                       // already in an atypical/manipulated regime
+        if (sellThroughHours != null && sellThroughHours > MAX_SELL_THROUGH_HOURS) return 0.0;
+
+        double profitScore = safeLog10(totalProfit + 1.0);                 // the prize, compressed
+
+        // Demand quality: absolute throughput dominates, supply imbalance modulates it.
+        double throughput = demand / (demand + DEMAND_HALF_SAT);            // 0..1
+        double imbalance  = clamp(ratio / RATIO_REFERENCE, 0.0, 1.0);       // 0..1
+        double demandQuality = throughput * (0.5 + 0.5 * imbalance);        // 0..1
+
+        double realism = Math.exp(-doublings / DOUBLING_DECAY);            // 0..1
+        double manipPenalty = clamp(1.0 - RISK_PENALTY_WEIGHT * riskScore, 0.0, 1.0); // 0..1
+
+        double s = profitScore * demandQuality * realism * manipPenalty;
+        return Double.isFinite(s) && s > 0 ? s : 0.0;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -197,6 +254,13 @@ public class ManipulationScorer {
             double demand = a != null ? a.avgInstaBoughtItems() : 0.0;
             double supply = a != null ? a.avgInstaSoldItems() : 0.0;
 
+            // Risk is computed first so the score can penalise/gate already-manipulated items.
+            RiskAssessment ra = riskToolkit.assessPriceDeviation(
+                    s.getInstantBuyPrice(), s.getInstantSellPrice(),
+                    s.getWeightedTwoPercentBuyPrice(), s.getWeightedTwoPercentSellPrice(),
+                    a != null ? a.avgCloseInstantBuy() : null,
+                    a != null ? a.avgCloseInstantSell() : null);
+
             Inputs in = new Inputs(
                     s.getInstantBuyPrice(),
                     s.getInstantSellPrice(),
@@ -206,18 +270,13 @@ public class ManipulationScorer {
                     supply,
                     effTax,
                     effRoi,
-                    effWall);
+                    effWall,
+                    ra.riskScore());
             Plan p = plan(in);
             if (p.score() <= 0.0) continue;
 
             if (p.demandSupplyRatio() < fMinRatio) continue;
             if (p.totalProfit() < fMinProfit) continue;
-
-            RiskAssessment ra = riskToolkit.assessPriceDeviation(
-                    s.getInstantBuyPrice(), s.getInstantSellPrice(),
-                    s.getWeightedTwoPercentBuyPrice(), s.getWeightedTwoPercentSellPrice(),
-                    a != null ? a.avgCloseInstantBuy() : null,
-                    a != null ? a.avgCloseInstantSell() : null);
 
             out.add(new ManipulationOpportunityResponseDTO(
                     id,
