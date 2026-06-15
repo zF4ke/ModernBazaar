@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@auth0/nextjs-auth0'
 import { useAdminAccess } from './use-admin-access'
 import { useBackendQuery } from './use-backend-query'
-import { useOfflineGuard } from './use-offline-guard'
+import { errorStatus } from '@/types/errors'
 import { Permission } from '@/constants/permissions'
 import { UserPermissions } from '@/types/permissions'
 
@@ -14,135 +13,45 @@ interface UseHasPermissionReturn {
   checkPermission: () => Promise<void>
 }
 
-// Cache for user permissions to avoid repeated API calls
-const permissionsCache = new Map<string, { data: UserPermissions; timestamp: number }>()
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-
 /**
- * Generic hook for checking specific permissions
- * @param requiredPermissions - Array of permissions to check (user needs ALL of them)
+ * Checks whether the current user holds ALL of the requested permissions.
+ *
+ * Derived directly from a single React Query entry (`/api/me/permissions`) — no
+ * mirrored state, no effects, and no hand-rolled cache. React Query already
+ * dedupes and caches the request, so every consumer shares one stable result
+ * and the value transitions unknown -> known exactly once (no flicker).
  */
 export function useHasPermission(requiredPermissions: Permission | Permission[]): UseHasPermissionReturn {
-  const { user } = useUser()
+  const { user, isLoading: userLoading } = useUser()
   const isAuthenticated = !!user
   const { hasAdminAccess } = useAdminAccess()
-  const { guard } = useOfflineGuard()
-  const [hasPermission, setHasPermission] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  // Normalize to array
   const permissionsArray = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions]
 
-  // Use useBackendQuery for the permissions API call with built-in retry logic
-  const { data: permissionsData, isLoading: queryLoading, error: queryError } = useBackendQuery<UserPermissions>(
+  const { data, isLoading, error: queryError, refetch } = useBackendQuery<UserPermissions>(
     '/api/me/permissions',
     {
       queryKey: ['permissions'],
       enabled: isAuthenticated,
       requireAuth: true,
-      // Don't retry on permission errors (401, 403) - these won't change
-      // The retry logic is handled by useBackendQuery automatically
-    }
+      // Entitlements rarely change mid-session; cache them so navigating between
+      // gated pages doesn't refetch and re-flash loading states.
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+    },
   )
 
-  const checkPermission = useCallback(async () => {
-    if (!isAuthenticated) {
-      setHasPermission(false)
-      setLoading(false)
-      return
-    }
+  // 403 (and 401) mean "you don't have it", which is a valid answer, not an error.
+  const status = errorStatus(queryError)
+  const isPermissionError = status === 401 || status === 403
 
-    try {
-      // Check if backend is online before proceeding
-      guard()
-      
-      setLoading(true)
-      setError(null)
-      
-      // Check cache first
-      const cacheKey = `permissions_${permissionsArray.join('_')}`
-      const cached = permissionsCache.get(cacheKey)
-      
-      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-        // Use cached permissions
-        const userHasAllPermissions = permissionsArray.every(permission => 
-          cached.data.permissions.includes(permission)
-        )
-        setHasPermission(userHasAllPermissions)
-        setLoading(false)
-        return
-      }
-      
-      // If we have fresh data from useBackendQuery, use it
-      if (permissionsData) {
-        // Cache the permissions
-        permissionsCache.set(cacheKey, {
-          data: permissionsData,
-          timestamp: Date.now()
-        })
-        
-        // Check if user has all required permissions
-        const userHasAllPermissions = permissionsArray.every(permission => 
-          permissionsData.permissions.includes(permission)
-        )
-        
-        setHasPermission(userHasAllPermissions)
-        setError(null)
-      } else if (queryError) {
-        // Handle query errors
-        if ((queryError as any).status === 403) {
-          setHasPermission(false)
-          setError(null)
-        } else {
-          setError('Failed to verify permissions')
-          setHasPermission(false)
-        }
-      }
-    } catch (error) {
-      // If guard() throws (backend offline), don't set error
-      if (error instanceof Error && error.message.includes('Backend is offline')) {
-        setHasPermission(false)
-        setError(null)
-      } else {
-        console.error(`Failed to check permissions ${permissionsArray.join(', ')}:`, error)
-        setError('Failed to verify permissions')
-        setHasPermission(false)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [isAuthenticated, guard, permissionsArray, permissionsData, queryError])
-
-  useEffect(() => {
-    checkPermission()
-  }, [checkPermission])
-
-  // Update loading state based on query loading
-  useEffect(() => {
-    if (queryLoading) {
-      setLoading(true)
-    }
-  }, [queryLoading])
-
-  // Update error state based on query error
-  useEffect(() => {
-    if (queryError) {
-      if ((queryError as any).status === 403) {
-        setError(null) // Don't show error for permission denied
-      } else {
-        setError('Failed to verify permissions')
-      }
-    } else {
-      setError(null)
-    }
-  }, [queryError])
+  const hasPermission = data ? permissionsArray.every((p) => data.permissions.includes(p)) : false
 
   return {
     hasPermission,
     hasAdminAccess,
-    loading: loading || queryLoading,
-    error,
-    checkPermission
+    loading: userLoading || (isAuthenticated && isLoading),
+    error: queryError && !isPermissionError ? 'Failed to verify permissions' : null,
+    checkPermission: async () => { await refetch() },
   }
 }

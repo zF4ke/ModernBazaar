@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 interface BackendHealth {
   isOnline: boolean
@@ -10,9 +10,20 @@ interface BackendHealth {
   isIgnored: boolean
 }
 
+// Ride out transient blips (e.g. a backend reload on localhost): only declare the
+// backend offline after this many consecutive failed probes.
+const FAILURE_THRESHOLD = 2
+// Poll calmly while healthy, but probe aggressively after a failure so recovery
+// (and the offline overlay clearing) feels near-instant.
+const HEALTHY_INTERVAL = 30_000
+const DEGRADED_INTERVAL = 5_000
+
 /**
- * Hook to monitor backend health status
- * Checks backend health every 30 seconds and provides offline detection
+ * Monitors backend health for offline detection.
+ *
+ * Starts optimistic (online) and is tolerant of single failed probes so a brief
+ * blip never flashes the full-screen offline overlay. When a probe does fail it
+ * re-checks quickly, so coming back online is fast.
  */
 export function useBackendHealth() {
   const [health, setHealth] = useState<BackendHealth>({
@@ -20,81 +31,89 @@ export function useBackendHealth() {
     lastCheck: null,
     error: null,
     isLoading: false,
-    isIgnored: false
+    isIgnored: false,
   })
 
-  const checkHealth = useCallback(async () => {
+  // Consecutive failure counter lives in a ref so it never triggers re-renders.
+  const failuresRef = useRef(0)
+
+  const checkHealth = useCallback(async (opts?: { showLoading?: boolean }) => {
+    if (opts?.showLoading) setHealth((prev) => ({ ...prev, isLoading: true }))
+
     try {
-      setHealth(prev => ({ ...prev, isLoading: true, error: null }))
-      
-      console.log('🔍 Checking backend health via /api/health...')
-      
       const response = await fetch('/api/health', {
         method: 'GET',
-        // Short timeout to detect offline quickly
+        // Short timeout so a hung backend is detected quickly.
         signal: AbortSignal.timeout(5000),
-        headers: {
-          'Accept': 'application/json',
-        }
+        headers: { Accept: 'application/json' },
       })
 
-      console.log('📡 Response status:', response.status)
+      if (!response.ok) throw new Error(`Backend responded with status: ${response.status}`)
 
-      if (response.ok) {
-        console.log('✅ Backend is online')
-        setHealth({
-          isOnline: true,
-          lastCheck: new Date(),
-          error: null,
-          isLoading: false,
-          isIgnored: false // Reset ignore state when backend comes back online
-        })
-      } else {
-        throw new Error(`Backend responded with status: ${response.status}`)
-      }
+      failuresRef.current = 0
+      // Bail out of the state update when nothing changed, to avoid a re-render
+      // on every healthy poll.
+      setHealth((prev) =>
+        prev.isOnline && !prev.isLoading && prev.error === null
+          ? prev
+          : { isOnline: true, lastCheck: new Date(), error: null, isLoading: false, isIgnored: false },
+      )
     } catch (error) {
+      failuresRef.current += 1
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.log('❌ Backend health check failed:', errorMessage)
-      setHealth(prev => ({
-        isOnline: false,
-        lastCheck: new Date(),
-        error: errorMessage,
-        isLoading: false,
-        isIgnored: prev.isIgnored // Keep ignore state when offline
-      }))
+
+      // Only flip to offline once we've seen enough consecutive failures.
+      if (failuresRef.current >= FAILURE_THRESHOLD) {
+        setHealth((prev) => ({
+          isOnline: false,
+          lastCheck: new Date(),
+          error: errorMessage,
+          isLoading: false,
+          isIgnored: prev.isIgnored, // Keep ignore state when offline
+        }))
+      } else {
+        // First failure: stay online, just clear any loading flag.
+        setHealth((prev) => (prev.isLoading ? { ...prev, isLoading: false } : prev))
+      }
     }
   }, [])
 
+  // Self-scheduling poll: fast cadence while degraded/offline, calm while healthy.
   useEffect(() => {
-    // Initial health check
-    checkHealth()
+    let active = true
+    let timer: ReturnType<typeof setTimeout>
 
-    // Set up periodic health checks every 30 seconds
-    const interval = setInterval(checkHealth, 30000)
+    const loop = async () => {
+      await checkHealth()
+      if (!active) return
+      const delay = failuresRef.current > 0 ? DEGRADED_INTERVAL : HEALTHY_INTERVAL
+      timer = setTimeout(loop, delay)
+    }
 
-    // Cleanup interval on unmount
-    return () => clearInterval(interval)
+    loop()
+
+    return () => {
+      active = false
+      clearTimeout(timer)
+    }
   }, [checkHealth])
 
-  // Manual health check function for immediate status updates
   const refreshHealth = useCallback(() => {
-    checkHealth()
+    checkHealth({ showLoading: true })
   }, [checkHealth])
 
-  // Function to ignore offline state temporarily
   const ignoreOffline = useCallback(() => {
-    setHealth(prev => ({ ...prev, isIgnored: true }))
+    setHealth((prev) => ({ ...prev, isIgnored: true }))
   }, [])
 
-  // Function to stop ignoring offline state
   const stopIgnoring = useCallback(() => {
-    setHealth(prev => ({ ...prev, isIgnored: false }))
+    setHealth((prev) => ({ ...prev, isIgnored: false }))
   }, [])
 
   return {
     ...health,
     refreshHealth,
     ignoreOffline,
-    stopIgnoring
+    stopIgnoring,
   }
 }
