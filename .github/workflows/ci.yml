@@ -69,8 +69,12 @@ jobs:
           # Keep memory modest for CI
           JAVA_OPTS: "-Xms128m -Xmx512m -XX:+UseG1GC -Xlog:gc*"
         run: |
+          # Smoke test only: the prod fail-closed auth guard refuses to start without
+          # AUTH_JWKS_URI. Use the mock decoder so this throwaway container can boot and
+          # report health. Production sets a real AUTH_JWKS_URI; mock stays false there.
           docker run -d --name bazaar-ci --network bazaar-ci-net \
             -e SPRING_PROFILES_ACTIVE=default \
+            -e AUTH_MOCK_ENABLED=true \
             -e SPRING_DATASOURCE_URL=jdbc:postgresql://pg-ci:5432/bazaar \
             -e SPRING_DATASOURCE_USERNAME=bazaar \
             -e SPRING_DATASOURCE_PASSWORD=bazaar \
