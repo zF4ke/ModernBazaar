@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 // Removed unused Link and many icons; keep only those needed here (refresh + preset icons)
 import { RefreshCw, Trophy, Zap, Mountain, Shuffle, AlertTriangle } from "lucide-react"
@@ -147,11 +147,11 @@ export default function FlippingPage() {
       localStorage.setItem("flipFavs", JSON.stringify(Array.from(favs)))
     } catch {}
   }, [favs])
-  const toggleFav = (id: string) => setFavs(prev => {
+  const toggleFav = useCallback((id: string) => setFavs(prev => {
     const next = new Set(prev)
     if (next.has(id)) next.delete(id); else next.add(id)
     return next
-  })
+  }), [])
 
   // Flag to prevent budget sync during loading
   const [isLoadingSetup, setIsLoadingSetup] = useState(true)
@@ -359,9 +359,6 @@ export default function FlippingPage() {
                   <Shuffle className="h-6 w-6 text-emerald-400" />
                 </div>
                 <div>
-                  <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Bazaar Flipping
-                  </div>
                   <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Find your next flip</h1>
                   <p className="text-sm text-muted-foreground">Buy/sell gaps ranked by profit per hour after tax.</p>
                 </div>

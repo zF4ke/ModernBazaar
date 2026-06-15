@@ -167,9 +167,6 @@ export default function ManipulationPage() {
                     <Crosshair className="h-6 w-6 text-blue-400" />
                   </div>
                   <div>
-                    <div className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                      <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />Bazaar Manipulation
-                    </div>
                     <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Corner the market</h1>
                     <p className="text-sm text-muted-foreground">Thin-supply markets you can control, with the full plan and break-even.</p>
                   </div>

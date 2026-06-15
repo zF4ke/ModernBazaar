@@ -31,11 +31,11 @@ interface OpportunityCardProps {
   bazaarTaxRate: number
   fav: boolean
   onToggleFav: (id: string) => void
-  expandedCard: string | null
+  isExpanded: boolean
   setExpandedCard: (id: string | null) => void
 }
 
-export function OpportunityCard({ o, query, bazaarTaxRate, fav, onToggleFav, expandedCard, setExpandedCard }: OpportunityCardProps) {
+function OpportunityCardImpl({ o, query, bazaarTaxRate, fav, onToggleFav, isExpanded, setExpandedCard }: OpportunityCardProps) {
   const buy = (o.buyOrderPrice ?? o.instantSellPrice) || 0
   const sell = (o.sellOrderPrice ?? o.instantBuyPrice) || 0
   const d = o.demandPerHour ?? 0
@@ -44,7 +44,6 @@ export function OpportunityCard({ o, query, bazaarTaxRate, fav, onToggleFav, exp
   const riskPct = o.riskScore !== undefined ? Math.round(o.riskScore * 100) : undefined
   const href = `/dashboard/bazaar-items/${o.productId}`
   const spreadPctVal = (o.spreadPct ?? 0) * 100
-  const isExpanded = expandedCard === o.productId
 
   const profitColor = (o.reasonableProfitPerHour ?? 0) * (query.horizonHours || 1) >= PROFIT_HIGHLIGHT
     ? 'text-emerald-400'
@@ -212,3 +211,9 @@ export function OpportunityCard({ o, query, bazaarTaxRate, fav, onToggleFav, exp
     </Card>
   )
 }
+
+// Memoized so typing in unrelated inputs (e.g. the budget field) or expanding a
+// sibling card doesn't re-render every card. Props are primitives/stable refs:
+// `o`/`query` keep identity across budget keystrokes, `onToggleFav`/`setExpandedCard`
+// are stable, and `isExpanded` is a precomputed boolean instead of the shared id.
+export const OpportunityCard = React.memo(OpportunityCardImpl)

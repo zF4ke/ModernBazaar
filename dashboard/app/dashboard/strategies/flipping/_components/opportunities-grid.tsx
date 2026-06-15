@@ -62,7 +62,7 @@ export function OpportunitiesGrid(props: OpportunitiesGridProps) {
                 bazaarTaxRate={bazaarTaxRate}
                 fav={favs.has(o.productId)}
                 onToggleFav={toggleFav}
-                expandedCard={expandedCard}
+                isExpanded={expandedCard === o.productId}
                 setExpandedCard={setExpandedCard}
               />
             ))}
