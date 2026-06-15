@@ -75,6 +75,7 @@ export default function ProfilePage() {
   const [comment, setComment] = useState("")
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
+  const [resuming, setResuming] = useState(false)
 
   const submitCancel = async () => {
     setBusy(true)
@@ -87,6 +88,19 @@ export default function ProfilePage() {
       await refetch()
     } finally {
       setBusy(false)
+    }
+  }
+
+  const resume = async () => {
+    setResuming(true)
+    try {
+      await fetchWithBackendUrl("/api/me/subscription/resume", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+      })
+      setDone(false)
+      await refetch()
+    } finally {
+      setResuming(false)
     }
   }
 
@@ -169,13 +183,19 @@ export default function ProfilePage() {
           {/* Manage / cancel (paid only) */}
           {isPaid && !subLoading && (
             <div className="mt-6 border-t pt-4">
-              {done ? (
-                <p className="flex items-center gap-2 text-sm text-emerald-400">
-                  <ShieldCheck className="h-4 w-4 shrink-0" />
-                  Cancelled. You keep {planName} until {periodEnd?.toLocaleDateString() ?? 'the period ends'}. Thanks for the feedback.
-                </p>
-              ) : canceled ? (
-                <p className="text-sm text-muted-foreground">Your subscription is set to end. Re-subscribe anytime from the <Link href="/#pricing" className="text-foreground underline underline-offset-2">pricing page</Link>.</p>
+              {done || canceled ? (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-amber-400" />
+                    <span>
+                      {done ? 'Cancelled — thanks for the feedback. ' : 'Your subscription is set to end. '}
+                      You keep {planName} until {periodEnd?.toLocaleDateString() ?? 'the period ends'}.
+                    </span>
+                  </p>
+                  <Button variant="outline" size="sm" onClick={resume} disabled={resuming}>
+                    {resuming ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Resuming…</> : 'Resume subscription'}
+                  </Button>
+                </div>
               ) : !showCancel ? (
                 <button onClick={() => setShowCancel(true)} className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground">
                   Cancel subscription

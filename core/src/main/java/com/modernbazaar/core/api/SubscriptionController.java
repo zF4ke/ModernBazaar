@@ -89,6 +89,18 @@ public class SubscriptionController {
     public record CancelRequest(String reason, String comment) {}
 
     /**
+     * Resumes (un-cancels) the authenticated user's subscription while still within the
+     * paid period. Re-enables billing on Lemon Squeezy and flips the status back to active.
+     */
+    @PostMapping(path = "/me/subscription/resume")
+    @RateLimiter(name = "subscriptionEndpoint")
+    public SubscriptionResponseDTO resumeMySubscription(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        log.info("Resume requested by user {}", userId);
+        return subscriptionService.requestResume(userId);
+    }
+
+    /**
      * Retrieves all active subscription plans available to users.
      *
      * This endpoint:

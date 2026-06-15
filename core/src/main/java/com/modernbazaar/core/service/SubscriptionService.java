@@ -251,15 +251,50 @@ public class SubscriptionService {
         return SubscriptionResponseDTO.from(sub, plan);
     }
 
+    /**
+     * Undo a pending cancellation while still within the paid period: tell Lemon Squeezy
+     * to resume billing and flip the local status back to active. The webhook confirms later.
+     * Safe no-op if there's nothing to resume (returns the current subscription unchanged).
+     */
+    @Transactional
+    public SubscriptionResponseDTO requestResume(String userId) {
+        var sub = userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId).orElse(null);
+        if (sub == null) return null;
+        Plan plan = planRepository.findBySlug(sub.getPlanSlug()).orElse(null);
+
+        boolean isCancelled = "canceled".equalsIgnoreCase(sub.getStatus());
+        boolean stillWithinPeriod = sub.getCurrentPeriodEnd() == null
+                || sub.getCurrentPeriodEnd().isAfter(OffsetDateTime.now());
+        if (isCancelled && stillWithinPeriod && resumeOnLemonSqueezy(sub.getStripeSubscriptionId())) {
+            sub.setStatus("active");
+            userSubscriptionRepository.save(sub);
+            log.info("User {} resumed subscription; active again until {}", userId, sub.getCurrentPeriodEnd());
+        } else {
+            log.info("Resume requested by user {} but not applied (status={}, withinPeriod={})",
+                    userId, sub.getStatus(), stillWithinPeriod);
+        }
+        return SubscriptionResponseDTO.from(sub, plan);
+    }
+
     /** Cancels a Lemon Squeezy subscription via the API (no-op without an API key / id). */
     private boolean cancelOnLemonSqueezy(String subscriptionId) {
+        return setLemonSqueezyCancelled(subscriptionId, true);
+    }
+
+    /** Resumes (un-cancels) a Lemon Squeezy subscription via the API (no-op without an API key / id). */
+    private boolean resumeOnLemonSqueezy(String subscriptionId) {
+        return setLemonSqueezyCancelled(subscriptionId, false);
+    }
+
+    /** PATCHes a Lemon Squeezy subscription's {@code cancelled} flag. False on missing key/id or error. */
+    private boolean setLemonSqueezyCancelled(String subscriptionId, boolean cancelled) {
         if (lemonSqueezyApiKey == null || lemonSqueezyApiKey.isBlank()
                 || subscriptionId == null || subscriptionId.isBlank()) {
             return false;
         }
         try {
             String body = "{\"data\":{\"type\":\"subscriptions\",\"id\":\"" + subscriptionId
-                    + "\",\"attributes\":{\"cancelled\":true}}}";
+                    + "\",\"attributes\":{\"cancelled\":" + cancelled + "}}}";
             var req = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create("https://api.lemonsqueezy.com/v1/subscriptions/" + subscriptionId))
                     .header("Authorization", "Bearer " + lemonSqueezyApiKey)
@@ -271,10 +306,10 @@ public class SubscriptionService {
             var resp = java.net.http.HttpClient.newHttpClient()
                     .send(req, java.net.http.HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() / 100 == 2) return true;
-            log.warn("Lemon Squeezy cancel failed ({}): {}", resp.statusCode(), resp.body());
+            log.warn("Lemon Squeezy {} failed ({}): {}", cancelled ? "cancel" : "resume", resp.statusCode(), resp.body());
             return false;
         } catch (Exception e) {
-            log.error("Lemon Squeezy cancel error", e);
+            log.error("Lemon Squeezy {} error", cancelled ? "cancel" : "resume", e);
             return false;
         }
     }
