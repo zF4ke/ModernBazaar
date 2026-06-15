@@ -99,14 +99,28 @@ Each entry's `"id"` (a number like `123456`) next to its product name is the var
 | **Signing secret** | Type any strong random string (or let LS generate). **Copy it.** |
 | **Events** | `subscription_created`, `subscription_updated`, `subscription_cancelled`, `subscription_payment_success` |
 
-⚠️ **The callback URL must be public.** `localhost` won't work for LS. To test locally,
-expose the backend with a tunnel, e.g.:
-```bash
-cloudflared tunnel --url http://localhost:8080
-# or: ngrok http 8080
+⚠️ **The callback URL is the BACKEND (core / Spring API), not the dashboard.** Lemon
+Squeezy POSTs server-to-server straight to core; the Next.js frontend is never involved in
+receiving webhooks. `<YOUR_PUBLIC_API_HOST>` is whatever public host serves core on 8080 —
+in prod its own subdomain (e.g. `api.yourdomain.com`), with your reverse proxy forwarding
+`/api/v1/billing/webhook/lemonsqueezy` to core. The route is public in `SecurityConfig`
+(signature-verified), so no auth sits in front of it.
+
+⚠️ **`localhost` won't work** — LS can't reach your machine. To test locally, expose core
+with a tunnel. No `cloudflared`/`ngrok` and no admin rights for choco/winget? Grab the
+standalone binary — no install, no account:
+```powershell
+# Windows: download the single exe, then run a quick tunnel against core (8080)
+$exe = "$env:LOCALAPPDATA\cloudflared\cloudflared.exe"
+New-Item -ItemType Directory -Force (Split-Path $exe) | Out-Null
+Invoke-WebRequest "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe" -OutFile $exe
+& $exe tunnel --url http://localhost:8080
 ```
-Use the tunnel's HTTPS URL + `/api/v1/billing/webhook/lemonsqueezy` as the callback.
-In production, use your real API domain. The signing secret goes in `LEMONSQUEEZY_WEBHOOK_SECRET`.
+It prints `https://<random>.trycloudflare.com`; your callback = that + `/api/v1/billing/webhook/lemonsqueezy`.
+
+⚠️ **Quick-tunnel URLs are EPHEMERAL** — they change every time `cloudflared` restarts, and
+you must re-paste the new URL into the LS webhook. For a stable URL use a *named* Cloudflare
+tunnel or your prod domain.
 
 ---
 
@@ -117,9 +131,20 @@ In production, use your real API domain. The signing secret goes in `LEMONSQUEEZ
 BILLING_ENABLED=true
 LEMONSQUEEZY_WEBHOOK_SECRET=<the signing secret from step 4>
 ```
-Then restart core:
+
+⚠️ **Escape every `$` in the secret as `$$`.** `infra/.env` is a Docker Compose `env_file`,
+and Compose runs **variable interpolation** on it — an unescaped `$word` is read as the
+(empty) variable `word`, silently corrupting the secret so HMAC verification fails on every
+real webhook. Example (fake secret): `ab$word12` must be written
+`LEMONSQUEEZY_WEBHOOK_SECRET=ab$$word12`. (This also applies to any `$` in DB passwords,
+etc.) Then restart core **with `--force-recreate`** so the new env is re-read:
+```bash
+docker compose -f infra/docker-compose.yml -p modernbazaar up -d --force-recreate --no-deps core
 ```
-docker compose -f infra/docker-compose.yml -p modernbazaar up -d core
+**Verify the delivered value matches byte-for-byte** (this is the #1 cause of "webhook 400 /
+upgrade didn't apply"):
+```bash
+docker exec modernbazaar-core-1 printenv LEMONSQUEEZY_WEBHOOK_SECRET   # must equal the LS secret exactly
 ```
 
 **Dashboard — `dashboard/.env.local`:**
@@ -152,6 +177,23 @@ grants features if it carries the right RBAC **permissions**. Set this up once:
 After this, a paid `subscription_created` → the webhook assigns the Flipper/Elite role →
 the next token carries the scope → the tool unlocks. Cancel/expiry → back to Free.
 
+### 5c. Duplicate-subscription protection (set `LEMONSQUEEZY_API_KEY`)
+
+LS hosted checkout **creates a new subscription every time** — it never extends or merges.
+Two layers stop that from double-charging anyone:
+
+- **UI guard:** the pricing/profile "Choose" buttons read the user's current plan and
+  disable for the same-or-lower tier ("Current plan" / "Included in Elite"), so they can't
+  start a second checkout for what they already have. Upgrading to a higher tier is allowed.
+- **Webhook safety net:** if a `subscription_created` arrives while a *different* subscription
+  is still active for that user, the backend cancels the old one on Lemon Squeezy so only the
+  new plan bills. **This needs `LEMONSQUEEZY_API_KEY` in `infra/.env`** (the same key also
+  powers the user-initiated cancel flow). Without it, the backend can't cancel and instead
+  logs a loud `DOUBLE-BILLING RISK … cancel sub <id> manually` error — so set the key:
+  ```
+  LEMONSQUEEZY_API_KEY=<Settings → API key>
+  ```
+
 ---
 
 ## 6. Test the flow (Test mode)
@@ -165,6 +207,22 @@ the next token carries the scope → the tool unlocks. Cancel/expiry → back to
 > The webhook attributes the purchase via `custom_data.user_id`, which the Upgrade
 > button passes automatically (your Auth0 sub). If you ever see "missing user_id" in
 > the core logs, the checkout was opened without being signed in.
+
+### 6b. Verify the backend without paying (signed simulation)
+
+To prove the webhook → plan-mapping → entitlement path works **before** wiring LS/the tunnel
+(or to debug a 400), POST a correctly-signed payload to a *throwaway* user and check the DB,
+then clean up. Run from a shell with `openssl` (Git Bash):
+```bash
+SECRET='<your LEMONSQUEEZY_WEBHOOK_SECRET>'           # the RAW secret, not the $$-escaped form
+printf '%s' '{"meta":{"event_name":"subscription_created","custom_data":{"user_id":"test|verify"}},"data":{"id":"sub_test","attributes":{"variant_id":<ELITE_VARIANT_ID>,"customer_id":"c","status":"active","renews_at":"2027-01-01T00:00:00.000000Z"}}}' > pl.json
+SIG=$(openssl dgst -sha256 -hmac "$SECRET" pl.json | awk '{print $NF}')
+curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8080/api/v1/billing/webhook/lemonsqueezy -H "X-Signature: $SIG" --data-binary @pl.json   # expect 200
+# confirm: psql -> select * from user_subscription where user_id='test|verify';  (plan_slug should be elite)
+# cleanup: psql -> delete from user_subscription where user_id='test|verify';
+```
+A wrong/garbled secret returns **400** (`Invalid Lemon Squeezy webhook signature`) — that's
+the signal the `$$`-escaping check above failed.
 
 ---
 

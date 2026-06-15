@@ -36,11 +36,21 @@ findings from the June 2026 adversarial audit and how each was fixed.
 | H-1 | High | Proxy honored a client `x-backend-url`, forwarding the user's token to any host (SSRF / token exfil) | Ignore `x-backend-url` in production; resolve the backend only from server env (dev override retained) |
 | M-1 | Medium | Credentialed CORS allowed a plain-HTTP origin + wildcard headers | Dropped the `http://` prod origin; explicit header allowlist |
 | M-2 | Medium | `extend(days)` accepted negative/huge values | Validated to 1–3650; `IllegalArgumentException` → HTTP 400 |
+| M-3 | Medium | Catch-all `GlobalExceptionHandler.handleAll` echoed `ex.getMessage()` to the client; the dashboard forwards error bodies to the browser, so unexpected 500s leaked internals (cache/SpEL config, SQL errors, NPE class names) | Return a generic 500 envelope (`details: null`); the full stack trace is logged **server-side only** |
 | L-1 | Low | Webhook signature compared raw (format-fragile) | Normalize incoming signature (trim/lowercase/strip `sha256=`) |
 
-**Checked and clean:** SQL/HQL queries (parameterized, no concatenation); discount
-input bounds (1–100); admin proxy routes (backend re-checks `manage:plans`); no
-secrets in tracked files or git history; access token not exposed to the client bundle.
+**Checked and clean:** SQL/HQL queries (parameterized; the only `@Query` "+" is compile-time
+literal joining); admin `sortBy` is whitelisted via a `switch` before `Sort.by` (no ORDER BY
+injection); mutations derive the user from the JWT, never a request param (no IDOR); no secrets
+in logs (only token *scopes* at debug, never values); discount input bounds (1–100); admin proxy
+routes (backend re-checks `manage:plans`); no secrets in tracked files or git history (`.env`
+files gitignored); access token not exposed to the client bundle.
+
+> Residual (low, accepted): `handleIllegalArgument` still returns its message (400) — these are
+> overwhelmingly intentional validation strings ("extend days must be 1–3650"). If a framework-
+> internal `IllegalArgumentException` ever surfaces there it could leak a little; the durable fix
+> is a dedicated `BadRequestException` for intentional validation so the rest fall through to the
+> generic catch-all. Not worth the broad refactor today.
 
 ## Operational must-dos before going live
 
