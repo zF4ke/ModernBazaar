@@ -1,3 +1,10 @@
+# Tests never talk to Auth0. Enable the mock JWT decoder so the security context can
+# load without AUTH_JWKS_URI (the prod fail-closed guard would otherwise throw at
+# startup). This is SAFE: mock-enabled is only honoured under the 'test' profile —
+# application-prod.yml / application-docker.yml leave it false (fail closed).
+auth:
+  mock-enabled: true
+
 spring:
   datasource:
     # In‑memory H2, auto‑closes on context shutdown
