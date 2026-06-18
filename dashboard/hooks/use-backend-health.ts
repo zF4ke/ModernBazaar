@@ -13,10 +13,20 @@ interface BackendHealth {
 // Ride out transient blips (e.g. a backend reload on localhost): only declare the
 // backend offline after this many consecutive failed probes.
 const FAILURE_THRESHOLD = 2
-// Poll calmly while healthy, but probe aggressively after a failure so recovery
-// (and the offline overlay clearing) feels near-instant.
-const HEALTHY_INTERVAL = 30_000
-const DEGRADED_INTERVAL = 5_000
+// Calm cadence while healthy.
+const HEALTHY_INTERVAL = 60_000
+// While failing, back off exponentially from this base up to the cap. This keeps
+// recovery snappy (the first retry after a failure is quick) without spamming a
+// long-down backend every few seconds: 5s → 10s → 20s → 40s → 60s (capped).
+const DEGRADED_BASE = 5_000
+const DEGRADED_MAX = 60_000
+
+/** Next poll delay: calm while healthy, exponential backoff (capped) while failing. */
+function nextDelay(consecutiveFailures: number): number {
+  if (consecutiveFailures <= 0) return HEALTHY_INTERVAL
+  const backoff = DEGRADED_BASE * 2 ** (consecutiveFailures - 1)
+  return Math.min(backoff, DEGRADED_MAX)
+}
 
 /**
  * Monitors backend health for offline detection.
@@ -78,23 +88,46 @@ export function useBackendHealth() {
     }
   }, [])
 
-  // Self-scheduling poll: fast cadence while degraded/offline, calm while healthy.
+  // Self-scheduling poll: calm while healthy, exponential backoff while failing,
+  // and paused entirely while the tab is hidden (resumes with an immediate check).
   useEffect(() => {
     let active = true
     let timer: ReturnType<typeof setTimeout>
 
+    const isHidden = () => typeof document !== 'undefined' && document.hidden
+
+    const schedule = () => {
+      clearTimeout(timer)
+      // Don't poll a backgrounded tab — no point, and it's the main source of spam.
+      if (!active || isHidden()) return
+      timer = setTimeout(loop, nextDelay(failuresRef.current))
+    }
+
     const loop = async () => {
-      await checkHealth()
       if (!active) return
-      const delay = failuresRef.current > 0 ? DEGRADED_INTERVAL : HEALTHY_INTERVAL
-      timer = setTimeout(loop, delay)
+      await checkHealth()
+      schedule()
+    }
+
+    const onVisibility = () => {
+      if (isHidden()) {
+        clearTimeout(timer) // pause
+      } else {
+        loop() // became visible: re-check immediately, then resume scheduling
+      }
     }
 
     loop()
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisibility)
+    }
 
     return () => {
       active = false
       clearTimeout(timer)
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisibility)
+      }
     }
   }, [checkHealth])
 
