@@ -76,7 +76,7 @@ export default function AdminPlansPage() {
           <Shield className="h-7 w-7 text-muted-foreground" />
           <div>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Plans</h2>
-            <p className="text-sm text-muted-foreground">Map each paid plan to its Lemon Squeezy variant and toggle availability.</p>
+            <p className="text-sm text-muted-foreground">Map each paid plan to its Stripe price ID and toggle availability.</p>
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
@@ -115,12 +115,12 @@ export default function AdminPlansPage() {
                   <div className="space-y-3">
                     {k.paid ? (
                       <div>
-                        <label className="text-xs font-medium text-muted-foreground">Lemon Squeezy variant ID</label>
+                        <label className="text-xs font-medium text-muted-foreground">Stripe price ID</label>
                         <div className="mt-1 flex gap-2">
-                          <Input value={vid} placeholder="e.g. 123456" className="h-9 font-mono text-sm"
+                          <Input value={vid} placeholder="e.g. price_1A2b3C..." className="h-9 font-mono text-sm"
                             onChange={(e) => setVariant((v) => ({ ...v, [k.slug]: e.target.value }))} />
                           <Button size="sm" className="h-9" disabled={!dirty || rowBusy}
-                            onClick={() => save(k.slug, { stripePriceId: vid.trim() || null }, `${k.name} variant saved`)}>
+                            onClick={() => save(k.slug, { stripePriceId: vid.trim() || null }, `${k.name} price ID saved`)}>
                             <Save className="h-4 w-4" />
                           </Button>
                         </div>

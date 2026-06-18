@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { fetchFromBackend } from "@/lib/api"
 import { isBackendError } from "@/types/errors"
 
-// Partial update of a plan (e.g. its Lemon Squeezy variant id or active flag).
+// Partial update of a plan (e.g. its Stripe price id or active flag).
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params

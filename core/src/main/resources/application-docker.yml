@@ -96,10 +96,19 @@ auth0:
     client-id: ${AUTH_MANAGEMENT_CLIENT_ID:}
     client-secret: ${AUTH_MANAGEMENT_CLIENT_SECRET:}
 
-# Lemon Squeezy (Merchant of Record - handles VAT/sales tax). Our only payment provider.
-lemonsqueezy:
-  webhook-secret: ${LEMONSQUEEZY_WEBHOOK_SECRET:}
-  api-key: ${LEMONSQUEEZY_API_KEY:}   # for server-side actions (e.g. cancelling a subscription)
+# Stripe Managed Payments (Merchant of Record - handles VAT/sales tax). Our payment provider.
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  # Where Stripe sends the user back after Checkout / Customer Portal (point at the dashboard host).
+  success-url: ${STRIPE_SUCCESS_URL:http://localhost:3001/dashboard/profile?checkout=success}
+  cancel-url:  ${STRIPE_CANCEL_URL:http://localhost:3001/dashboard/profile?checkout=cancelled}
+  portal-return-url: ${STRIPE_PORTAL_RETURN_URL:http://localhost:3001/dashboard/profile}
+  # Stripe recurring price ids per paid plan (NOT secrets — exposed at checkout). Seeded onto
+  # plan.stripe_price_id at startup (StripePlanSeeder) if unset/legacy; admin Plans edits win.
+  price:
+    flipper: ${STRIPE_PRICE_FLIPPER:price_1TjTUmCf0etY1rScKWehA6gs}
+    elite:   ${STRIPE_PRICE_ELITE:price_1TjTUqCf0etY1rScV7UbFWVr}
 
 
 skyblock:

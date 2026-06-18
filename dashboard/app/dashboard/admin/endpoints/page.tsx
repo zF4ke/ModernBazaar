@@ -854,14 +854,14 @@ const ENDPOINTS: EndpointInfo[] = [
   { path: '/api/admin/plans', method: 'GET', description: 'List plans', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/plans', method: 'POST', description: 'Create a plan', category: 'Admin', requiresAuth: true },
 
-  // Admin — discounts & referrals
-  { path: '/api/admin/discounts', method: 'GET', description: 'List discount codes', category: 'Admin', requiresAuth: true },
-  { path: '/api/admin/discounts', method: 'POST', description: 'Create a discount code', category: 'Admin', requiresAuth: true },
+  // Admin — referrals
   { path: '/api/admin/referrals', method: 'GET', description: 'List referral codes', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/referrals', method: 'POST', description: 'Create a referral code', category: 'Admin', requiresAuth: true },
 
   // Billing
-  { path: '/api/v1/billing/webhook/lemonsqueezy', method: 'POST', description: 'Lemon Squeezy webhook (signature-verified)', category: 'Billing', requiresAuth: false },
+  { path: '/api/v1/billing/webhook/stripe', method: 'POST', description: 'Stripe webhook (signature-verified)', category: 'Billing', requiresAuth: false },
+  { path: '/api/me/billing/checkout-session', method: 'POST', description: 'Create a Stripe Checkout session', category: 'Billing', requiresAuth: true },
+  { path: '/api/me/billing/portal-session', method: 'POST', description: 'Create a Stripe Customer Portal session', category: 'Billing', requiresAuth: true },
 
   // Public
   { path: '/api/plans', method: 'GET', description: 'Public list of plans', category: 'Plans', requiresAuth: false },

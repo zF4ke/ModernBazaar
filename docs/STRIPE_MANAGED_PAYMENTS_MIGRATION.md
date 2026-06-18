@@ -30,6 +30,35 @@
   Fallbacks if SMP is unavailable for our country/product: **Polar** (dev-friendly MoR) or
   **Gumroad** (easiest approval, good for getting live fast).
 
+## Implementation status (updated 2026-06-18)
+
+Legal entity for the trust pages: **Pedro Silva** (individual / sole proprietor), contact
+**modernbazaar.support@gmail.com**, jurisdiction **Portugal (EU → GDPR)**.
+
+- **Phase 1 — DONE.** Trust/legal pages (`dashboard/app/{terms,privacy,refund,contact}/page.tsx`,
+  shared `components/legal-page.tsx` + `lib/legal.ts`), shared `components/site-footer.tsx` with the
+  non-affiliation/read-only disclaimer, reframed landing copy in `app/page.tsx`. Templates are marked
+  "not legal advice — needs owner review."
+- **Phase 2 — DONE (code).** `stripe-java` added to `core/build.gradle` (⚠ pin the version to the
+  latest stable on Maven Central before shipping). `config/StripeConfig` sets the API key.
+  `service/StripeBillingService` (checkout/portal/cancel). `api/StripeWebhookController`
+  (`POST /api/v1/billing/webhook/stripe`, public route added to `SecurityConfig`). `api/StripeBillingController`
+  (`POST /api/me/billing/checkout-session` + `/portal-session`). `SubscriptionService` cancel/resume now
+  dispatch by id shape: Stripe (`sub_…`) → Stripe API, legacy numeric → Lemon Squeezy. Referral
+  attribution preserved (ref carried in Checkout subscription metadata). Stripe config keys added.
+- **Phase 3 — DONE.** `components/upgrade-button.tsx` now POSTs to the checkout-session endpoint and
+  redirects to the Stripe URL (LS static links + `NEXT_PUBLIC_LS_CHECKOUT_*` removed). Profile page has a
+  "Manage billing" Customer-Portal button. New proxy routes under `app/api/me/billing/`.
+- **Coupons — REMOVED.** The local discount-code feature (admin CRUD, never wired to checkout) was
+  deleted backend + frontend; Stripe handles promo codes natively (`allow_promotion_codes` on Checkout).
+  Affiliates/referrals were kept intact. The orphaned `discount_code` table can be dropped by hand
+  (Hibernate `ddl-auto: update` won't drop it). Stale doc mentions remain in `README.md`, `docs/MARKETING.md`,
+  `docs/ADMIN_SUITE_PLAN.md` — clean up when convenient.
+- **Phases 4–5 — OWNER / TODO.** Stripe dashboard config (enable Managed Payments, Tax, Radar, create
+  products+prices, set `plan.stripe_price_id` to the Stripe price IDs, webhook endpoint + signing secret),
+  then test-mode end-to-end. Cancel-resume decision: kept the **custom** endpoints (preserves churn feedback)
+  + added a Customer-Portal link, rather than the portal-only approach.
+
 ## How to apply for Stripe Managed Payments (owner task)
 
 Exact dashboard UI may differ — follow Stripe's prompts; this is the shape:
@@ -163,6 +192,12 @@ signing secret. (See "How to apply" above.)
 | `NEXT_PUBLIC_LS_CHECKOUT_FLIPPER/_ELITE` | (none — Checkout Sessions are server-created) |
 | `plan.stripe_price_id` = LS variant IDs | `plan.stripe_price_id` = Stripe price IDs |
 | `BILLING_ENABLED` | `BILLING_ENABLED` (unchanged) |
+| (n/a) | `STRIPE_SUCCESS_URL` — Checkout success redirect (default `…/dashboard/profile?checkout=success`) |
+| (n/a) | `STRIPE_CANCEL_URL` — Checkout cancel redirect (default `…/dashboard/profile?checkout=cancelled`) |
+| (n/a) | `STRIPE_PORTAL_RETURN_URL` — Customer-Portal return (default `…/dashboard/profile`) |
+
+> The three URL vars default to `localhost:3001`; set them to the real dashboard host in prod.
+> `$`-escape rule still applies to any secret in `infra/.env` (write `$` as `$$`).
 
 > Reminder: `infra/.env` is a Docker Compose `env_file` and Compose **interpolates** it —
 > **escape every `$` in a secret as `$$`**, then verify with

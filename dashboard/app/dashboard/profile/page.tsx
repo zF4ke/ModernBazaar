@@ -9,12 +9,13 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import {
   LogOut, Mail, Rocket, Shuffle, Crosshair, BarChart3, Lock, Check, ArrowRight,
-  Calendar, ShieldCheck, X, Loader2, Fingerprint,
+  Calendar, ShieldCheck, X, Loader2, Fingerprint, CreditCard,
 } from 'lucide-react'
 import { useBackendQuery } from '@/hooks/use-backend-query'
 import { LoginCheck } from '@/components/login-check'
 import { UpgradeButton } from '@/components/upgrade-button'
 import { fetchWithBackendUrl } from '@/lib/api'
+import { useToast } from '@/hooks/use-toast'
 import { PERMISSIONS } from '@/constants/permissions'
 import type { UserPermissions } from '@/types/permissions'
 
@@ -48,6 +49,7 @@ interface Sub { planSlug?: string; planName?: string; status?: string; currentPe
 
 export default function ProfilePage() {
   const { user } = useUser()
+  const { toast } = useToast()
   const isAuthenticated = !!user
 
   const { data: subscription, isLoading: subLoading, refetch } = useBackendQuery<Sub>(
@@ -76,6 +78,27 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [resuming, setResuming] = useState(false)
+  const [portalBusy, setPortalBusy] = useState(false)
+
+  // Open the Stripe Customer Portal (manage payment method, invoices, cancel). The
+  // backend creates the session from the user's Stripe customer id and returns its url.
+  const openPortal = async () => {
+    setPortalBusy(true)
+    try {
+      const res = await fetchWithBackendUrl("/api/me/billing/portal-session", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+      })
+      if (res.ok) {
+        const data = (await res.json()) as { url?: string }
+        if (data?.url) { window.location.href = data.url; return }
+      }
+      toast({ title: "Couldn't open billing", description: "Please try again in a moment.", variant: "destructive" })
+    } catch {
+      toast({ title: "Couldn't open billing", description: "Please try again in a moment.", variant: "destructive" })
+    } finally {
+      setPortalBusy(false)
+    }
+  }
 
   const submitCancel = async () => {
     setBusy(true)
@@ -192,14 +215,24 @@ export default function ProfilePage() {
                       You keep {planName} until {periodEnd?.toLocaleDateString() ?? 'the period ends'}.
                     </span>
                   </p>
-                  <Button variant="outline" size="sm" onClick={resume} disabled={resuming}>
-                    {resuming ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Resuming…</> : 'Resume subscription'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={openPortal} disabled={portalBusy}>
+                      {portalBusy ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Opening…</> : <><CreditCard className="h-4 w-4 mr-1.5" />Manage billing</>}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={resume} disabled={resuming}>
+                      {resuming ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Resuming…</> : 'Resume subscription'}
+                    </Button>
+                  </div>
                 </div>
               ) : !showCancel ? (
-                <button onClick={() => setShowCancel(true)} className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground">
-                  Cancel subscription
-                </button>
+                <div className="flex flex-wrap items-center gap-4">
+                  <Button variant="outline" size="sm" onClick={openPortal} disabled={portalBusy}>
+                    {portalBusy ? <><Loader2 className="h-4 w-4 mr-1.5 animate-spin" />Opening…</> : <><CreditCard className="h-4 w-4 mr-1.5" />Manage billing</>}
+                  </Button>
+                  <button onClick={() => setShowCancel(true)} className="text-sm text-muted-foreground underline underline-offset-2 hover:text-foreground">
+                    Cancel subscription
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-3 rounded-xl border bg-background/40 p-4">
                   <div className="flex items-center justify-between">

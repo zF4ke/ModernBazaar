@@ -11,7 +11,6 @@ import com.modernbazaar.core.repository.SubscriptionCancellationRepository;
 import com.modernbazaar.core.repository.UserSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -33,9 +32,7 @@ public class SubscriptionService {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final Auth0ManagementService auth0ManagementService;
     private final SubscriptionCancellationRepository cancellationRepository;
-
-    @Value("${lemonsqueezy.api-key:}")
-    private String lemonSqueezyApiKey;
+    private final StripeBillingService stripeBillingService;
 
     public Optional<UserSubscription> findCurrentForUser(String userId) {
         return userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId);
@@ -146,9 +143,8 @@ public class SubscriptionService {
     }
 
     /**
-     * Apply a payment-provider (Lemon Squeezy) subscription event. priceId is the
-     * provider's variant id, mapped to a local plan via Plan.stripePriceId (the
-     * column is reused as a generic provider price/variant id).
+     * Apply a Stripe subscription event. priceId is the Stripe price id, mapped to a
+     * local plan via Plan.stripePriceId.
      */
     @Transactional
     public void applyProviderWebhook(String priceId,
@@ -190,18 +186,18 @@ public class SubscriptionService {
         // Safety net against double billing: the user checked out again (a NEW subscription)
         // instead of changing plans, while a DIFFERENT subscription was still active. The
         // hosted checkout can't extend/merge, so the old one would keep charging — and once
-        // we overwrite the row above we'd lose its id. Cancel the orphan on Lemon Squeezy
-        // now. Best-effort; on failure we log loudly so it can be cancelled by hand.
+        // we overwrite the row above we'd lose its id. Cancel the orphan with the payment
+        // provider now. Best-effort; on failure we log loudly so it can be cancelled by hand.
         boolean replacingDifferentActiveSub = priorActive
                 && priorSubId != null && !priorSubId.isBlank()
                 && subscriptionId != null && !priorSubId.equals(subscriptionId)
                 && "active".equalsIgnoreCase(sub.getStatus());
         if (replacingDifferentActiveSub) {
-            if (cancelOnLemonSqueezy(priorSubId)) {
-                log.warn("Duplicate subscription for user={}: new sub {} replaced still-active old sub {} — cancelled the old one on Lemon Squeezy to prevent double billing.",
+            if (setProviderCancelled(priorSubId, true)) {
+                log.warn("Duplicate subscription for user={}: new sub {} replaced still-active old sub {} — cancelled the old one with the payment provider to prevent double billing.",
                         userId, subscriptionId, priorSubId);
             } else {
-                log.error("DOUBLE-BILLING RISK user={}: new sub {} replaced still-active old sub {} but it could NOT be cancelled (no LEMONSQUEEZY_API_KEY or API error). Cancel sub {} manually in Lemon Squeezy.",
+                log.error("DOUBLE-BILLING RISK user={}: new sub {} replaced still-active old sub {} but it could NOT be cancelled (provider not configured or API error). Cancel sub {} manually in the payment provider dashboard.",
                         userId, subscriptionId, priorSubId, priorSubId);
             }
         }
@@ -222,9 +218,9 @@ public class SubscriptionService {
 
     /**
      * User-initiated cancellation. Always records the feedback (why they're leaving),
-     * then cancels on Lemon Squeezy when the API key + subscription id are present
-     * (access stays until the period end; the webhook later confirms). Returns the
-     * current subscription so the UI can show the remaining time.
+     * then cancels with Stripe when a subscription id is present (access stays until the
+     * period end; the webhook later confirms). Returns the current subscription so the UI
+     * can show the remaining time.
      */
     @Transactional
     public SubscriptionResponseDTO requestCancellation(String userId, String reason, String comment) {
@@ -240,21 +236,21 @@ public class SubscriptionService {
         if (sub == null) return null;
         Plan plan = planRepository.findBySlug(sub.getPlanSlug()).orElse(null);
 
-        boolean cancelled = cancelOnLemonSqueezy(sub.getStripeSubscriptionId());
+        boolean cancelled = setProviderCancelled(sub.getStripeSubscriptionId(), true);
         if (cancelled) {
             sub.setStatus("canceled");
             userSubscriptionRepository.save(sub);
-            log.info("User {} cancelled subscription via Lemon Squeezy. Access until {}", userId, sub.getCurrentPeriodEnd());
+            log.info("User {} cancelled subscription with payment provider. Access until {}", userId, sub.getCurrentPeriodEnd());
         } else {
-            log.info("Cancellation feedback recorded for user {} (Lemon Squeezy not called: no API key or subscription id)", userId);
+            log.info("Cancellation feedback recorded for user {} (provider not called: not configured or no subscription id)", userId);
         }
         return SubscriptionResponseDTO.from(sub, plan);
     }
 
     /**
-     * Undo a pending cancellation while still within the paid period: tell Lemon Squeezy
-     * to resume billing and flip the local status back to active. The webhook confirms later.
-     * Safe no-op if there's nothing to resume (returns the current subscription unchanged).
+     * Undo a pending cancellation while still within the paid period: tell the payment
+     * provider to resume billing and flip the local status back to active. The webhook
+     * confirms later. Safe no-op if there's nothing to resume (returns the sub unchanged).
      */
     @Transactional
     public SubscriptionResponseDTO requestResume(String userId) {
@@ -265,7 +261,7 @@ public class SubscriptionService {
         boolean isCancelled = "canceled".equalsIgnoreCase(sub.getStatus());
         boolean stillWithinPeriod = sub.getCurrentPeriodEnd() == null
                 || sub.getCurrentPeriodEnd().isAfter(OffsetDateTime.now());
-        if (isCancelled && stillWithinPeriod && resumeOnLemonSqueezy(sub.getStripeSubscriptionId())) {
+        if (isCancelled && stillWithinPeriod && setProviderCancelled(sub.getStripeSubscriptionId(), false)) {
             sub.setStatus("active");
             userSubscriptionRepository.save(sub);
             log.info("User {} resumed subscription; active again until {}", userId, sub.getCurrentPeriodEnd());
@@ -276,41 +272,13 @@ public class SubscriptionService {
         return SubscriptionResponseDTO.from(sub, plan);
     }
 
-    /** Cancels a Lemon Squeezy subscription via the API (no-op without an API key / id). */
-    private boolean cancelOnLemonSqueezy(String subscriptionId) {
-        return setLemonSqueezyCancelled(subscriptionId, true);
-    }
-
-    /** Resumes (un-cancels) a Lemon Squeezy subscription via the API (no-op without an API key / id). */
-    private boolean resumeOnLemonSqueezy(String subscriptionId) {
-        return setLemonSqueezyCancelled(subscriptionId, false);
-    }
-
-    /** PATCHes a Lemon Squeezy subscription's {@code cancelled} flag. False on missing key/id or error. */
-    private boolean setLemonSqueezyCancelled(String subscriptionId, boolean cancelled) {
-        if (lemonSqueezyApiKey == null || lemonSqueezyApiKey.isBlank()
-                || subscriptionId == null || subscriptionId.isBlank()) {
-            return false;
-        }
-        try {
-            String body = "{\"data\":{\"type\":\"subscriptions\",\"id\":\"" + subscriptionId
-                    + "\",\"attributes\":{\"cancelled\":" + cancelled + "}}}";
-            var req = java.net.http.HttpRequest.newBuilder()
-                    .uri(java.net.URI.create("https://api.lemonsqueezy.com/v1/subscriptions/" + subscriptionId))
-                    .header("Authorization", "Bearer " + lemonSqueezyApiKey)
-                    .header("Accept", "application/vnd.api+json")
-                    .header("Content-Type", "application/vnd.api+json")
-                    .method("PATCH", java.net.http.HttpRequest.BodyPublishers.ofString(body))
-                    .timeout(java.time.Duration.ofSeconds(10))
-                    .build();
-            var resp = java.net.http.HttpClient.newHttpClient()
-                    .send(req, java.net.http.HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() / 100 == 2) return true;
-            log.warn("Lemon Squeezy {} failed ({}): {}", cancelled ? "cancel" : "resume", resp.statusCode(), resp.body());
-            return false;
-        } catch (Exception e) {
-            log.error("Lemon Squeezy {} error", cancelled ? "cancel" : "resume", e);
-            return false;
-        }
+    /**
+     * Toggle a subscription's scheduled-cancellation flag with the payment provider (Stripe):
+     * {@code cancel=true} schedules cancellation at period end; {@code false} resumes
+     * (un-cancels). No-op (returns false) without a subscription id or when Stripe isn't configured.
+     */
+    private boolean setProviderCancelled(String subscriptionId, boolean cancel) {
+        if (subscriptionId == null || subscriptionId.isBlank()) return false;
+        return stripeBillingService.setCancelAtPeriodEnd(subscriptionId, cancel);
     }
 }

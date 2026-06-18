@@ -11,8 +11,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { FeatureCard } from "@/components/feature-card"
 import { GradientSection } from "@/components/gradient-section"
 import { TrendingUp, Boxes, Sparkles, ArrowRight, Zap, Check, Plus, Star, Shield, Clock, Lock, Heart, Trophy, SlidersHorizontal, BarChart3, LineChart, ArrowRightLeft, Wifi, WifiOff, Shuffle, Hammer, Coins, Crosshair, Target, DollarSign, Activity } from "lucide-react"
-import { useBackendHealthContext } from '@/components/backend-health-provider'
 import { BrandMark } from "@/components/brand-mark"
+import { SiteFooter } from "@/components/site-footer"
 import { UpgradeButton, useUpgrade } from "@/components/upgrade-button"
 
 const LIVE_STRATEGIES = [
@@ -35,6 +35,7 @@ const LIVE_STRATEGIES = [
       "Cost to corner, how high you can push the price, and your profit",
       "Know exactly how much you stand to make and when to cash out",
     ],
+    note: "“Bazaar Manipulation” is the SkyBlock community's name for a long-standing supply-and-demand trading strategy. We only show read-only analysis of the public market — you make every move yourself, in-game, with virtual coins.",
   },
 ]
 
@@ -47,7 +48,6 @@ const SOON_STRATEGIES = [
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
-  const { isOnline } = useBackendHealthContext()
   const tiltRef = useRef<HTMLDivElement | null>(null)
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({})
   const { resumeFromQuery, isLoading: authLoading } = useUpgrade()
@@ -209,6 +209,9 @@ export default function LandingPage() {
             <p className="text-muted-foreground max-w-2xl mx-auto">
               You don't need to know the meta. Modern Bazaar reads the market and walks you through the exact move, step by step, sized to your coins. Two tools are live now, more on the way.
             </p>
+            <p className="text-sm text-muted-foreground/80 max-w-2xl mx-auto">
+              It's pure analysis built on Hypixel's official, public Bazaar API — read-only, no automation or botting, virtual in-game coins only. You make every trade yourself.
+            </p>
           </div>
 
           {/* Live tools — the two that matter */}
@@ -232,6 +235,9 @@ export default function LandingPage() {
                       </li>
                     ))}
                   </ul>
+                  {"note" in s && s.note ? (
+                    <p className="mt-4 text-xs leading-relaxed text-muted-foreground/80 italic">{s.note}</p>
+                  ) : null}
                   <Link href="/dashboard" className={`mt-5 inline-flex items-center gap-1 text-sm font-semibold ${s.accent} hover:gap-1.5 transition-all`}>
                     Explore {s.title} <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -549,29 +555,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t">
-        <div className="container mx-auto px-4 py-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="text-sm text-muted-foreground">© 2026 Modern Bazaar. All rights reserved. 💜</div>
-          <div className="flex items-center gap-4 text-sm">
-            <Link href="/terms" className="hover:underline">Terms of Service</Link>
-            <Link href="/privacy" className="hover:underline">Privacy Policy</Link>
-            <Link href="/support" className="hover:underline">Support</Link>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            {isOnline ? (
-              <span className="inline-flex items-center gap-2 text-green-500">
-                <span className="h-2 w-2 rounded-full bg-green-500" />
-                All Systems Operational
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2 text-amber-500">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
-                Some systems unavailable
-              </span>
-            )}
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

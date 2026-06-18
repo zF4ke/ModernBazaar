@@ -75,7 +75,7 @@ public class SubscriptionController {
 
     /**
      * Cancels the authenticated user's subscription, recording feedback about why.
-     * Cancels on Lemon Squeezy when configured; access continues until the period end.
+     * Cancels with Stripe when configured; access continues until the period end.
      */
     @PostMapping(path = "/me/subscription/cancel", consumes = "application/json")
     @RateLimiter(name = "subscriptionEndpoint")
@@ -90,7 +90,7 @@ public class SubscriptionController {
 
     /**
      * Resumes (un-cancels) the authenticated user's subscription while still within the
-     * paid period. Re-enables billing on Lemon Squeezy and flips the status back to active.
+     * paid period. Re-enables billing on Stripe and flips the status back to active.
      */
     @PostMapping(path = "/me/subscription/resume")
     @RateLimiter(name = "subscriptionEndpoint")
