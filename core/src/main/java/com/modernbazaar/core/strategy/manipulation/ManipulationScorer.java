@@ -87,6 +87,10 @@ public class ManipulationScorer {
     private static final double CREATED_BUY_ORDER_HALF_SAT = 3.0;
     /** Created sell orders/hour where the low-sell-pressure signal falls to 0.5. */
     private static final double CREATED_SELL_ORDER_HALF_SAT = 2.0;
+    /** Sell-order creation is a warning, but can be manageable when exit pressure stays low. */
+    private static final double SELL_CREATION_RATIO_HALF_SAT = 2.0;
+    /** Sell/insta-sell pressure should be much lower than the new buy-order unit depth. */
+    private static final double SELL_PRESSURE_RATIO_HALF_SAT = 0.20;
     /** Estimated cornered units where practical-size scoring reaches 0.5. */
     private static final double CORNER_SUPPLY_HALF_SAT = 10_000.0;
     /** Standing sell orders where the easy-control signal falls to 0.5. */
@@ -483,8 +487,26 @@ public class ManipulationScorer {
         double sellQuiet = CREATED_SELL_ORDER_HALF_SAT / (CREATED_SELL_ORDER_HALF_SAT + sellOrders);
         double buySideShare = (buyOrders + 0.5) / (buyOrders + sellOrders + 1.0);
         double pressureQuiet = exitDepth / (exitDepth + sellPressure + 1.0);
-        double blended = 0.35 * buyHeat + 0.25 * sellQuiet + 0.20 * buySideShare + 0.20 * pressureQuiet;
-        return 0.10 + 0.90 * clamp(blended, 0.0, 1.0);
+        double sellCreationRatio = sellOrders / (buyOrders + 1.0);
+        double sellCreationDominanceQuiet = ratioQuiet(sellCreationRatio, SELL_CREATION_RATIO_HALF_SAT);
+        double sellPressureRatio = sellPressure / (exitDepth + 1.0);
+        double sellPressureQuiet = ratioQuiet(sellPressureRatio, SELL_PRESSURE_RATIO_HALF_SAT);
+
+        double blended = 0.30 * buyHeat
+                + 0.20 * buySideShare
+                + 0.15 * sellQuiet
+                + 0.25 * pressureQuiet
+                + 0.10 * sellCreationDominanceQuiet;
+        double base = 0.05 + 0.95 * clamp(blended, 0.0, 1.0);
+        return base
+                * (0.55 + 0.45 * sellCreationDominanceQuiet)
+                * (0.10 + 0.90 * sellPressureQuiet);
+    }
+
+    private static double ratioQuiet(double ratio, double halfSat) {
+        if (!Double.isFinite(ratio) || ratio <= 0) return 1.0;
+        double scaled = ratio / Math.max(1e-9, halfSat);
+        return 1.0 / (1.0 + scaled * scaled);
     }
 
     private static double marketControlQuality(int activeSellOrders, int activeBuyOrders,
