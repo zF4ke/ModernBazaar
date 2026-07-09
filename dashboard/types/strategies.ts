@@ -105,6 +105,7 @@ export interface ManipulationQuery {
   sellWallFactor?: number
   minDemandSupplyRatio?: number
   minProfit?: number
+  maxCornerSupply?: number
   sort?: string
   page?: number
   limit?: number

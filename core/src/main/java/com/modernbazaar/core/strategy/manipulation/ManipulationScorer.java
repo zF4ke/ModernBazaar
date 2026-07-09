@@ -80,19 +80,15 @@ public class ManipulationScorer {
     /** Demand/supply ratio half-saturation point; higher ratios remain meaningfully better. */
     private static final double RATIO_HALF_SAT = 3.0;
     /** Sell-through time half-saturation point; manipulation exits should be fast. */
-    private static final double SELL_THROUGH_HALF_SAT_HOURS = 2.0;
+    private static final double SELL_THROUGH_HALF_SAT_HOURS = 3.0;
     /** Don't surface plays that take longer than this to exit via newly created buy-order units. */
-    private static final double MAX_SELL_THROUGH_HOURS = 6.0;
+    private static final double MAX_SELL_THROUGH_HOURS = 24.0;
     /** Created buy orders/hour where the buy-interest signal reaches 0.5. */
     private static final double CREATED_BUY_ORDER_HALF_SAT = 3.0;
     /** Created sell orders/hour where the low-sell-pressure signal falls to 0.5. */
     private static final double CREATED_SELL_ORDER_HALF_SAT = 2.0;
-    /** Minimum new buy-order count per hour required to trust the exit path. */
-    private static final double MIN_CREATED_BUY_ORDERS_PER_HOUR = 1.0;
-    /** Sell-order creation must stay well below buy-order creation. */
-    private static final double MAX_CREATED_SELL_TO_BUY_RATIO = 0.75;
-    /** Sell pressure must stay below new buy-order unit depth or our inflated bid gets eaten/refilled. */
-    private static final double MAX_SELL_PRESSURE_TO_EXIT_DEPTH = 0.50;
+    /** Estimated cornered units where practical-size scoring reaches 0.5. */
+    private static final double CORNER_SUPPLY_HALF_SAT = 10_000.0;
     /** Standing sell orders where the easy-control signal falls to 0.5. */
     private static final double ACTIVE_SELL_ORDER_HALF_SAT = 60.0;
     /** Standing buy orders where the buyer-depth signal reaches 0.5. */
@@ -217,7 +213,7 @@ public class ManipulationScorer {
         Double sellThroughHours = exitDemand > 0 ? (supplyUnits / exitDemand) : null;
         double risk = clamp(in.riskScore, 0.0, 1.0);
 
-        double score = scoreOf(totalProfit, demand, ratio, doublings, risk, sellThroughHours,
+        double score = scoreOf(totalProfit, supplyUnits, demand, ratio, doublings, risk, sellThroughHours,
                 in.createdBuyOrdersPerHour, in.createdSellOrdersPerHour, exitDemand, sellPressure,
                 in.activeSellOrders, in.activeBuyOrders, in.sellVolume, in.buyVolume);
 
@@ -230,7 +226,7 @@ public class ManipulationScorer {
      * (any single fatal flaw disqualifies), then a multiplicative blend so the prize only
      * survives when there are real buyers, a believable price-climb and a non-spiked price.
      */
-    private static double scoreOf(double totalProfit, double demand, double ratio,
+    private static double scoreOf(double totalProfit, long cornerSupplyUnits, double demand, double ratio,
                                   int doublings, double riskScore, Double sellThroughHours,
                                   double createdBuyOrdersPerHour,
                                   double createdSellOrdersPerHour,
@@ -247,15 +243,10 @@ public class ManipulationScorer {
         if (doublings > MAX_DOUBLINGS) return 0.0;                         // bid must climb too far to be believable
         if (riskScore >= MAX_RISK_SCORE) return 0.0;                       // already in an atypical/manipulated regime
         if (sellThroughHours != null && sellThroughHours > MAX_SELL_THROUGH_HOURS) return 0.0;
-        if (createdBuyOrdersPerHour < MIN_CREATED_BUY_ORDERS_PER_HOUR) return 0.0;
-        if (createdSellOrdersPerHour > Math.max(1.0, createdBuyOrdersPerHour * MAX_CREATED_SELL_TO_BUY_RATIO)) {
-            return 0.0;
-        }
-        if (sellPressureUnitsPerHour > exitDemandUnitsPerHour * MAX_SELL_PRESSURE_TO_EXIT_DEPTH) {
-            return 0.0;
-        }
 
         double profitScore = safeLog10(totalProfit + 1.0);                 // the prize, compressed
+        double cornerSizeQuality = CORNER_SUPPLY_HALF_SAT
+                / (CORNER_SUPPLY_HALF_SAT + Math.max(0.0, cornerSupplyUnits));
 
         // Demand quality: absolute throughput dominates, supply imbalance modulates it.
         double throughput = demand / (demand + DEMAND_HALF_SAT);            // 0..1
@@ -271,7 +262,7 @@ public class ManipulationScorer {
         double realism = Math.exp(-doublings / DOUBLING_DECAY);            // 0..1
         double manipPenalty = clamp(1.0 - RISK_PENALTY_WEIGHT * riskScore, 0.0, 1.0); // 0..1
 
-        double s = profitScore * marketControlQuality * demandQuality * sellThroughQuality
+        double s = profitScore * cornerSizeQuality * marketControlQuality * demandQuality * sellThroughQuality
                 * orderFlowQuality * realism * manipPenalty;
         return Double.isFinite(s) && s > 0 ? s : 0.0;
     }
@@ -287,7 +278,8 @@ public class ManipulationScorer {
                                                          Double taxRate,
                                                          Double sellWallFactor,
                                                          Double minDemandSupplyRatio,
-                                                         Double minProfit) {
+                                                         Double minProfit,
+                                                         Long maxCornerSupply) {
         List<BazaarItemSnapshot> snaps = snapRepo.searchLatest(
                 filter.q(), filter.minSell(), filter.maxSell(),
                 filter.minBuy(), filter.maxBuy(), filter.minSpread());
@@ -305,6 +297,8 @@ public class ManipulationScorer {
         final double fBudget = budget != null ? budget : Double.POSITIVE_INFINITY;
         final double fMinRatio = minDemandSupplyRatio != null ? minDemandSupplyRatio : Double.NEGATIVE_INFINITY;
         final double fMinProfit = minProfit != null ? minProfit : Double.NEGATIVE_INFINITY;
+        final long fMaxCornerSupply = maxCornerSupply != null && maxCornerSupply > 0
+                ? maxCornerSupply : Long.MAX_VALUE;
 
         List<ManipulationOpportunityResponseDTO> out = new ArrayList<>(snaps.size());
         for (BazaarItemSnapshot s : snaps) {
@@ -315,14 +309,15 @@ public class ManipulationScorer {
             if (agg == null || agg.getUnits() <= 0 || agg.getCost() <= 0) continue; // nothing to corner
             CornerEstimate corner = estimateCorner(agg, s);
             if (corner.supplyUnits() <= 0 || corner.cost() <= 0) continue;
+            if (corner.supplyUnits() > fMaxCornerSupply) continue;
 
             // Budget gate: we must be able to buy the estimated full sell side, not only visible rows.
             if (corner.cost() > fBudget) continue;
 
             FinanceAverages a = avgs48.get(id);
             if (a == null) continue; // manipulation needs historical order-flow signals, not just a live snapshot
-            double demand = a != null ? a.avgInstaBoughtItems() : weeklyPerHour(s.getSellMovingWeek());
-            double supply = a != null ? a.avgInstaSoldItems() : weeklyPerHour(s.getBuyMovingWeek());
+            double demand = a.avgInstaBoughtItems();
+            double supply = a.avgInstaSoldItems();
             Double createdBuyOrders = a.avgCreatedBuyOrders();
             Double createdSellOrders = a.avgCreatedSellOrders();
             double buyOrderUnitsPerHour = nonNeg(a.avgAddedItemsBuyOrders());

@@ -23,6 +23,7 @@ const DEFAULT_QUERY: ManipulationQuery = {
   page: 0,
   roi: 2,
   taxRate: 0.01125,
+  maxCornerSupply: 50000,
 }
 
 export default function ManipulationPage() {
@@ -62,6 +63,7 @@ export default function ManipulationPage() {
           taxRate: parsed.taxRate ?? prev.taxRate,
           minDemandSupplyRatio: parsed.minDemandSupplyRatio,
           minProfit: parsed.minProfit,
+          maxCornerSupply: parsed.maxCornerSupply ?? prev.maxCornerSupply,
         }))
         if (parsed.budget) setBudgetInput(new Intl.NumberFormat("en-US").format(parsed.budget))
         if (parsed.pinFavoritesToTop !== undefined) setPinFavoritesToTop(parsed.pinFavoritesToTop)
@@ -87,10 +89,11 @@ export default function ManipulationPage() {
       cur.taxRate = query.taxRate
       cur.minDemandSupplyRatio = query.minDemandSupplyRatio
       cur.minProfit = query.minProfit
+      cur.maxCornerSupply = query.maxCornerSupply
       cur.pinFavoritesToTop = pinFavoritesToTop
       localStorage.setItem("manipSetup", JSON.stringify(cur))
     } catch {}
-  }, [query.sort, query.roi, query.taxRate, query.minDemandSupplyRatio, query.minProfit, pinFavoritesToTop, isLoadingSetup])
+  }, [query.sort, query.roi, query.taxRate, query.minDemandSupplyRatio, query.minProfit, query.maxCornerSupply, pinFavoritesToTop, isLoadingSetup])
 
   useEffect(() => {
     if (isLoadingSetup) return

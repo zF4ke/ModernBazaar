@@ -23,6 +23,7 @@ import {
   Star,
   Eraser,
   DollarSign,
+  Package,
 } from "lucide-react"
 
 interface ManipulationSetupProps {
@@ -77,7 +78,7 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
 
       <div className="space-y-6">
         {/* Primary: Budget / ROI / Tax */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <div className="space-y-2">
             <Label className="text-sm font-medium flex items-center gap-2">
               <Coins className="h-4 w-4" />
@@ -129,6 +130,25 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">Tax applied when selling items</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Max Units
+            </Label>
+            <Input
+              inputMode="numeric"
+              type="text"
+              placeholder="e.g. 50,000"
+              value={query.maxCornerSupply ? new Intl.NumberFormat("en-US").format(query.maxCornerSupply) : ""}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, "")
+                updateQuery({ maxCornerSupply: value ? parseInt(value) : undefined })
+              }}
+              className="h-12 text-base"
+            />
+            <p className="text-xs text-muted-foreground">Hides markets with too many units to handle</p>
           </div>
         </div>
 
