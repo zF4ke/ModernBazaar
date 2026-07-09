@@ -44,7 +44,6 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
 
   const profitColor = o.totalProfit >= 10_000_000 ? "text-emerald-400" : "text-foreground"
   const pressureTone = pressureSignalTone(o.buyOrderUnitsPerHour, o.sellPressureUnitsPerHour)
-  const orderTone = orderFlowSignalTone(o.createdBuyOrdersPerHour, o.createdSellOrdersPerHour)
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("a, button")) return
@@ -152,27 +151,16 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
               tone={valueSignalTone(ratio, 3, 1.5)}
             />
             <SignalCell
-              icon={TrendingUp}
-              label="ROI"
-              value={`${format(o.roi, 1)}x`}
-              tone="muted"
-            />
-            <SignalCell
-              icon={Repeat}
-              label="Steps"
-              value={`${o.buyOrderDoublingSteps}`}
-              tone={inverseSignalTone(o.buyOrderDoublingSteps, 2, 4)}
-            />
-            <SignalCell
               icon={ShoppingCart}
-              label="Orders"
-              value={
-                o.createdBuyOrdersPerHour !== undefined && o.createdSellOrdersPerHour !== undefined
-                  ? `+${format(o.createdBuyOrdersPerHour, 1)} / +${format(o.createdSellOrdersPerHour, 1)}`
-                  : "-"
-              }
-              sublabel="buy / sell"
-              tone={orderTone}
+              label="Buy Orders"
+              value={o.createdBuyOrdersPerHour !== undefined ? `+${format(o.createdBuyOrdersPerHour, 1)}/h` : "-"}
+              tone={o.createdBuyOrdersPerHour !== undefined ? valueSignalTone(o.createdBuyOrdersPerHour, 3, 1) : "muted"}
+            />
+            <SignalCell
+              icon={AlertCircle}
+              label="Sell Orders"
+              value={o.createdSellOrdersPerHour !== undefined ? `+${format(o.createdSellOrdersPerHour, 1)}/h` : "-"}
+              tone={o.createdSellOrdersPerHour !== undefined ? inverseSignalTone(o.createdSellOrdersPerHour, 2, 5) : "muted"}
             />
             <SignalCell
               icon={TrendingUp}
@@ -384,16 +372,6 @@ function inverseSignalTone(value: number, goodAtOrBelow: number, badAtOrAbove: n
   if (value <= goodAtOrBelow) return "good"
   if (value >= badAtOrAbove) return "bad"
   return "warn"
-}
-
-function orderFlowSignalTone(buyOrders?: number, sellOrders?: number): SignalTone {
-  if (buyOrders === undefined || sellOrders === undefined || !Number.isFinite(buyOrders) || !Number.isFinite(sellOrders)) {
-    return "muted"
-  }
-  const ratio = sellOrders / (buyOrders + 0.5)
-  if (ratio <= 0.75) return "good"
-  if (ratio <= 1.5) return "warn"
-  return "bad"
 }
 
 function pressureSignalTone(exitUnits?: number, pressureUnits?: number): SignalTone {
