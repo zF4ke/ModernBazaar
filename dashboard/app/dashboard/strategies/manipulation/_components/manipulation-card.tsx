@@ -188,9 +188,9 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
             />
             <SignalCell
               icon={Package}
-              label="Sell Depth"
+              label="Sell Items"
               value={format(o.activeSellOrders, 0)}
-              tone={inverseSignalTone(o.activeSellOrders, 60, 150)}
+              tone="muted"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
