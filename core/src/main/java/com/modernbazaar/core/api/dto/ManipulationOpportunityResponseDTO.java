@@ -29,20 +29,22 @@ public record ManipulationOpportunityResponseDTO(
         int     buyOrderDoublingSteps,  // times to double the current top bid to reach targetBuyOrderPrice
 
         // demand / supply signals
-        Double  demandPerHour,          // avg units players insta-buy per hour (how fast we offload)
-        Double  supplyPerHour,          // avg units players insta-sell per hour (how fast the market refills)
+        Double  demandPerHour,          // avg units players insta-buy per hour (organic buyer activity)
+        Double  supplyPerHour,          // avg units players insta-sell per hour (pressure into buy orders)
         Double  demandSupplyRatio,      // demand / supply (>1 = more buyers than sellers)
         int     activeSellOrders,       // standing sell orders (thin = easy to corner)
         int     activeBuyOrders,        // standing buy orders (deep demand)
         Double  createdBuyOrdersPerHour,  // new buy orders/hour (more = easier to bait demand)
         Double  createdSellOrdersPerHour, // new sell orders/hour (less = easier to keep cornered)
+        Double  buyOrderUnitsPerHour,     // new buy-order units/hour available for exit
+        Double  sellPressureUnitsPerHour, // new sell-order units + insta-sold units/hour fighting the play
         long    sellVolume,            // total standing sell units (low = easier to control)
         long    buyVolume,             // total standing buy units (high = stronger demand depth)
 
         // economics
         double  netProfitPerUnit,       // targetBuyOrderPrice*(1-tax) - avgBuyCostPerUnit
         double  totalProfit,            // netProfitPerUnit * cornerSupplyUnits
-        Double  estimatedSellThroughHours, // cornerSupplyUnits / demandPerHour
+        Double  estimatedSellThroughHours, // cornerSupplyUnits / buyOrderUnitsPerHour
 
         // risk + ranking
         Boolean risky,

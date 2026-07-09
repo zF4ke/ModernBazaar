@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * Score (transparent, profit discounted by how realistic the play actually is)
  * - profitScore    = log10(totalProfit + 1)                  — the prize, compressed
  * - demandQuality  = throughput(demand) * (0.35 + 0.65*imbalance) — are there real buyers?
- * - sellThrough    = halfLife / (halfLife + hoursToSell)          — how quickly can you exit?
+ * - sellThrough    = halfLife / (halfLife + hoursToSell)          — how quickly new buy-order units let you exit
  * - orderFlow      = high created buy orders + low created sell orders
  * - marketControl  = low sell-side depth + high buy-side depth
  * - realism        = exp(-doublings / DECAY)                 — is the bid-climb believable?
@@ -73,19 +73,26 @@ public class ManipulationScorer {
     private static final double MAX_RATIO = 5.0;
 
     // ── Scoring tunables ─────────────────────────────────────────────────────
-    /** Absolute demand floor: below this many insta-buys/hour you can't reliably
-     *  offload the cornered stock, so the play is gated out regardless of paper profit. */
+    /** Absolute organic-demand floor; below this there is not enough buyer attention to bait. */
     private static final double MIN_DEMAND_PER_HOUR = 1.0;
     /** Demand at which the throughput factor reaches 0.5 (saturating, never hard-capped). */
     private static final double DEMAND_HALF_SAT = 10.0;
     /** Demand/supply ratio half-saturation point; higher ratios remain meaningfully better. */
     private static final double RATIO_HALF_SAT = 3.0;
-    /** Sell-through time half-saturation point; faster exits should rank much higher. */
-    private static final double SELL_THROUGH_HALF_SAT_HOURS = 6.0;
+    /** Sell-through time half-saturation point; manipulation exits should be fast. */
+    private static final double SELL_THROUGH_HALF_SAT_HOURS = 2.0;
+    /** Don't surface plays that take longer than this to exit via newly created buy-order units. */
+    private static final double MAX_SELL_THROUGH_HOURS = 6.0;
     /** Created buy orders/hour where the buy-interest signal reaches 0.5. */
     private static final double CREATED_BUY_ORDER_HALF_SAT = 3.0;
     /** Created sell orders/hour where the low-sell-pressure signal falls to 0.5. */
     private static final double CREATED_SELL_ORDER_HALF_SAT = 2.0;
+    /** Minimum new buy-order count per hour required to trust the exit path. */
+    private static final double MIN_CREATED_BUY_ORDERS_PER_HOUR = 1.0;
+    /** Sell-order creation must stay well below buy-order creation. */
+    private static final double MAX_CREATED_SELL_TO_BUY_RATIO = 0.75;
+    /** Sell pressure must stay below new buy-order unit depth or our inflated bid gets eaten/refilled. */
+    private static final double MAX_SELL_PRESSURE_TO_EXIT_DEPTH = 0.50;
     /** Standing sell orders where the easy-control signal falls to 0.5. */
     private static final double ACTIVE_SELL_ORDER_HALF_SAT = 60.0;
     /** Standing buy orders where the buyer-depth signal reaches 0.5. */
@@ -102,8 +109,6 @@ public class ManipulationScorer {
     private static final double MAX_RISK_SCORE = 0.85;
     /** manipPenalty = 1 - RISK_PENALTY_WEIGHT * riskScore (so risk 0→1.0, risk 0.5→0.55). */
     private static final double RISK_PENALTY_WEIGHT = 0.9;
-    /** Don't surface plays that take longer than this to fully sell through at current demand. */
-    private static final double MAX_SELL_THROUGH_HOURS = 72.0;
     private static final Set<String> CRAFTABLE_ITEM_IDS =
             loadIdResource("/manipulation/craftable-item-ids.txt");
     private static final Set<String> NPC_BUYABLE_ITEM_IDS =
@@ -141,6 +146,9 @@ public class ManipulationScorer {
             double sellWallFactor,     // sell order = targetBuyOrder * factor (> 1)
             double createdBuyOrdersPerHour,
             double createdSellOrdersPerHour,
+            double buyOrderUnitsPerHour,
+            double sellOrderUnitsPerHour,
+            double instaSoldUnitsPerHour,
             int activeSellOrders,
             int activeBuyOrders,
             long sellVolume,
@@ -204,11 +212,13 @@ public class ManipulationScorer {
         double ratio = supply > 0 ? Math.min(MAX_RATIO, demand / supply)
                 : (demand > 0 ? MAX_RATIO : 0.0);
 
-        Double sellThroughHours = demand > 0 ? (supplyUnits / demand) : null;
+        double exitDemand = nonNeg(in.buyOrderUnitsPerHour);
+        double sellPressure = nonNeg(in.sellOrderUnitsPerHour) + nonNeg(in.instaSoldUnitsPerHour);
+        Double sellThroughHours = exitDemand > 0 ? (supplyUnits / exitDemand) : null;
         double risk = clamp(in.riskScore, 0.0, 1.0);
 
         double score = scoreOf(totalProfit, demand, ratio, doublings, risk, sellThroughHours,
-                in.createdBuyOrdersPerHour, in.createdSellOrdersPerHour,
+                in.createdBuyOrdersPerHour, in.createdSellOrdersPerHour, exitDemand, sellPressure,
                 in.activeSellOrders, in.activeBuyOrders, in.sellVolume, in.buyVolume);
 
         return new Plan(avgBuyCost, minResell, targetBuyOrder, suggestedSellOrder,
@@ -224,6 +234,8 @@ public class ManipulationScorer {
                                   int doublings, double riskScore, Double sellThroughHours,
                                   double createdBuyOrdersPerHour,
                                   double createdSellOrdersPerHour,
+                                  double exitDemandUnitsPerHour,
+                                  double sellPressureUnitsPerHour,
                                   int activeSellOrders,
                                   int activeBuyOrders,
                                   long sellVolume,
@@ -231,9 +243,17 @@ public class ManipulationScorer {
         // Hard gates — these are the items the old formula wrongly ranked #1.
         if (totalProfit <= 0) return 0.0;
         if (demand < MIN_DEMAND_PER_HOUR) return 0.0;                       // no real buyers to dump onto
+        if (exitDemandUnitsPerHour <= 0) return 0.0;                        // no new buy-order depth to exit into
         if (doublings > MAX_DOUBLINGS) return 0.0;                         // bid must climb too far to be believable
         if (riskScore >= MAX_RISK_SCORE) return 0.0;                       // already in an atypical/manipulated regime
         if (sellThroughHours != null && sellThroughHours > MAX_SELL_THROUGH_HOURS) return 0.0;
+        if (createdBuyOrdersPerHour < MIN_CREATED_BUY_ORDERS_PER_HOUR) return 0.0;
+        if (createdSellOrdersPerHour > Math.max(1.0, createdBuyOrdersPerHour * MAX_CREATED_SELL_TO_BUY_RATIO)) {
+            return 0.0;
+        }
+        if (sellPressureUnitsPerHour > exitDemandUnitsPerHour * MAX_SELL_PRESSURE_TO_EXIT_DEPTH) {
+            return 0.0;
+        }
 
         double profitScore = safeLog10(totalProfit + 1.0);                 // the prize, compressed
 
@@ -244,7 +264,8 @@ public class ManipulationScorer {
         double sellThroughQuality = sellThroughHours != null
                 ? SELL_THROUGH_HALF_SAT_HOURS / (SELL_THROUGH_HALF_SAT_HOURS + Math.max(0.0, sellThroughHours))
                 : 0.0;
-        double orderFlowQuality = orderFlowQuality(createdBuyOrdersPerHour, createdSellOrdersPerHour);
+        double orderFlowQuality = orderFlowQuality(createdBuyOrdersPerHour, createdSellOrdersPerHour,
+                exitDemandUnitsPerHour, sellPressureUnitsPerHour);
         double marketControlQuality = marketControlQuality(activeSellOrders, activeBuyOrders, sellVolume, buyVolume);
 
         double realism = Math.exp(-doublings / DOUBLING_DECAY);            // 0..1
@@ -299,10 +320,14 @@ public class ManipulationScorer {
             if (corner.cost() > fBudget) continue;
 
             FinanceAverages a = avgs48.get(id);
+            if (a == null) continue; // manipulation needs historical order-flow signals, not just a live snapshot
             double demand = a != null ? a.avgInstaBoughtItems() : weeklyPerHour(s.getSellMovingWeek());
             double supply = a != null ? a.avgInstaSoldItems() : weeklyPerHour(s.getBuyMovingWeek());
-            Double createdBuyOrders = a != null ? a.avgCreatedBuyOrders() : null;
-            Double createdSellOrders = a != null ? a.avgCreatedSellOrders() : null;
+            Double createdBuyOrders = a.avgCreatedBuyOrders();
+            Double createdSellOrders = a.avgCreatedSellOrders();
+            double buyOrderUnitsPerHour = nonNeg(a.avgAddedItemsBuyOrders());
+            double sellOrderUnitsPerHour = nonNeg(a.avgAddedItemsSellOrders());
+            double sellPressureUnitsPerHour = sellOrderUnitsPerHour + nonNeg(a.avgInstaSoldItems());
 
             // Risk is computed first so the score can penalise/gate already-manipulated items.
             RiskAssessment ra = riskToolkit.assessPriceDeviation(
@@ -323,6 +348,9 @@ public class ManipulationScorer {
                     effWall,
                     createdBuyOrders != null ? createdBuyOrders : -1.0,
                     createdSellOrders != null ? createdSellOrders : -1.0,
+                    buyOrderUnitsPerHour,
+                    sellOrderUnitsPerHour,
+                    a.avgInstaSoldItems(),
                     s.getActiveSellOrdersCount(),
                     s.getActiveBuyOrdersCount(),
                     s.getSellVolume(),
@@ -356,6 +384,8 @@ public class ManipulationScorer {
                     s.getActiveBuyOrdersCount(),
                     createdBuyOrders,
                     createdSellOrders,
+                    buyOrderUnitsPerHour,
+                    sellPressureUnitsPerHour,
                     s.getSellVolume(),
                     s.getBuyVolume(),
                     p.netProfitPerUnit(),
@@ -442,18 +472,23 @@ public class ManipulationScorer {
     private static double log2(double x) { return Math.log(x) / Math.log(2.0); }
     private static double weeklyPerHour(long movingWeek) { return movingWeek > 0 ? movingWeek / 168.0 : 0.0; }
 
-    private static double orderFlowQuality(double createdBuyOrdersPerHour, double createdSellOrdersPerHour) {
+    private static double orderFlowQuality(double createdBuyOrdersPerHour, double createdSellOrdersPerHour,
+                                           double exitDemandUnitsPerHour, double sellPressureUnitsPerHour) {
         if (!Double.isFinite(createdBuyOrdersPerHour) || !Double.isFinite(createdSellOrdersPerHour)
-                || createdBuyOrdersPerHour < 0 || createdSellOrdersPerHour < 0) {
+                || createdBuyOrdersPerHour < 0 || createdSellOrdersPerHour < 0
+                || !Double.isFinite(exitDemandUnitsPerHour) || !Double.isFinite(sellPressureUnitsPerHour)) {
             return 0.65;
         }
 
         double buyOrders = Math.max(0.0, createdBuyOrdersPerHour);
         double sellOrders = Math.max(0.0, createdSellOrdersPerHour);
+        double exitDepth = Math.max(0.0, exitDemandUnitsPerHour);
+        double sellPressure = Math.max(0.0, sellPressureUnitsPerHour);
         double buyHeat = buyOrders / (buyOrders + CREATED_BUY_ORDER_HALF_SAT);
         double sellQuiet = CREATED_SELL_ORDER_HALF_SAT / (CREATED_SELL_ORDER_HALF_SAT + sellOrders);
         double buySideShare = (buyOrders + 0.5) / (buyOrders + sellOrders + 1.0);
-        double blended = 0.45 * buyHeat + 0.35 * sellQuiet + 0.20 * buySideShare;
+        double pressureQuiet = exitDepth / (exitDepth + sellPressure + 1.0);
+        double blended = 0.35 * buyHeat + 0.25 * sellQuiet + 0.20 * buySideShare + 0.20 * pressureQuiet;
         return 0.10 + 0.90 * clamp(blended, 0.0, 1.0);
     }
 

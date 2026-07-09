@@ -161,6 +161,12 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                 +{format(o.createdBuyOrdersPerHour, 1)} buy / +{format(o.createdSellOrdersPerHour, 1)} sell orders/h
               </Badge>
             )}
+            {o.buyOrderUnitsPerHour !== undefined && o.sellPressureUnitsPerHour !== undefined && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-cyan-500/50 text-cyan-400">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                {formatCompact(o.buyOrderUnitsPerHour)} exit / {formatCompact(o.sellPressureUnitsPerHour)} pressure/h
+              </Badge>
+            )}
             {o.risky && (
               o.riskNote ? (
                 <Tooltip>
@@ -213,8 +219,10 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                     ["Buy volume", format(o.buyVolume, 0)],
                     ["Created buy orders / hour", o.createdBuyOrdersPerHour !== undefined ? format(o.createdBuyOrdersPerHour, 1) : "—"],
                     ["Created sell orders / hour", o.createdSellOrdersPerHour !== undefined ? format(o.createdSellOrdersPerHour, 1) : "—"],
+                    ["Buy-order units / hour", o.buyOrderUnitsPerHour !== undefined ? format(o.buyOrderUnitsPerHour, 0) : "—"],
+                    ["Sell pressure units / hour", o.sellPressureUnitsPerHour !== undefined ? format(o.sellPressureUnitsPerHour, 0) : "—"],
                   ]}
-                  note="Best targets have strong new buy-order creation and very little new sell-order creation."
+                  note="Best targets have strong new buy-order depth and very little sell pressure."
                 />
                 <PlanStep
                   color="red" icon={ShoppingCart} title="Step 2: Corner the market"
@@ -255,7 +263,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                     ["Total profit", `${format(o.totalProfit, 0)} coins`],
                     ["Est. sell-through", formatTime(o.estimatedSellThroughHours)],
                   ]}
-                  note="Re-bait the buy order each round until the whole stock is offloaded."
+                  note="Sell-through is based on new buy-order units, not generic insta-buy demand."
                 />
                 {o.risky && (
                   <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
