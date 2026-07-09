@@ -182,6 +182,7 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
                   <SelectContent>
                     <SelectItem value="overclocker">Overclocker</SelectItem>
                     <SelectItem value="attention">Attention</SelectItem>
+                    <SelectItem value="balanced">Balanced</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

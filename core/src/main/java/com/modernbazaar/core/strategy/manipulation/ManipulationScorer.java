@@ -127,13 +127,15 @@ public class ManipulationScorer {
 
     private enum FormulaVersion {
         OVERCLOCKER,
-        ATTENTION;
+        ATTENTION,
+        BALANCED;
 
         static FormulaVersion parse(String value) {
             if (value == null || value.isBlank()) return OVERCLOCKER;
             String normalized = value.trim().toLowerCase(Locale.ROOT);
             return switch (normalized) {
                 case "attention", "new", "v2" -> ATTENTION;
+                case "balanced", "hybrid", "v3" -> BALANCED;
                 default -> OVERCLOCKER;
             };
         }
@@ -201,6 +203,10 @@ public class ManipulationScorer {
      */
     public Plan plan(Inputs in) {
         return plan(in, FormulaVersion.OVERCLOCKER);
+    }
+
+    public Plan plan(Inputs in, String formulaVersion) {
+        return plan(in, FormulaVersion.parse(formulaVersion));
     }
 
     private Plan plan(Inputs in, FormulaVersion formulaVersion) {
@@ -589,6 +595,29 @@ public class ManipulationScorer {
             return base
                     * (0.55 + 0.45 * sellCreationDominanceQuiet)
                     * (0.10 + 0.90 * sellPressureQuiet);
+        }
+
+        if (formulaVersion == FormulaVersion.BALANCED) {
+            double bidChase = bidUpMoves / (bidUpMoves + BID_UP_MOVE_HALF_SAT);
+            double attention = 0.30 * buyHeat
+                    + 0.25 * bidChase
+                    + 0.25 * flipperAttention
+                    + 0.20 * buySideShare;
+            double pressureSurvival = 0.55 * sellPressureQuiet
+                    + 0.25 * sellCreationDominanceQuiet
+                    + 0.20 * pressureQuiet;
+            double blended = 0.25 * buyHeat
+                    + 0.20 * buySideShare
+                    + 0.20 * pressureQuiet
+                    + 0.15 * sellQuiet
+                    + 0.10 * bidChase
+                    + 0.10 * flipperAttention;
+            double base = 0.05 + 0.95 * clamp(blended, 0.0, 1.0);
+            return base
+                    * (0.30 + 0.70 * clamp(attention, 0.0, 1.0))
+                    * (0.15 + 0.85 * clamp(pressureSurvival, 0.0, 1.0))
+                    * (0.35 + 0.65 * sellPressureQuiet)
+                    * (0.50 + 0.50 * sellCreationDominanceQuiet);
         }
 
         double bidChase = bidUpMoves / (bidUpMoves + BID_UP_MOVE_HALF_SAT);

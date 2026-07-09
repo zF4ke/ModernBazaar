@@ -28,6 +28,19 @@ class ManipulationScorerTest {
                 BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, // 0.01125
                 2.0,      // roi
                 2.0,      // sellWallFactor
+                5.0,      // createdBuyOrdersPerHour
+                1.0,      // createdSellOrdersPerHour
+                200.0,    // buyOrderUnitsPerHour
+                15.0,     // sellOrderUnitsPerHour
+                20.0,     // instaSoldUnitsPerHour
+                2.0,      // bidUpMovesPerHour
+                1_000.0,  // bidUpPriceDeltaPerHour
+                0.55,     // flipperAttentionScore
+                2_000_000.0, // flipperProfitPerHour
+                20,       // activeSellOrders
+                200,      // activeBuyOrders
+                1_000L,   // sellVolume
+                20_000L,  // buyVolume
                 0.0);     // riskScore (not manipulated)
     }
 
@@ -35,7 +48,9 @@ class ManipulationScorerTest {
     private static Inputs inputs(double demand, double supply, int unitsCost1000, double riskScore) {
         long units = unitsCost1000;
         return new Inputs(1000.0, 500.0, units, units * 1000.0,
-                demand, supply, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0, riskScore);
+                demand, supply, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0,
+                5.0, 1.0, demand, 15.0, supply, 2.0, 1_000.0, 0.55, 2_000_000.0,
+                20, 200, units, 20_000L, riskScore);
     }
 
     @Test
@@ -128,7 +143,9 @@ class ManipulationScorerTest {
         // avgBuyCost 5,000,000 vs a tiny 10,000 top bid: the buy order would have to climb
         // ~10 doublings to reach the inflated target — fantasy — so it's gated out.
         Inputs detached = new Inputs(5_000_000.0, 10_000.0, 1L, 5_000_000.0,
-                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0, 0.0);
+                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0,
+                5.0, 1.0, 200.0, 15.0, 50.0, 2.0, 1_000.0, 0.55, 2_000_000.0,
+                20, 200, 1L, 20_000L, 0.0);
         Plan p = scorer.plan(detached);
         assertThat(p.buyOrderDoublingSteps()).isGreaterThan(6);
         assertThat(p.score()).isEqualTo(0.0);
@@ -143,7 +160,9 @@ class ManipulationScorerTest {
     @Test
     void noSupplyToCorner_yieldsZeroPlan() {
         Inputs empty = new Inputs(1000.0, 500.0, 0L, 0.0,
-                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0, 0.0);
+                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0,
+                5.0, 1.0, 200.0, 15.0, 50.0, 2.0, 1_000.0, 0.55, 2_000_000.0,
+                20, 200, 0L, 20_000L, 0.0);
         Plan p = scorer.plan(empty);
         assertThat(p.score()).isEqualTo(0.0);
         assertThat(p.totalProfit()).isEqualTo(0.0);
@@ -151,21 +170,51 @@ class ManipulationScorerTest {
 
     @Test
     void higherProfit_scoresHigher() {
-        Plan small = scorer.plan(baseInputs());
-        Inputs bigger = new Inputs(1000.0, 500.0, 10_000L, 10_000_000.0,
-                200.0, 50.0, BazaarConstants.DEFAULT_BAZAAR_TAX_RATE, 2.0, 2.0, 0.0);
-        Plan large = scorer.plan(bigger);
-        assertThat(large.score()).isGreaterThan(small.score());
+        Inputs base = baseInputs();
+        Inputs higherRoi = new Inputs(
+                base.instantBuyPrice(), base.instantSellPrice(), base.cornerSupplyUnits(), base.cornerCost(),
+                base.demandPerHour(), base.supplyPerHour(), base.taxRate(), 3.0, base.sellWallFactor(),
+                base.createdBuyOrdersPerHour(), base.createdSellOrdersPerHour(), base.buyOrderUnitsPerHour(),
+                base.sellOrderUnitsPerHour(), base.instaSoldUnitsPerHour(), base.bidUpMovesPerHour(),
+                base.bidUpPriceDeltaPerHour(), base.flipperAttentionScore(), base.flipperProfitPerHour(),
+                base.activeSellOrders(), base.activeBuyOrders(), base.sellVolume(), base.buyVolume(),
+                base.riskScore());
+
+        Plan normal = scorer.plan(base);
+        Plan richer = scorer.plan(higherRoi);
+        assertThat(richer.totalProfit()).isGreaterThan(normal.totalProfit());
+        assertThat(richer.score()).isGreaterThan(normal.score());
     }
 
     @Test
     void invalidTaxAndRoi_fallBackToDefaults() {
         Inputs bad = new Inputs(1000.0, 500.0, 1000L, 1_000_000.0,
-                200.0, 50.0, Double.NaN, 0.5, 0.5, 0.0); // tax NaN, roi<1, wall<=1
+                200.0, 50.0, Double.NaN, 0.5, 0.5,
+                5.0, 1.0, 200.0, 15.0, 50.0, 2.0, 1_000.0, 0.55, 2_000_000.0,
+                20, 200, 1_000L, 20_000L, 0.0); // tax NaN, roi<1, wall<=1
         Plan p = scorer.plan(bad);
         // roi falls back to 2.0 -> net profit per unit == avgCost
         assertThat(p.netProfitPerUnit()).isCloseTo(1000.0, within(1e-6));
         // wall falls back to 2.0
         assertThat(p.suggestedSellOrderPrice()).isCloseTo(p.targetBuyOrderPrice() * 2.0, within(1e-6));
+    }
+
+    @Test
+    void balancedFormula_survivesAttentionButPenalizesSellPressure() {
+        Inputs clean = baseInputs();
+        Inputs pressured = new Inputs(
+                clean.instantBuyPrice(), clean.instantSellPrice(), clean.cornerSupplyUnits(), clean.cornerCost(),
+                clean.demandPerHour(), clean.supplyPerHour(), clean.taxRate(), clean.roi(), clean.sellWallFactor(),
+                clean.createdBuyOrdersPerHour(), 12.0, clean.buyOrderUnitsPerHour(), 250.0, 200.0,
+                clean.bidUpMovesPerHour(), clean.bidUpPriceDeltaPerHour(), clean.flipperAttentionScore(),
+                clean.flipperProfitPerHour(), clean.activeSellOrders(), clean.activeBuyOrders(),
+                clean.sellVolume(), clean.buyVolume(), clean.riskScore());
+
+        double cleanScore = scorer.plan(clean, "balanced").score();
+        double pressuredScore = scorer.plan(pressured, "balanced").score();
+
+        assertThat(cleanScore).isGreaterThan(0.0);
+        assertThat(pressuredScore).isGreaterThan(0.0);
+        assertThat(pressuredScore).isLessThan(cleanScore);
     }
 }
