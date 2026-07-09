@@ -217,4 +217,9 @@ class ManipulationScorerTest {
         assertThat(pressuredScore).isGreaterThan(0.0);
         assertThat(pressuredScore).isLessThan(cleanScore);
     }
+
+    @Test
+    void noFormula_usesBalancedByDefault() {
+        assertThat(scorer.plan(baseInputs()).score()).isEqualTo(scorer.plan(baseInputs(), "balanced").score());
+    }
 }

@@ -131,12 +131,13 @@ public class ManipulationScorer {
         BALANCED;
 
         static FormulaVersion parse(String value) {
-            if (value == null || value.isBlank()) return OVERCLOCKER;
+            if (value == null || value.isBlank()) return BALANCED;
             String normalized = value.trim().toLowerCase(Locale.ROOT);
             return switch (normalized) {
+                case "overclocker", "old", "v1" -> OVERCLOCKER;
                 case "attention", "new", "v2" -> ATTENTION;
                 case "balanced", "hybrid", "v3" -> BALANCED;
-                default -> OVERCLOCKER;
+                default -> BALANCED;
             };
         }
     }
@@ -202,7 +203,7 @@ public class ManipulationScorer {
      * Builds the manipulation plan from market inputs. Pure function (no I/O).
      */
     public Plan plan(Inputs in) {
-        return plan(in, FormulaVersion.OVERCLOCKER);
+        return plan(in, FormulaVersion.BALANCED);
     }
 
     public Plan plan(Inputs in, String formulaVersion) {

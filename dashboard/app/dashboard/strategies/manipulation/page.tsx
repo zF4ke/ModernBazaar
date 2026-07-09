@@ -24,7 +24,7 @@ const DEFAULT_QUERY: ManipulationQuery = {
   roi: 2,
   taxRate: 0.01125,
   maxCornerSupply: 20000,
-  formulaVersion: "overclocker",
+  formulaVersion: "balanced",
 }
 
 export default function ManipulationPage() {
@@ -67,7 +67,9 @@ export default function ManipulationPage() {
           maxCornerSupply: parsed.maxCornerSupply === 50000
             ? prev.maxCornerSupply
             : parsed.maxCornerSupply ?? prev.maxCornerSupply,
-          formulaVersion: parsed.formulaVersion ?? prev.formulaVersion,
+          formulaVersion: parsed.formulaVersion === "overclocker"
+            ? prev.formulaVersion
+            : parsed.formulaVersion ?? prev.formulaVersion,
         }))
         if (parsed.budget) setBudgetInput(new Intl.NumberFormat("en-US").format(parsed.budget))
         if (parsed.pinFavoritesToTop !== undefined) setPinFavoritesToTop(parsed.pinFavoritesToTop)
