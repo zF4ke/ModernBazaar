@@ -186,6 +186,12 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
               value={o.flipperAttentionScore !== undefined ? `${format(o.flipperAttentionScore * 100, 0)}%` : "-"}
               tone={valueSignalTone(o.flipperAttentionScore ?? 0, 0.55, 0.30)}
             />
+            <SignalCell
+              icon={Package}
+              label="Sell Depth"
+              value={format(o.activeSellOrders, 0)}
+              tone={inverseSignalTone(o.activeSellOrders, 60, 150)}
+            />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {o.risky && (
@@ -206,10 +212,6 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                 </Badge>
               )
             )}
-            <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-              <Package className="h-3 w-3" />
-              <span>Sell orders {format(o.activeSellOrders, 0)}</span>
-            </div>
           </div>
           {!isExpanded && (
             <div className="flex justify-center pt-1 pb-2">
