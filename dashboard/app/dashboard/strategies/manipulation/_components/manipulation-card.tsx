@@ -43,7 +43,8 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
   const taxPct = (o.taxRate ?? 0.01125) * 100
 
   const profitColor = o.totalProfit >= 10_000_000 ? "text-emerald-400" : "text-foreground"
-  const bidRaiseBadgeClass = strengthBadgeClass(o.bidUpMovesPerHour ?? 0, 3.0, 1.0)
+  const pressureTone = pressureSignalTone(o.buyOrderUnitsPerHour, o.sellPressureUnitsPerHour)
+  const orderTone = orderFlowSignalTone(o.createdBuyOrdersPerHour, o.createdSellOrdersPerHour)
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("a, button")) return
@@ -141,45 +142,64 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
           </div>
         </div>
 
-        {/* Badges */}
+        {/* Market signals */}
         <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${ratio >= 3 ? "border-emerald-500/50 text-emerald-400" : ratio >= 1.5 ? "border-amber-500/50 text-amber-400" : "border-zinc-600 text-zinc-400"}`}>
-              <Scale className="h-3 w-3 mr-1" />
-              {format(ratio, 1)}x demand/supply
-            </Badge>
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-zinc-600 text-zinc-400">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {format(o.roi, 1)}x ROI
-            </Badge>
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-zinc-600 text-zinc-400">
-              <Repeat className="h-3 w-3 mr-1" />
-              {o.buyOrderDoublingSteps} doublings
-            </Badge>
-            {o.createdBuyOrdersPerHour !== undefined && o.createdSellOrdersPerHour !== undefined && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-blue-500/50 text-blue-400">
-                <ShoppingCart className="h-3 w-3 mr-1" />
-                +{format(o.createdBuyOrdersPerHour, 1)} buy / +{format(o.createdSellOrdersPerHour, 1)} sell orders/h
-              </Badge>
-            )}
-            {o.buyOrderUnitsPerHour !== undefined && o.sellPressureUnitsPerHour !== undefined && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-cyan-500/50 text-cyan-400">
-                <TrendingUp className="h-3 w-3 mr-1" />
-                {formatCompact(o.buyOrderUnitsPerHour)} exit / {formatCompact(o.sellPressureUnitsPerHour)} pressure/h
-              </Badge>
-            )}
-            {o.bidUpMovesPerHour !== undefined && (
-              <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${bidRaiseBadgeClass}`}>
-                <ArrowUpCircle className="h-3 w-3 mr-1" />
-                {format(o.bidUpMovesPerHour, 1)} bid raises/h
-              </Badge>
-            )}
-            {o.flipperAttentionScore !== undefined && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-amber-500/50 text-amber-400">
-                <Search className="h-3 w-3 mr-1" />
-                {format(o.flipperAttentionScore * 100, 0)}% flip attention
-              </Badge>
-            )}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <SignalCell
+              icon={Scale}
+              label="D/S"
+              value={`${format(ratio, 1)}x`}
+              tone={valueSignalTone(ratio, 3, 1.5)}
+            />
+            <SignalCell
+              icon={TrendingUp}
+              label="ROI"
+              value={`${format(o.roi, 1)}x`}
+              tone="muted"
+            />
+            <SignalCell
+              icon={Repeat}
+              label="Steps"
+              value={`${o.buyOrderDoublingSteps}`}
+              tone={inverseSignalTone(o.buyOrderDoublingSteps, 2, 4)}
+            />
+            <SignalCell
+              icon={ShoppingCart}
+              label="Orders"
+              value={
+                o.createdBuyOrdersPerHour !== undefined && o.createdSellOrdersPerHour !== undefined
+                  ? `+${format(o.createdBuyOrdersPerHour, 1)} / +${format(o.createdSellOrdersPerHour, 1)}`
+                  : "-"
+              }
+              sublabel="buy / sell"
+              tone={orderTone}
+            />
+            <SignalCell
+              icon={TrendingUp}
+              label="Exit"
+              value={formatCompact(o.buyOrderUnitsPerHour)}
+              tone={valueSignalTone(o.buyOrderUnitsPerHour ?? 0, 500, 100)}
+            />
+            <SignalCell
+              icon={AlertCircle}
+              label="Pressure"
+              value={`${formatCompact(o.sellPressureUnitsPerHour)}/h`}
+              tone={pressureTone}
+            />
+            <SignalCell
+              icon={ArrowUpCircle}
+              label="Outbid"
+              value={`${format(o.bidUpMovesPerHour, 1)}/h`}
+              tone={valueSignalTone(o.bidUpMovesPerHour ?? 0, 3, 1)}
+            />
+            <SignalCell
+              icon={Search}
+              label="Attention"
+              value={o.flipperAttentionScore !== undefined ? `${format(o.flipperAttentionScore * 100, 0)}%` : "-"}
+              tone={valueSignalTone(o.flipperAttentionScore ?? 0, 0.55, 0.30)}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             {o.risky && (
               o.riskNote ? (
                 <Tooltip>
@@ -307,10 +327,83 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
   )
 }
 
-function strengthBadgeClass(value: number, goodAt: number, okayAt: number) {
-  if (value >= goodAt) return "border-emerald-500/50 text-emerald-400"
-  if (value >= okayAt) return "border-amber-500/50 text-amber-400"
-  return "border-zinc-600 text-zinc-400"
+type SignalTone = "good" | "warn" | "bad" | "muted"
+
+const SIGNAL_TONES: Record<SignalTone, { box: string; icon: string; value: string }> = {
+  good: {
+    box: "border-emerald-500/25 bg-emerald-500/10",
+    icon: "text-emerald-400",
+    value: "text-emerald-300",
+  },
+  warn: {
+    box: "border-amber-500/25 bg-amber-500/10",
+    icon: "text-amber-400",
+    value: "text-amber-300",
+  },
+  bad: {
+    box: "border-red-500/25 bg-red-500/10",
+    icon: "text-red-400",
+    value: "text-red-300",
+  },
+  muted: {
+    box: "border-border/50 bg-border/15",
+    icon: "text-muted-foreground",
+    value: "text-foreground",
+  },
+}
+
+function SignalCell({ icon: Icon, label, value, sublabel, tone }: {
+  icon: any
+  label: string
+  value: string
+  sublabel?: string
+  tone: SignalTone
+}) {
+  const c = SIGNAL_TONES[tone]
+  return (
+    <div className={`min-h-[58px] rounded border px-2 py-2 ${c.box}`}>
+      <div className="mb-1 flex items-center gap-1 text-[10px] font-medium uppercase tracking-normal text-muted-foreground">
+        <Icon className={`h-3 w-3 ${c.icon}`} />
+        <span className="truncate">{label}</span>
+      </div>
+      <div className={`truncate font-mono text-sm font-semibold leading-tight ${c.value}`}>{value}</div>
+      {sublabel ? <div className="truncate text-[10px] leading-tight text-muted-foreground/80">{sublabel}</div> : null}
+    </div>
+  )
+}
+
+function valueSignalTone(value: number, goodAt: number, okayAt: number): SignalTone {
+  if (!Number.isFinite(value) || value <= 0) return "muted"
+  if (value >= goodAt) return "good"
+  if (value >= okayAt) return "warn"
+  return "muted"
+}
+
+function inverseSignalTone(value: number, goodAtOrBelow: number, badAtOrAbove: number): SignalTone {
+  if (!Number.isFinite(value)) return "muted"
+  if (value <= goodAtOrBelow) return "good"
+  if (value >= badAtOrAbove) return "bad"
+  return "warn"
+}
+
+function orderFlowSignalTone(buyOrders?: number, sellOrders?: number): SignalTone {
+  if (buyOrders === undefined || sellOrders === undefined || !Number.isFinite(buyOrders) || !Number.isFinite(sellOrders)) {
+    return "muted"
+  }
+  const ratio = sellOrders / (buyOrders + 0.5)
+  if (ratio <= 0.75) return "good"
+  if (ratio <= 1.5) return "warn"
+  return "bad"
+}
+
+function pressureSignalTone(exitUnits?: number, pressureUnits?: number): SignalTone {
+  if (exitUnits === undefined || pressureUnits === undefined || !Number.isFinite(exitUnits) || !Number.isFinite(pressureUnits)) {
+    return "muted"
+  }
+  const ratio = pressureUnits / (exitUnits + 1)
+  if (ratio <= 0.20) return "good"
+  if (ratio <= 0.50) return "warn"
+  return "bad"
 }
 
 const COLOR_MAP: Record<string, { box: string; title: string; mono: string; border: string }> = {
