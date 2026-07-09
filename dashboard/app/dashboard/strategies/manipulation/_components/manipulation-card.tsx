@@ -43,6 +43,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
   const taxPct = (o.taxRate ?? 0.01125) * 100
 
   const profitColor = o.totalProfit >= 10_000_000 ? "text-emerald-400" : "text-foreground"
+  const bidRaiseBadgeClass = strengthBadgeClass(o.bidUpMovesPerHour ?? 0, 3.0, 1.0)
 
   const handleCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("a, button")) return
@@ -168,7 +169,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
               </Badge>
             )}
             {o.bidUpMovesPerHour !== undefined && (
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-emerald-500/50 text-emerald-400">
+              <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${bidRaiseBadgeClass}`}>
                 <ArrowUpCircle className="h-3 w-3 mr-1" />
                 {format(o.bidUpMovesPerHour, 1)} bid raises/h
               </Badge>
@@ -304,6 +305,12 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
       </CardContent>
     </Card>
   )
+}
+
+function strengthBadgeClass(value: number, goodAt: number, okayAt: number) {
+  if (value >= goodAt) return "border-emerald-500/50 text-emerald-400"
+  if (value >= okayAt) return "border-amber-500/50 text-amber-400"
+  return "border-zinc-600 text-zinc-400"
 }
 
 const COLOR_MAP: Record<string, { box: string; title: string; mono: string; border: string }> = {
