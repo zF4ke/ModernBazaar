@@ -113,6 +113,8 @@ public class ManipulationScorer {
     private static final double DOUBLING_DECAY = 2.5;
     /** At/above this RiskToolkit score the item is already in an atypical/spiked regime → gate. */
     private static final double MAX_RISK_SCORE = 0.85;
+    /** Default cap for current item price, before any inflated manipulation target. */
+    private static final double DEFAULT_MAX_ITEM_PRICE = 1_500_000.0;
     /** manipPenalty = 1 - RISK_PENALTY_WEIGHT * riskScore (so risk 0→1.0, risk 0.5→0.55). */
     private static final double RISK_PENALTY_WEIGHT = 0.9;
     private static final Set<String> CRAFTABLE_ITEM_IDS =
@@ -353,7 +355,7 @@ public class ManipulationScorer {
         final long fMaxCornerSupply = maxCornerSupply != null && maxCornerSupply > 0
                 ? maxCornerSupply : Long.MAX_VALUE;
         final double fMaxItemPrice = maxItemPrice != null && maxItemPrice > 0
-                ? maxItemPrice : Double.POSITIVE_INFINITY;
+                ? maxItemPrice : DEFAULT_MAX_ITEM_PRICE;
         final FormulaVersion fFormulaVersion = FormulaVersion.parse(formulaVersion);
 
         List<ManipulationOpportunityResponseDTO> out = new ArrayList<>(snaps.size());

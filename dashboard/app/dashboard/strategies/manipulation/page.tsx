@@ -24,6 +24,7 @@ const DEFAULT_QUERY: ManipulationQuery = {
   roi: 2,
   taxRate: 0.01125,
   maxCornerSupply: 20000,
+  maxItemPrice: 1_500_000,
   formulaVersion: "balanced",
 }
 
@@ -64,7 +65,7 @@ export default function ManipulationPage() {
           taxRate: parsed.taxRate ?? prev.taxRate,
           minDemandSupplyRatio: parsed.minDemandSupplyRatio,
           minProfit: parsed.minProfit,
-          maxItemPrice: parsed.maxItemPrice,
+          maxItemPrice: parsed.maxItemPrice ?? prev.maxItemPrice,
           maxCornerSupply: parsed.maxCornerSupply === 50000
             ? prev.maxCornerSupply
             : parsed.maxCornerSupply ?? prev.maxCornerSupply,

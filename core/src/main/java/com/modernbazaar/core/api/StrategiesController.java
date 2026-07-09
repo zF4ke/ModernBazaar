@@ -126,7 +126,7 @@ public class StrategiesController {
      * @param minDemandSupplyRatio Hide items whose demand/supply ratio is below this
      * @param minProfit  Hide items whose total expected profit is below this
      * @param maxCornerSupply Hide items requiring more than this many units to corner
-     * @param maxItemPrice Hide items whose current insta-buy price is above this
+     * @param maxItemPrice Hide items whose current insta-buy price is above this (default: 1,500,000)
      * @param formulaVersion Scoring formula: balanced | overclocker | attention (default: balanced)
      * @param sort       Sort field: score | profit | ratio | cornerCost | demand
      * @param page       Page number (0-based)
