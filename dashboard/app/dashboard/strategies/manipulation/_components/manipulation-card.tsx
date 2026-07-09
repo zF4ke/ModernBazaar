@@ -167,6 +167,12 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                 {formatCompact(o.buyOrderUnitsPerHour)} exit / {formatCompact(o.sellPressureUnitsPerHour)} pressure/h
               </Badge>
             )}
+            {o.bidUpMovesPerHour !== undefined && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-emerald-500/50 text-emerald-400">
+                <ArrowUpCircle className="h-3 w-3 mr-1" />
+                {format(o.bidUpMovesPerHour, 1)} bid raises/h
+              </Badge>
+            )}
             {o.risky && (
               o.riskNote ? (
                 <Tooltip>
@@ -221,8 +227,10 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                     ["Created sell orders / hour", o.createdSellOrdersPerHour !== undefined ? format(o.createdSellOrdersPerHour, 1) : "—"],
                     ["Buy-order units / hour", o.buyOrderUnitsPerHour !== undefined ? format(o.buyOrderUnitsPerHour, 0) : "—"],
                     ["Sell pressure units / hour", o.sellPressureUnitsPerHour !== undefined ? format(o.sellPressureUnitsPerHour, 0) : "—"],
+                    ["Top-bid raises / hour", o.bidUpMovesPerHour !== undefined ? format(o.bidUpMovesPerHour, 1) : "—"],
+                    ["Top-bid rise / hour", o.bidUpPriceDeltaPerHour !== undefined ? `${format(o.bidUpPriceDeltaPerHour, 1)} coins` : "—"],
                   ]}
-                  note="Best targets have strong new buy-order depth and very little sell pressure."
+                  note="Best targets have fresh buy-order depth, active top-bid raises, and very little sell pressure."
                 />
                 <PlanStep
                   color="red" icon={ShoppingCart} title="Step 2: Corner the market"

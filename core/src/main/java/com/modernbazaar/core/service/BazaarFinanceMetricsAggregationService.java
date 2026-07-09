@@ -89,6 +89,8 @@ public class BazaarFinanceMetricsAggregationService {
         m.setAvgAddedItemsSellOrders(avg(last, BazaarItemHourSummary::getAddedItemsSellOrders));
         m.setAvgInstaBoughtItems(avg(last, BazaarItemHourSummary::getInstaBoughtItems));
         m.setAvgInstaSoldItems(avg(last, BazaarItemHourSummary::getInstaSoldItems));
+        m.setAvgBidUpMoves(avg(last, BazaarItemHourSummary::getBidUpMoves));
+        m.setAvgBidUpPriceDelta(avg(last, BazaarItemHourSummary::getBidUpPriceDelta));
     }
 
     private double avg(List<BazaarItemHourSummary> list, ToDouble<BazaarItemHourSummary> f) {

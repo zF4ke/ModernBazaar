@@ -85,6 +85,8 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
                  hs.added_items_sell_orders,
                  hs.insta_sold_items,
                  hs.insta_bought_items,
+                 hs.bid_up_moves,
+                 hs.bid_up_price_delta,
                  row_number() over (partition by hs.product_id order by hs.hour_start desc) as rn
           from bazaar_hour_summary hs
           where hs.product_id in (:ids)
@@ -107,7 +109,9 @@ public interface BazaarItemHourSummaryRepository extends JpaRepository<BazaarIte
                added_items_buy_orders,
                added_items_sell_orders,
                insta_sold_items,
-               insta_bought_items
+               insta_bought_items,
+               bid_up_moves,
+               bid_up_price_delta
         from ranked
         where rn <= :window
         """, nativeQuery = true)

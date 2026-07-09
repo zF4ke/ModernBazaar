@@ -63,6 +63,11 @@ public class BazaarItemHourSummary {
     private long   instaSoldItems;
     private long   instaBoughtItems;
 
+    /** count of times the highest buy order moved upward in the hour */
+    private long   bidUpMoves;
+    /** sum of positive highest-buy-order price movement in the hour */
+    private double bidUpPriceDelta;
+
     /* link back to minute points for debugging (lazy) */
     @OneToMany(mappedBy="hourSummary", fetch=FetchType.LAZY)
     private List<BazaarItemHourPoint> points;

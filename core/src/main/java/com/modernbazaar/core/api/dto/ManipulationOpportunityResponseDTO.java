@@ -38,6 +38,8 @@ public record ManipulationOpportunityResponseDTO(
         Double  createdSellOrdersPerHour, // new sell orders/hour (less = easier to keep cornered)
         Double  buyOrderUnitsPerHour,     // new buy-order units/hour available for exit
         Double  sellPressureUnitsPerHour, // new sell-order units + insta-sold units/hour fighting the play
+        Double  bidUpMovesPerHour,        // times/hour the top buy order moved upward
+        Double  bidUpPriceDeltaPerHour,   // coins/hour of positive top-buy-order movement
         long    sellVolume,            // total standing sell units (low = easier to control)
         long    buyVolume,             // total standing buy units (high = stronger demand depth)
 

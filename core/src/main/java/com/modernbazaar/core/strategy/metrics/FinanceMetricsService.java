@@ -122,7 +122,9 @@ public class FinanceMetricsService {
                 m.getAvgAddedItemsBuyOrders(),
                 m.getAvgAddedItemsSellOrders(),
                 m.getAvgInstaBoughtItems(),
-                m.getAvgInstaSoldItems()
+                m.getAvgInstaSoldItems(),
+                m.getAvgBidUpMoves(),
+                m.getAvgBidUpPriceDelta()
         );
     }
 
@@ -144,6 +146,8 @@ public class FinanceMetricsService {
         double avgAddedSell   = last.stream().mapToDouble(BazaarItemHourSummary::getAddedItemsSellOrders).average().orElse(0.0);
         double avgInstaBought = last.stream().mapToDouble(BazaarItemHourSummary::getInstaBoughtItems).average().orElse(0.0);
         double avgInstaSold   = last.stream().mapToDouble(BazaarItemHourSummary::getInstaSoldItems).average().orElse(0.0);
+        double avgBidUpMoves  = last.stream().mapToDouble(BazaarItemHourSummary::getBidUpMoves).average().orElse(0.0);
+        double avgBidUpDelta  = last.stream().mapToDouble(BazaarItemHourSummary::getBidUpPriceDelta).average().orElse(0.0);
         return new FinanceAverages(
                 productId,
                 n,
@@ -162,7 +166,9 @@ public class FinanceMetricsService {
                 avgAddedBuy,
                 avgAddedSell,
                 avgInstaBought,
-                avgInstaSold
+                avgInstaSold,
+                avgBidUpMoves,
+                avgBidUpDelta
         );
     }
 }

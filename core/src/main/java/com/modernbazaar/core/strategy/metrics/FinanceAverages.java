@@ -26,5 +26,8 @@ public record FinanceAverages (
         double avgAddedItemsSellOrders,
         // fluxo de insta-trades
         double avgInstaBoughtItems,
-        double avgInstaSoldItems
+        double avgInstaSoldItems,
+        // top-bid chase behavior
+        double avgBidUpMoves,
+        double avgBidUpPriceDelta
 ) {}

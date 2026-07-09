@@ -99,6 +99,8 @@ public class BazaarHourlyProcessingService {
         long prevBuyVol = 0, prevSellVol = 0;
         long prevBuyWeek = 0, prevSellWeek = 0; // para calcular insta‑flows (deltas positivos)
         long instaBoughtItems = 0, instaSoldItems = 0; // totais na hora
+        long bidUpMoves = 0;
+        double bidUpPriceDelta = 0.0;
 
         long processed = 0;
 
@@ -123,7 +125,6 @@ public class BazaarHourlyProcessingService {
 
                     kept.add(s);
                 } else {
-                    prevSnap = s;
                     // track min/max
                     minBuy = Math.min(minBuy, s.getInstantBuyPrice());
                     maxBuy = Math.max(maxBuy, s.getInstantBuyPrice());
@@ -150,12 +151,19 @@ public class BazaarHourlyProcessingService {
                     if (dBuyWeek > 0) instaSoldItems += dBuyWeek;     // bazaar comprou → players insta‑venderam
                     if (dSellWeek > 0) instaBoughtItems += dSellWeek; // bazaar vendeu → players insta‑compraram
 
+                    double bidDelta = s.getInstantSellPrice() - prevSnap.getInstantSellPrice();
+                    if (Double.isFinite(bidDelta) && bidDelta > 0) {
+                        bidUpMoves++;
+                        bidUpPriceDelta += bidDelta;
+                    }
+
                     prevActiveBuy = s.getActiveBuyOrdersCount();
                     prevActiveSell = s.getActiveSellOrdersCount();
                     prevBuyVol = s.getBuyVolume();
                     prevSellVol = s.getSellVolume();
                     prevBuyWeek = s.getBuyMovingWeek();
                     prevSellWeek = s.getSellMovingWeek();
+                    prevSnap = s;
 
                     // decide if we should keep this snapshot
                     if (shouldKeep(prevKept, s)) {
@@ -201,6 +209,8 @@ public class BazaarHourlyProcessingService {
             // totais de insta‑trades na hora (aprox. via movingWeek)
             sum.setInstaBoughtItems(instaBoughtItems);
             sum.setInstaSoldItems(instaSoldItems);
+            sum.setBidUpMoves(bidUpMoves);
+            sum.setBidUpPriceDelta(bidUpPriceDelta);
 
             summaryRepo.save(sum);
         }

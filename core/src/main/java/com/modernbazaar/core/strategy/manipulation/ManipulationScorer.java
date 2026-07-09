@@ -85,6 +85,8 @@ public class ManipulationScorer {
     private static final double MAX_SELL_THROUGH_HOURS = 24.0;
     /** Created buy orders/hour where the buy-interest signal reaches 0.5. */
     private static final double CREATED_BUY_ORDER_HALF_SAT = 3.0;
+    /** Top-bid upward moves/hour where bidder-chase confidence reaches 0.5. */
+    private static final double BID_UP_MOVE_HALF_SAT = 3.0;
     /** Created sell orders/hour where the low-sell-pressure signal falls to 0.5. */
     private static final double CREATED_SELL_ORDER_HALF_SAT = 2.0;
     /** Sell-order creation is a warning, but can be manageable when exit pressure stays low. */
@@ -149,6 +151,8 @@ public class ManipulationScorer {
             double buyOrderUnitsPerHour,
             double sellOrderUnitsPerHour,
             double instaSoldUnitsPerHour,
+            double bidUpMovesPerHour,
+            double bidUpPriceDeltaPerHour,
             int activeSellOrders,
             int activeBuyOrders,
             long sellVolume,
@@ -219,7 +223,7 @@ public class ManipulationScorer {
 
         double score = scoreOf(totalProfit, supplyUnits, demand, ratio, doublings, risk, sellThroughHours,
                 in.createdBuyOrdersPerHour, in.createdSellOrdersPerHour, exitDemand, sellPressure,
-                in.activeSellOrders, in.activeBuyOrders, in.sellVolume, in.buyVolume);
+                in.bidUpMovesPerHour, in.activeSellOrders, in.activeBuyOrders, in.sellVolume, in.buyVolume);
 
         return new Plan(avgBuyCost, minResell, targetBuyOrder, suggestedSellOrder,
                 doublings, netProfitPerUnit, totalProfit, ratio, sellThroughHours, score);
@@ -236,6 +240,7 @@ public class ManipulationScorer {
                                   double createdSellOrdersPerHour,
                                   double exitDemandUnitsPerHour,
                                   double sellPressureUnitsPerHour,
+                                  double bidUpMovesPerHour,
                                   int activeSellOrders,
                                   int activeBuyOrders,
                                   long sellVolume,
@@ -260,7 +265,7 @@ public class ManipulationScorer {
                 ? SELL_THROUGH_HALF_SAT_HOURS / (SELL_THROUGH_HALF_SAT_HOURS + Math.max(0.0, sellThroughHours))
                 : 0.0;
         double orderFlowQuality = orderFlowQuality(createdBuyOrdersPerHour, createdSellOrdersPerHour,
-                exitDemandUnitsPerHour, sellPressureUnitsPerHour);
+                exitDemandUnitsPerHour, sellPressureUnitsPerHour, bidUpMovesPerHour);
         double marketControlQuality = marketControlQuality(activeSellOrders, activeBuyOrders, sellVolume, buyVolume);
 
         double realism = Math.exp(-doublings / DOUBLING_DECAY);            // 0..1
@@ -335,6 +340,8 @@ public class ManipulationScorer {
             double buyOrderUnitsPerHour = nonNeg(a.avgAddedItemsBuyOrders());
             double sellOrderUnitsPerHour = nonNeg(a.avgAddedItemsSellOrders());
             double sellPressureUnitsPerHour = sellOrderUnitsPerHour + nonNeg(a.avgInstaSoldItems());
+            double bidUpMovesPerHour = nonNeg(a.avgBidUpMoves());
+            double bidUpPriceDeltaPerHour = nonNeg(a.avgBidUpPriceDelta());
 
             // Risk is computed first so the score can penalise/gate already-manipulated items.
             RiskAssessment ra = riskToolkit.assessPriceDeviation(
@@ -358,6 +365,8 @@ public class ManipulationScorer {
                     buyOrderUnitsPerHour,
                     sellOrderUnitsPerHour,
                     a.avgInstaSoldItems(),
+                    bidUpMovesPerHour,
+                    bidUpPriceDeltaPerHour,
                     s.getActiveSellOrdersCount(),
                     s.getActiveBuyOrdersCount(),
                     s.getSellVolume(),
@@ -394,6 +403,8 @@ public class ManipulationScorer {
                     createdSellOrders,
                     buyOrderUnitsPerHour,
                     sellPressureUnitsPerHour,
+                    bidUpMovesPerHour,
+                    bidUpPriceDeltaPerHour,
                     s.getSellVolume(),
                     s.getBuyVolume(),
                     p.netProfitPerUnit(),
@@ -508,10 +519,12 @@ public class ManipulationScorer {
     private static double weeklyPerHour(long movingWeek) { return movingWeek > 0 ? movingWeek / 168.0 : 0.0; }
 
     private static double orderFlowQuality(double createdBuyOrdersPerHour, double createdSellOrdersPerHour,
-                                           double exitDemandUnitsPerHour, double sellPressureUnitsPerHour) {
+                                           double exitDemandUnitsPerHour, double sellPressureUnitsPerHour,
+                                           double bidUpMovesPerHour) {
         if (!Double.isFinite(createdBuyOrdersPerHour) || !Double.isFinite(createdSellOrdersPerHour)
                 || createdBuyOrdersPerHour < 0 || createdSellOrdersPerHour < 0
-                || !Double.isFinite(exitDemandUnitsPerHour) || !Double.isFinite(sellPressureUnitsPerHour)) {
+                || !Double.isFinite(exitDemandUnitsPerHour) || !Double.isFinite(sellPressureUnitsPerHour)
+                || !Double.isFinite(bidUpMovesPerHour)) {
             return 0.65;
         }
 
@@ -519,7 +532,9 @@ public class ManipulationScorer {
         double sellOrders = Math.max(0.0, createdSellOrdersPerHour);
         double exitDepth = Math.max(0.0, exitDemandUnitsPerHour);
         double sellPressure = Math.max(0.0, sellPressureUnitsPerHour);
+        double bidUpMoves = Math.max(0.0, bidUpMovesPerHour);
         double buyHeat = buyOrders / (buyOrders + CREATED_BUY_ORDER_HALF_SAT);
+        double bidChase = bidUpMoves / (bidUpMoves + BID_UP_MOVE_HALF_SAT);
         double sellQuiet = CREATED_SELL_ORDER_HALF_SAT / (CREATED_SELL_ORDER_HALF_SAT + sellOrders);
         double buySideShare = (buyOrders + 0.5) / (buyOrders + sellOrders + 1.0);
         double pressureQuiet = exitDepth / (exitDepth + sellPressure + 1.0);
@@ -529,12 +544,14 @@ public class ManipulationScorer {
         double sellPressureQuiet = ratioQuiet(sellPressureRatio, SELL_PRESSURE_RATIO_HALF_SAT);
 
         double blended = 0.30 * buyHeat
-                + 0.20 * buySideShare
+                + 0.25 * bidChase
+                + 0.15 * buySideShare
                 + 0.15 * sellQuiet
                 + 0.25 * pressureQuiet
-                + 0.10 * sellCreationDominanceQuiet;
+                + 0.05 * sellCreationDominanceQuiet;
         double base = 0.05 + 0.95 * clamp(blended, 0.0, 1.0);
         return base
+                * (0.35 + 0.65 * bidChase)
                 * (0.55 + 0.45 * sellCreationDominanceQuiet)
                 * (0.10 + 0.90 * sellPressureQuiet);
     }

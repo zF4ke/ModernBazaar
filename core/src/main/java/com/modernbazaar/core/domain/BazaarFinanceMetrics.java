@@ -52,5 +52,8 @@ public class BazaarFinanceMetrics {
     // fluxo insta-trades
     private double avgInstaBoughtItems;
     private double avgInstaSoldItems;
-}
 
+    // bid-chase behavior: highest buy order moving upward
+    private double avgBidUpMoves;
+    private double avgBidUpPriceDelta;
+}

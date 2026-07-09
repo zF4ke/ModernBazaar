@@ -85,6 +85,8 @@ export interface ManipulationOpportunity {
   createdSellOrdersPerHour?: number
   buyOrderUnitsPerHour?: number
   sellPressureUnitsPerHour?: number
+  bidUpMovesPerHour?: number
+  bidUpPriceDeltaPerHour?: number
   sellVolume: number
   buyVolume: number
   // economics
