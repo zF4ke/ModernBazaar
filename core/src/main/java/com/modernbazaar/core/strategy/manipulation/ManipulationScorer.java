@@ -16,6 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,10 +43,13 @@ import java.util.stream.Collectors;
  *
  * Score (transparent, profit discounted by how realistic the play actually is)
  * - profitScore    = log10(totalProfit + 1)                  — the prize, compressed
- * - demandQuality  = throughput(demand) * (0.5 + 0.5*imbalance) — can you actually offload?
+ * - demandQuality  = throughput(demand) * (0.35 + 0.65*imbalance) — are there real buyers?
+ * - sellThrough    = halfLife / (halfLife + hoursToSell)          — how quickly can you exit?
+ * - orderFlow      = high created buy orders + low created sell orders
+ * - marketControl  = low sell-side depth + high buy-side depth
  * - realism        = exp(-doublings / DECAY)                 — is the bid-climb believable?
  * - manipPenalty   = 1 - W*riskScore                         — is it already manipulated?
- * - score          = profitScore * demandQuality * realism * manipPenalty
+ * - score          = profitScore * marketControl * demandQuality * sellThrough * orderFlow * realism * manipPenalty
  *
  * The factors are multiplicative so any single fatal flaw collapses the score: a fat
  * paper profit on an item with no real buyers, an absurd price-climb, or an already
@@ -54,11 +61,10 @@ import java.util.stream.Collectors;
  * {@link #MAX_RISK_SCORE} (already manipulated), or sell-through beyond
  * {@link #MAX_SELL_THROUGH_HOURS} (capital tied up too long).
  *
- * Not yet modelled (needs data we don't currently have): NPC-shop-buyable items
- * (infinite supply at a fixed price → uncornerable) and craftable/mergeable items
- * (an alternative supply that caps the price). See {@code npcSellPrice} on
- * SkyblockItem — it's a sell-to-NPC price, NOT a shop-buyable flag, so it can't
- * stand in for either. Tracked as a follow-up.
+ * Craftable/mergeable items are excluded from manipulation results because an
+ * alternative supply path caps the manipulated price. NPC-shop-buyable items
+ * should be handled the same way once an NPC buy-price/source list is available;
+ * {@code npcSellPrice} is sell-to-NPC, not buy-from-NPC, so it cannot stand in.
  */
 @Component
 public class ManipulationScorer {
@@ -72,8 +78,22 @@ public class ManipulationScorer {
     private static final double MIN_DEMAND_PER_HOUR = 1.0;
     /** Demand at which the throughput factor reaches 0.5 (saturating, never hard-capped). */
     private static final double DEMAND_HALF_SAT = 10.0;
-    /** demand/supply imbalance that counts as "fully supply-starved" for the bonus. */
-    private static final double RATIO_REFERENCE = 2.0;
+    /** Demand/supply ratio half-saturation point; higher ratios remain meaningfully better. */
+    private static final double RATIO_HALF_SAT = 3.0;
+    /** Sell-through time half-saturation point; faster exits should rank much higher. */
+    private static final double SELL_THROUGH_HALF_SAT_HOURS = 6.0;
+    /** Created buy orders/hour where the buy-interest signal reaches 0.5. */
+    private static final double CREATED_BUY_ORDER_HALF_SAT = 3.0;
+    /** Created sell orders/hour where the low-sell-pressure signal falls to 0.5. */
+    private static final double CREATED_SELL_ORDER_HALF_SAT = 2.0;
+    /** Standing sell orders where the easy-control signal falls to 0.5. */
+    private static final double ACTIVE_SELL_ORDER_HALF_SAT = 60.0;
+    /** Standing buy orders where the buyer-depth signal reaches 0.5. */
+    private static final double ACTIVE_BUY_ORDER_HALF_SAT = 120.0;
+    /** Sell volume where the easy-control signal falls to 0.5. */
+    private static final double SELL_VOLUME_HALF_SAT = 50_000.0;
+    /** Buy volume where the buyer-depth signal reaches 0.5. */
+    private static final double BUY_VOLUME_HALF_SAT = 50_000.0;
     /** Beyond this many bid-doublings the climb to the inflated buy order is fantasy → gate. */
     private static final int MAX_DOUBLINGS = 6;
     /** realism = exp(-doublings / DOUBLING_DECAY): 0 doublings→1, ~2.5→0.37, 6→0.09. */
@@ -84,6 +104,10 @@ public class ManipulationScorer {
     private static final double RISK_PENALTY_WEIGHT = 0.9;
     /** Don't surface plays that take longer than this to fully sell through at current demand. */
     private static final double MAX_SELL_THROUGH_HOURS = 72.0;
+    private static final Set<String> CRAFTABLE_ITEM_IDS =
+            loadIdResource("/manipulation/craftable-item-ids.txt");
+    private static final Set<String> NPC_BUYABLE_ITEM_IDS =
+            loadIdResource("/manipulation/npc-buyable-item-ids.txt");
 
     private final RiskToolkit riskToolkit;
     private final BazaarProductSnapshotRepository snapRepo;
@@ -108,13 +132,19 @@ public class ManipulationScorer {
     public record Inputs(
             double instantBuyPrice,    // lowest sell order (cost to insta-buy a unit)
             double instantSellPrice,   // highest buy order (current top bid)
-            long   cornerSupplyUnits,  // visible standing sell units
-            double cornerCost,         // coins to insta-buy all sell offers
+            long   cornerSupplyUnits,  // estimated standing sell units to corner
+            double cornerCost,         // estimated coins to insta-buy all sell offers
             double demandPerHour,      // avg units insta-bought / hour
             double supplyPerHour,      // avg units insta-sold / hour
             double taxRate,            // selling tax, e.g. 0.01125
             double roi,                // buy-order inflation vs minResell (>= 1)
             double sellWallFactor,     // sell order = targetBuyOrder * factor (> 1)
+            double createdBuyOrdersPerHour,
+            double createdSellOrdersPerHour,
+            int activeSellOrders,
+            int activeBuyOrders,
+            long sellVolume,
+            long buyVolume,
             double riskScore           // RiskToolkit 0..1: how already-manipulated/atypical the price is
     ) {}
 
@@ -177,7 +207,9 @@ public class ManipulationScorer {
         Double sellThroughHours = demand > 0 ? (supplyUnits / demand) : null;
         double risk = clamp(in.riskScore, 0.0, 1.0);
 
-        double score = scoreOf(totalProfit, demand, ratio, doublings, risk, sellThroughHours);
+        double score = scoreOf(totalProfit, demand, ratio, doublings, risk, sellThroughHours,
+                in.createdBuyOrdersPerHour, in.createdSellOrdersPerHour,
+                in.activeSellOrders, in.activeBuyOrders, in.sellVolume, in.buyVolume);
 
         return new Plan(avgBuyCost, minResell, targetBuyOrder, suggestedSellOrder,
                 doublings, netProfitPerUnit, totalProfit, ratio, sellThroughHours, score);
@@ -189,7 +221,13 @@ public class ManipulationScorer {
      * survives when there are real buyers, a believable price-climb and a non-spiked price.
      */
     private static double scoreOf(double totalProfit, double demand, double ratio,
-                                  int doublings, double riskScore, Double sellThroughHours) {
+                                  int doublings, double riskScore, Double sellThroughHours,
+                                  double createdBuyOrdersPerHour,
+                                  double createdSellOrdersPerHour,
+                                  int activeSellOrders,
+                                  int activeBuyOrders,
+                                  long sellVolume,
+                                  long buyVolume) {
         // Hard gates — these are the items the old formula wrongly ranked #1.
         if (totalProfit <= 0) return 0.0;
         if (demand < MIN_DEMAND_PER_HOUR) return 0.0;                       // no real buyers to dump onto
@@ -201,13 +239,19 @@ public class ManipulationScorer {
 
         // Demand quality: absolute throughput dominates, supply imbalance modulates it.
         double throughput = demand / (demand + DEMAND_HALF_SAT);            // 0..1
-        double imbalance  = clamp(ratio / RATIO_REFERENCE, 0.0, 1.0);       // 0..1
-        double demandQuality = throughput * (0.5 + 0.5 * imbalance);        // 0..1
+        double imbalance = ratio / (ratio + RATIO_HALF_SAT);                // 0..1, gradual
+        double demandQuality = throughput * (0.35 + 0.65 * imbalance);      // 0..1
+        double sellThroughQuality = sellThroughHours != null
+                ? SELL_THROUGH_HALF_SAT_HOURS / (SELL_THROUGH_HALF_SAT_HOURS + Math.max(0.0, sellThroughHours))
+                : 0.0;
+        double orderFlowQuality = orderFlowQuality(createdBuyOrdersPerHour, createdSellOrdersPerHour);
+        double marketControlQuality = marketControlQuality(activeSellOrders, activeBuyOrders, sellVolume, buyVolume);
 
         double realism = Math.exp(-doublings / DOUBLING_DECAY);            // 0..1
         double manipPenalty = clamp(1.0 - RISK_PENALTY_WEIGHT * riskScore, 0.0, 1.0); // 0..1
 
-        double s = profitScore * demandQuality * realism * manipPenalty;
+        double s = profitScore * marketControlQuality * demandQuality * sellThroughQuality
+                * orderFlowQuality * realism * manipPenalty;
         return Double.isFinite(s) && s > 0 ? s : 0.0;
     }
 
@@ -244,15 +288,21 @@ public class ManipulationScorer {
         List<ManipulationOpportunityResponseDTO> out = new ArrayList<>(snaps.size());
         for (BazaarItemSnapshot s : snaps) {
             String id = s.getProductId();
+            if (isExcludedAlternativeSupply(id)) continue;
+
             SellSideAggregateRow agg = sellAgg.get(id);
             if (agg == null || agg.getUnits() <= 0 || agg.getCost() <= 0) continue; // nothing to corner
+            CornerEstimate corner = estimateCorner(agg, s);
+            if (corner.supplyUnits() <= 0 || corner.cost() <= 0) continue;
 
-            // Budget gate: we must be able to buy the whole visible market.
-            if (agg.getCost() > fBudget) continue;
+            // Budget gate: we must be able to buy the estimated full sell side, not only visible rows.
+            if (corner.cost() > fBudget) continue;
 
             FinanceAverages a = avgs48.get(id);
-            double demand = a != null ? a.avgInstaBoughtItems() : 0.0;
-            double supply = a != null ? a.avgInstaSoldItems() : 0.0;
+            double demand = a != null ? a.avgInstaBoughtItems() : weeklyPerHour(s.getSellMovingWeek());
+            double supply = a != null ? a.avgInstaSoldItems() : weeklyPerHour(s.getBuyMovingWeek());
+            Double createdBuyOrders = a != null ? a.avgCreatedBuyOrders() : null;
+            Double createdSellOrders = a != null ? a.avgCreatedSellOrders() : null;
 
             // Risk is computed first so the score can penalise/gate already-manipulated items.
             RiskAssessment ra = riskToolkit.assessPriceDeviation(
@@ -264,13 +314,19 @@ public class ManipulationScorer {
             Inputs in = new Inputs(
                     s.getInstantBuyPrice(),
                     s.getInstantSellPrice(),
-                    agg.getUnits(),
-                    agg.getCost(),
+                    corner.supplyUnits(),
+                    corner.cost(),
                     demand,
                     supply,
                     effTax,
                     effRoi,
                     effWall,
+                    createdBuyOrders != null ? createdBuyOrders : -1.0,
+                    createdSellOrders != null ? createdSellOrders : -1.0,
+                    s.getActiveSellOrdersCount(),
+                    s.getActiveBuyOrdersCount(),
+                    s.getSellVolume(),
+                    s.getBuyVolume(),
                     ra.riskScore());
             Plan p = plan(in);
             if (p.score() <= 0.0) continue;
@@ -284,8 +340,8 @@ public class ManipulationScorer {
                     s.getInstantBuyPrice(),
                     s.getInstantSellPrice(),
                     s.getInstantSellPrice(),
-                    agg.getUnits(),
-                    agg.getCost(),
+                    corner.supplyUnits(),
+                    corner.cost(),
                     p.avgBuyCostPerUnit(),
                     effTax,
                     p.minResellPrice(),
@@ -298,6 +354,10 @@ public class ManipulationScorer {
                     p.demandSupplyRatio(),
                     s.getActiveSellOrdersCount(),
                     s.getActiveBuyOrdersCount(),
+                    createdBuyOrders,
+                    createdSellOrders,
+                    s.getSellVolume(),
+                    s.getBuyVolume(),
                     p.netProfitPerUnit(),
                     p.totalProfit(),
                     p.estimatedSellThroughHours(),
@@ -316,8 +376,107 @@ public class ManipulationScorer {
                 .collect(Collectors.toMap(BazaarItem::getProductId, bi -> bi.getSkyblockItem().getName()));
     }
 
+    private static boolean isExcludedAlternativeSupply(String productId) {
+        if (productId == null || productId.isBlank()) return false;
+        String normalized = normalizeId(productId);
+        return CRAFTABLE_ITEM_IDS.contains(normalized) || NPC_BUYABLE_ITEM_IDS.contains(normalized);
+    }
+
+    private static Set<String> loadIdResource(String path) {
+        try (InputStream in = ManipulationScorer.class.getResourceAsStream(path)) {
+            if (in == null) return Set.of();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                return reader.lines()
+                        .map(String::trim)
+                        .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                        .map(ManipulationScorer::normalizeId)
+                        .collect(Collectors.toUnmodifiableSet());
+            }
+        } catch (Exception ignored) {
+            return Set.of();
+        }
+    }
+
+    private static String normalizeId(String id) {
+        return id.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]+", "_").replaceAll("^_+|_+$", "");
+    }
+
+    private record CornerEstimate(long supplyUnits, double cost) {}
+
+    private static CornerEstimate estimateCorner(SellSideAggregateRow agg, BazaarItemSnapshot s) {
+        long visibleUnits = Math.max(0L, agg.getUnits());
+        double visibleCost = nonNeg(agg.getCost());
+        if (visibleUnits <= 0 || visibleCost <= 0) {
+            return new CornerEstimate(0L, 0.0);
+        }
+
+        long visibleOrders = Math.max(0L, agg.getVisibleOrders());
+        long totalSellOrders = Math.max(0, s.getActiveSellOrdersCount());
+        long missingOrders = totalSellOrders > visibleOrders ? totalSellOrders - visibleOrders : 0L;
+
+        double estimatedUnits = visibleUnits;
+        if (visibleOrders > 0 && missingOrders > 0) {
+            double visibleUnitsPerOrder = visibleUnits / (double) visibleOrders;
+            estimatedUnits = Math.max(estimatedUnits, visibleUnits + missingOrders * visibleUnitsPerOrder);
+        }
+        if (s.getSellVolume() > visibleUnits) {
+            estimatedUnits = Math.max(estimatedUnits, s.getSellVolume());
+        }
+
+        double avgVisiblePrice = visibleCost / visibleUnits;
+        double worstVisiblePrice = nonNeg(agg.getMaxVisiblePrice());
+        double hiddenUnitPrice = Math.max(avgVisiblePrice, worstVisiblePrice);
+        double hiddenOrderRatio = visibleOrders > 0
+                ? Math.min(1.0, missingOrders / (double) visibleOrders)
+                : (missingOrders > 0 ? 1.0 : 0.0);
+        hiddenUnitPrice *= 1.0 + 0.25 * hiddenOrderRatio;
+
+        double hiddenUnits = Math.max(0.0, estimatedUnits - visibleUnits);
+        double estimatedCost = visibleCost + hiddenUnits * hiddenUnitPrice;
+        return new CornerEstimate((long) Math.ceil(estimatedUnits), estimatedCost);
+    }
+
     private static double nonNeg(double v) { return (Double.isFinite(v) && v > 0) ? v : 0.0; }
     private static double clamp(double x, double lo, double hi) { return Math.max(lo, Math.min(hi, x)); }
     private static double safeLog10(double x) { return Math.log10(Math.max(1e-9, x)); }
     private static double log2(double x) { return Math.log(x) / Math.log(2.0); }
+    private static double weeklyPerHour(long movingWeek) { return movingWeek > 0 ? movingWeek / 168.0 : 0.0; }
+
+    private static double orderFlowQuality(double createdBuyOrdersPerHour, double createdSellOrdersPerHour) {
+        if (!Double.isFinite(createdBuyOrdersPerHour) || !Double.isFinite(createdSellOrdersPerHour)
+                || createdBuyOrdersPerHour < 0 || createdSellOrdersPerHour < 0) {
+            return 0.65;
+        }
+
+        double buyOrders = Math.max(0.0, createdBuyOrdersPerHour);
+        double sellOrders = Math.max(0.0, createdSellOrdersPerHour);
+        double buyHeat = buyOrders / (buyOrders + CREATED_BUY_ORDER_HALF_SAT);
+        double sellQuiet = CREATED_SELL_ORDER_HALF_SAT / (CREATED_SELL_ORDER_HALF_SAT + sellOrders);
+        double buySideShare = (buyOrders + 0.5) / (buyOrders + sellOrders + 1.0);
+        double blended = 0.45 * buyHeat + 0.35 * sellQuiet + 0.20 * buySideShare;
+        return 0.10 + 0.90 * clamp(blended, 0.0, 1.0);
+    }
+
+    private static double marketControlQuality(int activeSellOrders, int activeBuyOrders,
+                                               long sellVolume, long buyVolume) {
+        double sellOrders = Math.max(0.0, activeSellOrders);
+        double buyOrders = Math.max(0.0, activeBuyOrders);
+        double sellUnits = Math.max(0.0, sellVolume);
+        double buyUnits = Math.max(0.0, buyVolume);
+
+        double sellOrderThinness = ACTIVE_SELL_ORDER_HALF_SAT / (ACTIVE_SELL_ORDER_HALF_SAT + sellOrders);
+        double sellVolumeThinness = SELL_VOLUME_HALF_SAT / (SELL_VOLUME_HALF_SAT + sellUnits);
+        double buyOrderDepth = buyOrders / (buyOrders + ACTIVE_BUY_ORDER_HALF_SAT);
+        double buyVolumeDepth = buyUnits / (buyUnits + BUY_VOLUME_HALF_SAT);
+        double orderImbalance = (buyOrders + 1.0) / (buyOrders + sellOrders + 2.0);
+        double volumeImbalance = (buyUnits + 1.0) / (buyUnits + sellUnits + 2.0);
+
+        double blended = 0.25 * sellOrderThinness
+                + 0.25 * sellVolumeThinness
+                + 0.20 * buyOrderDepth
+                + 0.15 * buyVolumeDepth
+                + 0.10 * orderImbalance
+                + 0.05 * volumeImbalance;
+        return 0.15 + 0.85 * clamp(blended, 0.0, 1.0);
+    }
 }

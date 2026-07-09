@@ -1,0 +1,132 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "max_parallel_workers_per_gather=1"
+      - "-c"
+      - "max_worker_processes=4"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bazaar}
+      POSTGRES_USER: ${POSTGRES_USER:-bazaar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bazaar}"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - internal
+
+  core:
+    build:
+      context: ..
+      dockerfile: infra/docker/core.Dockerfile
+    image: modern-bazaar/core:prod
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-bazaar}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 6
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 2
+      POSTGRES_USER: ${POSTGRES_USER:-bazaar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      AUTH_ISSUER_URI: ${AUTH_ISSUER_URI:?required}
+      AUTH_JWKS_URI: ${AUTH_JWKS_URI:?required}
+      AUTH_AUDIENCE: ${AUTH_AUDIENCE:?required}
+      AUTH_MANAGEMENT_CLIENT_ID: ${AUTH_MANAGEMENT_CLIENT_ID:-}
+      AUTH_MANAGEMENT_CLIENT_SECRET: ${AUTH_MANAGEMENT_CLIENT_SECRET:-}
+      AUTH_MOCK_ENABLED: ${AUTH_MOCK_ENABLED:-false}
+      ADMIN_USER_SUBS: ${ADMIN_USER_SUBS:-}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?required}
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_SUCCESS_URL: ${STRIPE_SUCCESS_URL:-}
+      STRIPE_CANCEL_URL: ${STRIPE_CANCEL_URL:-}
+      STRIPE_PORTAL_RETURN_URL: ${STRIPE_PORTAL_RETURN_URL:-}
+      STRIPE_PRICE_FLIPPER: ${STRIPE_PRICE_FLIPPER:-}
+      STRIPE_PRICE_ELITE: ${STRIPE_PRICE_ELITE:-}
+      SKYBLOCK_BAZAAR_POLL_ENABLED: ${SKYBLOCK_BAZAAR_POLL_ENABLED:-true}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep UP || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - core-heapdumps:/app/heapdumps
+      - core-logs:/app/logs
+    networks:
+      - internal
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - internal
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?required}
+      GF_SERVER_ROOT_URL: https://grafana.modernbazaar.zf4ke.me
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - internal
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-bazaar}:${POSTGRES_PASSWORD:?required}@db:5432/${POSTGRES_DB:-bazaar}?sslmode=disable
+    depends_on:
+      - db
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      PROMETHEUS_BASIC_AUTH: ${PROMETHEUS_BASIC_AUTH:?required}
+    depends_on:
+      - core
+      - grafana
+      - prometheus
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - internal
+
+volumes:
+  dbdata:
+  grafana-data:
+  prometheus-data:
+  core-heapdumps:
+  core-logs:
+  caddy-data:
+  caddy-config:
+
+networks:
+  internal:
+    driver: bridge

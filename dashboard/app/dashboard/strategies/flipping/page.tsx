@@ -203,7 +203,7 @@ export default function FlippingPage() {
 
         // Set budget input to match the saved budget
         if (parsed.budget) {
-          setBudgetInput(new Intl.NumberFormat().format(parsed.budget))
+          setBudgetInput(new Intl.NumberFormat("en-US").format(parsed.budget))
         } else {
           setBudgetInput("")
         }
@@ -264,7 +264,7 @@ export default function FlippingPage() {
   useEffect(() => {
     if (!isLoadingSetup) {
       if (query.budget) {
-        setBudgetInput(new Intl.NumberFormat().format(query.budget))
+        setBudgetInput(new Intl.NumberFormat("en-US").format(query.budget))
       } else {
         setBudgetInput("")
       }

@@ -125,8 +125,8 @@ public interface BazaarProductSnapshotRepository
 
     /**
      * Aggregates the visible sell-side order book of the latest snapshot per product.
-     * Returns total standing sell units and the total coins needed to insta-buy them all
-     * (the cost to "corner" the market). Items with no sell orders are omitted.
+     * Returns visible standing sell units, order count and cost so the manipulation
+     * scorer can estimate the hidden depth not returned by the API summary.
      */
     @Query(value = """
         with latest as (
@@ -137,7 +137,9 @@ public interface BazaarProductSnapshotRepository
         )
         select l.pid                                          as productId,
                coalesce(sum(oe.amount), 0)                    as units,
-               coalesce(sum(oe.amount * oe.price_per_unit), 0) as cost
+               coalesce(sum(oe.amount * oe.price_per_unit), 0) as cost,
+               coalesce(sum(oe.orders), 0)                    as visibleOrders,
+               coalesce(max(oe.price_per_unit), 0)            as maxVisiblePrice
         from   latest l
                join bazaar_order_entry oe
                  on oe.snapshot_id = l.snap_id and oe.side = 'SELL'

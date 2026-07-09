@@ -16,8 +16,8 @@ public record ManipulationOpportunityResponseDTO(
         double  currentHighestBuyOrder, // = instantSellPrice, named for clarity in the plan
 
         // cornering the market (step 1-3)
-        long    cornerSupplyUnits,      // visible standing sell units we'd buy out
-        double  cornerCost,             // coins to insta-buy every sell offer
+        long    cornerSupplyUnits,      // estimated standing sell units we'd buy out
+        double  cornerCost,             // estimated coins to insta-buy every sell offer
         double  avgBuyCostPerUnit,      // cornerCost / cornerSupplyUnits
 
         // pricing (step 4-5)
@@ -34,6 +34,10 @@ public record ManipulationOpportunityResponseDTO(
         Double  demandSupplyRatio,      // demand / supply (>1 = more buyers than sellers)
         int     activeSellOrders,       // standing sell orders (thin = easy to corner)
         int     activeBuyOrders,        // standing buy orders (deep demand)
+        Double  createdBuyOrdersPerHour,  // new buy orders/hour (more = easier to bait demand)
+        Double  createdSellOrdersPerHour, // new sell orders/hour (less = easier to keep cornered)
+        long    sellVolume,            // total standing sell units (low = easier to control)
+        long    buyVolume,             // total standing buy units (high = stronger demand depth)
 
         // economics
         double  netProfitPerUnit,       // targetBuyOrderPrice*(1-tax) - avgBuyCostPerUnit

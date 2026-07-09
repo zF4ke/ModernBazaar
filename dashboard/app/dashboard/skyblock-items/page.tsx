@@ -40,7 +40,7 @@ const TIER_COLOR: Record<string, string> = {
 }
 
 const fmtNpc = (n: number | null | undefined) =>
-  n === null || n === undefined ? "—" : n.toLocaleString(undefined, { maximumFractionDigits: 0 })
+  n === null || n === undefined ? "—" : n.toLocaleString("en-US", { maximumFractionDigits: 0 })
 
 const titleCase = (s: string) =>
   s ? s.toLowerCase().replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : s

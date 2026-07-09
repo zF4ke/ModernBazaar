@@ -155,6 +155,12 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
               <Repeat className="h-3 w-3 mr-1" />
               {o.buyOrderDoublingSteps} doublings
             </Badge>
+            {o.createdBuyOrdersPerHour !== undefined && o.createdSellOrdersPerHour !== undefined && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-blue-500/50 text-blue-400">
+                <ShoppingCart className="h-3 w-3 mr-1" />
+                +{format(o.createdBuyOrdersPerHour, 1)} buy / +{format(o.createdSellOrdersPerHour, 1)} sell orders/h
+              </Badge>
+            )}
             {o.risky && (
               o.riskNote ? (
                 <Tooltip>
@@ -202,8 +208,13 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                     ["Demand / supply", `${format(ratio, 1)}x`],
                     ["Buyers / hour", o.demandPerHour ? format(o.demandPerHour, 0) : "—"],
                     ["Standing sell orders", format(o.activeSellOrders, 0)],
+                    ["Standing buy orders", format(o.activeBuyOrders, 0)],
+                    ["Sell volume", format(o.sellVolume, 0)],
+                    ["Buy volume", format(o.buyVolume, 0)],
+                    ["Created buy orders / hour", o.createdBuyOrdersPerHour !== undefined ? format(o.createdBuyOrdersPerHour, 1) : "—"],
+                    ["Created sell orders / hour", o.createdSellOrdersPerHour !== undefined ? format(o.createdSellOrdersPerHour, 1) : "—"],
                   ]}
-                  note="Thin supply with strong demand is what lets you set the price."
+                  note="Best targets have strong new buy-order creation and very little new sell-order creation."
                 />
                 <PlanStep
                   color="red" icon={ShoppingCart} title="Step 2: Corner the market"

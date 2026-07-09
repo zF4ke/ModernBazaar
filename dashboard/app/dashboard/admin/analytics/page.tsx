@@ -18,7 +18,7 @@ interface AdminAnalytics {
 }
 
 const titleCase = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, " ") : s
-const fmt = (n: number) => (Number.isFinite(n) ? n.toLocaleString() : "—")
+const fmt = (n: number) => (Number.isFinite(n) ? n.toLocaleString("en-US") : "—")
 
 const PLAN_COLOR: Record<string, string> = {
   free: "bg-zinc-500", flipper: "bg-emerald-500", elite: "bg-blue-500",

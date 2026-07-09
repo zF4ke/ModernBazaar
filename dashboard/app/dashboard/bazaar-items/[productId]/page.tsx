@@ -510,7 +510,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                 <ArrowDownRight className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Buy Orders</CardTitle>
                 <div className="relative opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-popover border rounded-md px-2 py-1 shadow-md z-10 whitespace-nowrap">
-                  <div className="text-sm font-medium">{snapshot.activeBuyOrdersCount.toLocaleString()} orders</div>
+                  <div className="text-sm font-medium">{snapshot.activeBuyOrdersCount.toLocaleString("en-US")} orders</div>
                   <div className="text-xs text-muted-foreground">may be inaccurate</div>
                 </div>
               </div>
@@ -564,7 +564,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                         </div>
                       </TableCell>
                       <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
-                      <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
+                      <TableCell className="font-mono">{order.amount.toLocaleString("en-US")}</TableCell>
                       <TableCell>{order.orders}</TableCell>
                     </TableRow>
                   ))}
@@ -579,7 +579,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                       {snapshot.buyOrders.reduce((sum, order) => sum + (order.pricePerUnit * order.amount), 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="font-mono">
-                      {snapshot.buyOrders.reduce((sum, order) => sum + order.amount, 0).toLocaleString()}
+                      {snapshot.buyOrders.reduce((sum, order) => sum + order.amount, 0).toLocaleString("en-US")}
                     </TableCell>
                     <TableCell>
                       {snapshot.buyOrders.reduce((sum, order) => sum + order.orders, 0)}
@@ -598,7 +598,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                 <ArrowUpRight className="h-5 w-5 text-muted-foreground" />
                 <CardTitle>Sell Orders</CardTitle>
                 <div className="relative opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-popover border rounded-md px-2 py-1 shadow-md z-10 whitespace-nowrap">
-                  <div className="text-sm font-medium">{snapshot.activeSellOrdersCount.toLocaleString()} orders</div>
+                  <div className="text-sm font-medium">{snapshot.activeSellOrdersCount.toLocaleString("en-US")} orders</div>
                   <div className="text-xs text-muted-foreground">may be inaccurate</div>
                 </div>
               </div>
@@ -652,7 +652,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                         </div>
                       </TableCell>
                       <TableCell className="font-mono">{order.pricePerUnit.toFixed(2)}</TableCell>
-                      <TableCell className="font-mono">{order.amount.toLocaleString()}</TableCell>
+                      <TableCell className="font-mono">{order.amount.toLocaleString("en-US")}</TableCell>
                       <TableCell>{order.orders}</TableCell>
                     </TableRow>
                   ))}
@@ -667,7 +667,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
                       {snapshot.sellOrders.reduce((sum, order) => sum + (order.pricePerUnit * order.amount), 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="font-mono">
-                      {snapshot.sellOrders.reduce((sum, order) => sum + order.amount, 0).toLocaleString()}
+                      {snapshot.sellOrders.reduce((sum, order) => sum + order.amount, 0).toLocaleString("en-US")}
                     </TableCell>
                     <TableCell>
                       {snapshot.sellOrders.reduce((sum, order) => sum + order.orders, 0)}

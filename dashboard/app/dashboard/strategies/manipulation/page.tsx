@@ -63,7 +63,7 @@ export default function ManipulationPage() {
           minDemandSupplyRatio: parsed.minDemandSupplyRatio,
           minProfit: parsed.minProfit,
         }))
-        if (parsed.budget) setBudgetInput(new Intl.NumberFormat().format(parsed.budget))
+        if (parsed.budget) setBudgetInput(new Intl.NumberFormat("en-US").format(parsed.budget))
         if (parsed.pinFavoritesToTop !== undefined) setPinFavoritesToTop(parsed.pinFavoritesToTop)
       }
     } catch {} finally {

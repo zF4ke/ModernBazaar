@@ -1,0 +1,3 @@
+# Known NPC-buyable bazaar item IDs.
+# Keep this file for data that is buy-from-NPC, not sell-to-NPC.
+# The Hypixel resources API currently exposes npc_sell_price only, which is not enough.

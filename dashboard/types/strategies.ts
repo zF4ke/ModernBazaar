@@ -81,6 +81,10 @@ export interface ManipulationOpportunity {
   demandSupplyRatio?: number
   activeSellOrders: number
   activeBuyOrders: number
+  createdBuyOrdersPerHour?: number
+  createdSellOrdersPerHour?: number
+  sellVolume: number
+  buyVolume: number
   // economics
   netProfitPerUnit: number
   totalProfit: number

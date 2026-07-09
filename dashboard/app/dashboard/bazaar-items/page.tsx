@@ -26,7 +26,7 @@ import { LoginCheck } from "@/components/login-check"
 
 /** Grouped coin formatting (readable + precise): 1,234,567.9 */
 const fmtCoins = (n: number) =>
-  Number.isFinite(n) ? n.toLocaleString(undefined, { maximumFractionDigits: 1 }) : "—"
+  Number.isFinite(n) ? n.toLocaleString("en-US", { maximumFractionDigits: 1 }) : "—"
 
 export default function BazaarItemsPage() {
   const [query, setQuery] = useState<BazaarItemsQuery>({

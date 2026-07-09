@@ -39,7 +39,7 @@ export function BudgetHorizonTaxInputs({
             const value = e.target.value.replace(/[^0-9]/g, '')
             if (value) {
               const numValue = parseInt(value)
-              setBudgetInput(new Intl.NumberFormat().format(numValue))
+              setBudgetInput(new Intl.NumberFormat("en-US").format(numValue))
               // Remove immediate setQuery - only use debounced value
             } else {
               setBudgetInput("")

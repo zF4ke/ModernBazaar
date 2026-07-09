@@ -55,7 +55,12 @@ public class StrategyManipulationService {
                     Comparator.comparingDouble((ManipulationOpportunityResponseDTO o) ->
                             Optional.ofNullable(o.demandPerHour()).orElse(0.0)).reversed();
             default ->
-                    Comparator.comparingDouble(ManipulationOpportunityResponseDTO::score).reversed();
+                    Comparator.comparingDouble(ManipulationOpportunityResponseDTO::score).reversed()
+                            .thenComparing(Comparator.comparingDouble((ManipulationOpportunityResponseDTO o) ->
+                                    Optional.ofNullable(o.estimatedSellThroughHours()).orElse(Double.POSITIVE_INFINITY)))
+                            .thenComparing(Comparator.comparingDouble((ManipulationOpportunityResponseDTO o) ->
+                                    Optional.ofNullable(o.demandSupplyRatio()).orElse(0.0)).reversed())
+                            .thenComparing(Comparator.comparingDouble(ManipulationOpportunityResponseDTO::totalProfit).reversed());
         };
         all.sort(cmp);
 

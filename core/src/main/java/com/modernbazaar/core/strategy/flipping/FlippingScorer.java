@@ -367,18 +367,18 @@ public class FlippingScorer {
             double ib = s.getInstantBuyPrice();
             double is = s.getInstantSellPrice();
 
-            Double d48 = a48 != null && a48.avgInstaBoughtItems() > 0 ? a48.avgInstaBoughtItems() : (a48 != null ? Math.abs(a48.avgDeltaBuyOrders()) : null);
-            Double s48 = a48 != null && a48.avgInstaSoldItems()   > 0 ? a48.avgInstaSoldItems()   : (a48 != null ? Math.abs(a48.avgDeltaSellOrders()) : null);
-            Double d06 = a06 != null && a06.avgInstaBoughtItems() > 0 ? a06.avgInstaBoughtItems() : (a06 != null ? Math.abs(a06.avgDeltaBuyOrders()) : null);
-            Double s06 = a06 != null && a06.avgInstaSoldItems()   > 0 ? a06.avgInstaSoldItems()   : (a06 != null ? Math.abs(a06.avgDeltaSellOrders()) : null);
-            Double d01 = a01 != null && a01.avgInstaBoughtItems() > 0 ? a01.avgInstaBoughtItems() : (a01 != null ? Math.abs(a01.avgDeltaBuyOrders()) : null);
-            Double s01 = a01 != null && a01.avgInstaSoldItems()   > 0 ? a01.avgInstaSoldItems()   : (a01 != null ? Math.abs(a01.avgDeltaSellOrders()) : null);
+            Double d48 = a48 != null && a48.avgInstaBoughtItems() > 0 ? a48.avgInstaBoughtItems() : (a48 != null ? Math.abs(a48.avgDeltaBuyOrders()) : weeklyPerHour(s.getSellMovingWeek()));
+            Double s48 = a48 != null && a48.avgInstaSoldItems()   > 0 ? a48.avgInstaSoldItems()   : (a48 != null ? Math.abs(a48.avgDeltaSellOrders()) : weeklyPerHour(s.getBuyMovingWeek()));
+            Double d06 = a06 != null && a06.avgInstaBoughtItems() > 0 ? a06.avgInstaBoughtItems() : (a06 != null ? Math.abs(a06.avgDeltaBuyOrders()) : 0.0);
+            Double s06 = a06 != null && a06.avgInstaSoldItems()   > 0 ? a06.avgInstaSoldItems()   : (a06 != null ? Math.abs(a06.avgDeltaSellOrders()) : 0.0);
+            Double d01 = a01 != null && a01.avgInstaBoughtItems() > 0 ? a01.avgInstaBoughtItems() : (a01 != null ? Math.abs(a01.avgDeltaBuyOrders()) : 0.0);
+            Double s01 = a01 != null && a01.avgInstaSoldItems()   > 0 ? a01.avgInstaSoldItems()   : (a01 != null ? Math.abs(a01.avgDeltaSellOrders()) : 0.0);
 
             Double demand = minPos(d48, d06, d01);
             Double supply = minPos(s48, s06, s01);
             double flowProxy = ((demand != null ? demand : 0.0) + (supply != null ? supply : 0.0));
-            double churnBuy = a48 != null ? a48.avgCreatedBuyOrders() : 0.0;
-            double churnSell = a48 != null ? a48.avgCreatedSellOrders() : 0.0;
+            double churnBuy = a48 != null ? a48.avgCreatedBuyOrders() : s.getActiveBuyOrdersCount();
+            double churnSell = a48 != null ? a48.avgCreatedSellOrders() : s.getActiveSellOrdersCount();
 
             Inputs in = new Inputs(
                     ib,
@@ -404,7 +404,7 @@ public class FlippingScorer {
                 if (sc.suggestedUnitsPerHour() < fMinUnits) return null;
                 if (sc.suggestedUnitsPerHour() > fMaxUnits) return null;
             }
-            double compPerHour = (a48 != null ? (a48.avgCreatedBuyOrders() + a48.avgCreatedSellOrders()) : 0.0);
+            double compPerHour = (a48 != null ? (a48.avgCreatedBuyOrders() + a48.avgCreatedSellOrders()) : (s.getActiveBuyOrdersCount() + s.getActiveSellOrdersCount()));
             if (compPerHour > fMaxComp) return null;
             if (sc.riskScore() > fMaxRisk) return null;
 
@@ -463,5 +463,9 @@ public class FlippingScorer {
             }
         }
         return out;
+    }
+
+    private static double weeklyPerHour(long movingWeek) {
+        return movingWeek > 0 ? movingWeek / 168.0 : 0.0;
     }
 }

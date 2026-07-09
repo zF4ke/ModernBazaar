@@ -58,3 +58,4 @@ out/
 
 # Claude Code session/workflow artifacts
 .claude/
+.tools/

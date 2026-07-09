@@ -112,7 +112,7 @@ export default function AdminUsersPage() {
           <UsersIcon className="h-7 w-7 text-muted-foreground" />
           <div>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Users</h2>
-            <p className="text-sm text-muted-foreground">{data ? `${data.totalItems.toLocaleString()} ${data.totalItems === 1 ? "user" : "users"}` : "Manage plans and access"}</p>
+            <p className="text-sm text-muted-foreground">{data ? `${data.totalItems.toLocaleString("en-US")} ${data.totalItems === 1 ? "user" : "users"}` : "Manage plans and access"}</p>
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>

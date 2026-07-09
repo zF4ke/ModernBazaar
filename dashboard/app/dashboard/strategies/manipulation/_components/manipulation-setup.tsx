@@ -90,7 +90,7 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
               value={budgetInput}
               onChange={(e) => {
                 const value = e.target.value.replace(/[^0-9]/g, "")
-                setBudgetInput(value ? new Intl.NumberFormat().format(parseInt(value)) : "")
+                setBudgetInput(value ? new Intl.NumberFormat("en-US").format(parseInt(value)) : "")
               }}
               className="h-12 text-base"
             />

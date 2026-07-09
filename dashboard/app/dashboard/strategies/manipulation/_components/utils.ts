@@ -1,6 +1,6 @@
 export const format = (n: number | undefined, d = 0) =>
   n !== undefined && n !== null && Number.isFinite(n)
-    ? new Intl.NumberFormat(undefined, { maximumFractionDigits: d, minimumFractionDigits: d }).format(n)
+    ? new Intl.NumberFormat("en-US", { maximumFractionDigits: d, minimumFractionDigits: d }).format(n)
     : "-"
 
 export const formatTime = (hours: number | undefined) => {

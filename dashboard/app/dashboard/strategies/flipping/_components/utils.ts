@@ -1,4 +1,4 @@
-export const format = (n: number | undefined, d = 0) => n !== undefined ? new Intl.NumberFormat(undefined, { maximumFractionDigits: d, minimumFractionDigits: d }).format(n) : "-"
+export const format = (n: number | undefined, d = 0) => n !== undefined ? new Intl.NumberFormat("en-US", { maximumFractionDigits: d, minimumFractionDigits: d }).format(n) : "-"
 
 export const formatTime = (hours: number | undefined) => {
   if (!hours) return "N/A"
