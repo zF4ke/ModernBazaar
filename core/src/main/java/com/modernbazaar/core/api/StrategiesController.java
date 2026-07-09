@@ -126,6 +126,7 @@ public class StrategiesController {
      * @param minDemandSupplyRatio Hide items whose demand/supply ratio is below this
      * @param minProfit  Hide items whose total expected profit is below this
      * @param maxCornerSupply Hide items requiring more than this many units to corner
+     * @param formulaVersion Scoring formula: overclocker | attention
      * @param sort       Sort field: score | profit | ratio | cornerCost | demand
      * @param page       Page number (0-based)
      * @param limit      Items per page
@@ -149,6 +150,7 @@ public class StrategiesController {
             @RequestParam(required = false) Double minDemandSupplyRatio,
             @RequestParam(required = false) Double minProfit,
             @RequestParam(required = false) Long maxCornerSupply,
+            @RequestParam(required = false) String formulaVersion,
             @RequestParam(required = false) String sort,
             @RequestParam(defaultValue = "0")  Integer page,
             @RequestParam(defaultValue = "50") Integer limit
@@ -157,6 +159,6 @@ public class StrategiesController {
         var filter = BazaarItemFilterDTO.of(q, minSell, maxSell, minBuy, maxBuy, null);
         return manipulation.list(filter, Optional.ofNullable(sort), page, limit,
                                  budget, roi, taxRate, sellWallFactor, minDemandSupplyRatio, minProfit,
-                                 maxCornerSupply);
+                                 maxCornerSupply, formulaVersion);
     }
 }

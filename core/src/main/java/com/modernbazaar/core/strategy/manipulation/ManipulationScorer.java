@@ -87,6 +87,10 @@ public class ManipulationScorer {
     private static final double CREATED_BUY_ORDER_HALF_SAT = 3.0;
     /** Top-bid upward moves/hour where bidder-chase confidence reaches 0.5. */
     private static final double BID_UP_MOVE_HALF_SAT = 3.0;
+    /** Raw flip profit/hour where flipper-attention confidence reaches 0.5. */
+    private static final double FLIP_PROFIT_HALF_SAT = 2_000_000.0;
+    /** Spread percentage where flipper-attention confidence reaches 0.5. */
+    private static final double FLIP_SPREAD_PCT_HALF_SAT = 0.035;
     /** Created sell orders/hour where the low-sell-pressure signal falls to 0.5. */
     private static final double CREATED_SELL_ORDER_HALF_SAT = 2.0;
     /** Sell-order creation is a warning, but can be manageable when exit pressure stays low. */
@@ -121,6 +125,20 @@ public class ManipulationScorer {
     private final BazaarItemRepository itemRepo;
     private final FinanceMetricsService finance;
 
+    private enum FormulaVersion {
+        OVERCLOCKER,
+        ATTENTION;
+
+        static FormulaVersion parse(String value) {
+            if (value == null || value.isBlank()) return OVERCLOCKER;
+            String normalized = value.trim().toLowerCase(Locale.ROOT);
+            return switch (normalized) {
+                case "attention", "new", "v2" -> ATTENTION;
+                default -> OVERCLOCKER;
+            };
+        }
+    }
+
     @Autowired
     public ManipulationScorer(RiskToolkit riskToolkit,
                               BazaarProductSnapshotRepository snapRepo,
@@ -153,6 +171,8 @@ public class ManipulationScorer {
             double instaSoldUnitsPerHour,
             double bidUpMovesPerHour,
             double bidUpPriceDeltaPerHour,
+            double flipperAttentionScore,
+            double flipperProfitPerHour,
             int activeSellOrders,
             int activeBuyOrders,
             long sellVolume,
@@ -180,6 +200,10 @@ public class ManipulationScorer {
      * Builds the manipulation plan from market inputs. Pure function (no I/O).
      */
     public Plan plan(Inputs in) {
+        return plan(in, FormulaVersion.OVERCLOCKER);
+    }
+
+    private Plan plan(Inputs in, FormulaVersion formulaVersion) {
         double ib = in.instantBuyPrice;
         long supplyUnits = in.cornerSupplyUnits;
         double cornerCost = in.cornerCost;
@@ -223,7 +247,8 @@ public class ManipulationScorer {
 
         double score = scoreOf(totalProfit, supplyUnits, demand, ratio, doublings, risk, sellThroughHours,
                 in.createdBuyOrdersPerHour, in.createdSellOrdersPerHour, exitDemand, sellPressure,
-                in.bidUpMovesPerHour, in.activeSellOrders, in.activeBuyOrders, in.sellVolume, in.buyVolume);
+                in.bidUpMovesPerHour, in.flipperAttentionScore, formulaVersion,
+                in.activeSellOrders, in.activeBuyOrders, in.sellVolume, in.buyVolume);
 
         return new Plan(avgBuyCost, minResell, targetBuyOrder, suggestedSellOrder,
                 doublings, netProfitPerUnit, totalProfit, ratio, sellThroughHours, score);
@@ -241,6 +266,8 @@ public class ManipulationScorer {
                                   double exitDemandUnitsPerHour,
                                   double sellPressureUnitsPerHour,
                                   double bidUpMovesPerHour,
+                                  double flipperAttentionScore,
+                                  FormulaVersion formulaVersion,
                                   int activeSellOrders,
                                   int activeBuyOrders,
                                   long sellVolume,
@@ -265,7 +292,7 @@ public class ManipulationScorer {
                 ? SELL_THROUGH_HALF_SAT_HOURS / (SELL_THROUGH_HALF_SAT_HOURS + Math.max(0.0, sellThroughHours))
                 : 0.0;
         double orderFlowQuality = orderFlowQuality(createdBuyOrdersPerHour, createdSellOrdersPerHour,
-                exitDemandUnitsPerHour, sellPressureUnitsPerHour, bidUpMovesPerHour);
+                exitDemandUnitsPerHour, sellPressureUnitsPerHour, bidUpMovesPerHour, flipperAttentionScore, formulaVersion);
         double marketControlQuality = marketControlQuality(activeSellOrders, activeBuyOrders, sellVolume, buyVolume);
 
         double realism = Math.exp(-doublings / DOUBLING_DECAY);            // 0..1
@@ -288,7 +315,8 @@ public class ManipulationScorer {
                                                          Double sellWallFactor,
                                                          Double minDemandSupplyRatio,
                                                          Double minProfit,
-                                                         Long maxCornerSupply) {
+                                                         Long maxCornerSupply,
+                                                         String formulaVersion) {
         List<BazaarItemSnapshot> snaps = snapRepo.searchLatest(
                 filter.q(), filter.minSell(), filter.maxSell(),
                 filter.minBuy(), filter.maxBuy(), filter.minSpread());
@@ -316,6 +344,7 @@ public class ManipulationScorer {
         final double fMinProfit = minProfit != null ? minProfit : Double.NEGATIVE_INFINITY;
         final long fMaxCornerSupply = maxCornerSupply != null && maxCornerSupply > 0
                 ? maxCornerSupply : Long.MAX_VALUE;
+        final FormulaVersion fFormulaVersion = FormulaVersion.parse(formulaVersion);
 
         List<ManipulationOpportunityResponseDTO> out = new ArrayList<>(snaps.size());
         for (BazaarItemSnapshot s : snaps) {
@@ -342,6 +371,7 @@ public class ManipulationScorer {
             double sellPressureUnitsPerHour = sellOrderUnitsPerHour + nonNeg(a.avgInstaSoldItems());
             double bidUpMovesPerHour = nonNeg(a.avgBidUpMoves());
             double bidUpPriceDeltaPerHour = nonNeg(a.avgBidUpPriceDelta());
+            FlipAttention flipAttention = estimateFlipAttention(s, demand, supply);
 
             // Risk is computed first so the score can penalise/gate already-manipulated items.
             RiskAssessment ra = riskToolkit.assessPriceDeviation(
@@ -367,12 +397,14 @@ public class ManipulationScorer {
                     a.avgInstaSoldItems(),
                     bidUpMovesPerHour,
                     bidUpPriceDeltaPerHour,
+                    flipAttention.score(),
+                    flipAttention.profitPerHour(),
                     s.getActiveSellOrdersCount(),
                     s.getActiveBuyOrdersCount(),
                     s.getSellVolume(),
                     s.getBuyVolume(),
                     ra.riskScore());
-            Plan p = plan(in);
+            Plan p = plan(in, fFormulaVersion);
             if (p.score() <= 0.0) continue;
             if (hasCheaperEnchantCombineSupply(id, lowerEnchantSnaps, p.targetBuyOrderPrice())) continue;
 
@@ -405,6 +437,8 @@ public class ManipulationScorer {
                     sellPressureUnitsPerHour,
                     bidUpMovesPerHour,
                     bidUpPriceDeltaPerHour,
+                    flipAttention.score(),
+                    flipAttention.profitPerHour(),
                     s.getSellVolume(),
                     s.getBuyVolume(),
                     p.netProfitPerUnit(),
@@ -520,11 +554,13 @@ public class ManipulationScorer {
 
     private static double orderFlowQuality(double createdBuyOrdersPerHour, double createdSellOrdersPerHour,
                                            double exitDemandUnitsPerHour, double sellPressureUnitsPerHour,
-                                           double bidUpMovesPerHour) {
+                                           double bidUpMovesPerHour,
+                                           double flipperAttentionScore,
+                                           FormulaVersion formulaVersion) {
         if (!Double.isFinite(createdBuyOrdersPerHour) || !Double.isFinite(createdSellOrdersPerHour)
                 || createdBuyOrdersPerHour < 0 || createdSellOrdersPerHour < 0
                 || !Double.isFinite(exitDemandUnitsPerHour) || !Double.isFinite(sellPressureUnitsPerHour)
-                || !Double.isFinite(bidUpMovesPerHour)) {
+                || !Double.isFinite(bidUpMovesPerHour) || !Double.isFinite(flipperAttentionScore)) {
             return 0.65;
         }
 
@@ -533,8 +569,8 @@ public class ManipulationScorer {
         double exitDepth = Math.max(0.0, exitDemandUnitsPerHour);
         double sellPressure = Math.max(0.0, sellPressureUnitsPerHour);
         double bidUpMoves = Math.max(0.0, bidUpMovesPerHour);
+        double flipperAttention = clamp(flipperAttentionScore, 0.0, 1.0);
         double buyHeat = buyOrders / (buyOrders + CREATED_BUY_ORDER_HALF_SAT);
-        double bidChase = bidUpMoves / (bidUpMoves + BID_UP_MOVE_HALF_SAT);
         double sellQuiet = CREATED_SELL_ORDER_HALF_SAT / (CREATED_SELL_ORDER_HALF_SAT + sellOrders);
         double buySideShare = (buyOrders + 0.5) / (buyOrders + sellOrders + 1.0);
         double pressureQuiet = exitDepth / (exitDepth + sellPressure + 1.0);
@@ -543,17 +579,50 @@ public class ManipulationScorer {
         double sellPressureRatio = sellPressure / (exitDepth + 1.0);
         double sellPressureQuiet = ratioQuiet(sellPressureRatio, SELL_PRESSURE_RATIO_HALF_SAT);
 
+        if (formulaVersion == FormulaVersion.OVERCLOCKER) {
+            double blended = 0.30 * buyHeat
+                    + 0.20 * buySideShare
+                    + 0.15 * sellQuiet
+                    + 0.25 * pressureQuiet
+                    + 0.10 * sellCreationDominanceQuiet;
+            double base = 0.05 + 0.95 * clamp(blended, 0.0, 1.0);
+            return base
+                    * (0.55 + 0.45 * sellCreationDominanceQuiet)
+                    * (0.10 + 0.90 * sellPressureQuiet);
+        }
+
+        double bidChase = bidUpMoves / (bidUpMoves + BID_UP_MOVE_HALF_SAT);
         double blended = 0.30 * buyHeat
                 + 0.25 * bidChase
                 + 0.15 * buySideShare
                 + 0.15 * sellQuiet
-                + 0.25 * pressureQuiet
+                + 0.20 * pressureQuiet
+                + 0.05 * flipperAttention
                 + 0.05 * sellCreationDominanceQuiet;
         double base = 0.05 + 0.95 * clamp(blended, 0.0, 1.0);
         return base
                 * (0.35 + 0.65 * bidChase)
+                * (0.45 + 0.55 * flipperAttention)
                 * (0.55 + 0.45 * sellCreationDominanceQuiet)
                 * (0.10 + 0.90 * sellPressureQuiet);
+    }
+
+    private record FlipAttention(double score, double profitPerHour) {}
+
+    private static FlipAttention estimateFlipAttention(BazaarItemSnapshot s, double demandPerHour, double supplyPerHour) {
+        double bid = s.getInstantSellPrice();
+        double ask = s.getInstantBuyPrice();
+        if (!Double.isFinite(bid) || !Double.isFinite(ask) || bid <= 0 || ask <= bid) {
+            return new FlipAttention(0.0, 0.0);
+        }
+        double spread = ask - bid;
+        double spreadPct = spread / bid;
+        double throughput = Math.min(nonNeg(demandPerHour), nonNeg(supplyPerHour));
+        double profitPerHour = spread * throughput;
+        double profitQuality = profitPerHour / (profitPerHour + FLIP_PROFIT_HALF_SAT);
+        double spreadQuality = spreadPct / (spreadPct + FLIP_SPREAD_PCT_HALF_SAT);
+        double score = Math.sqrt(clamp(profitQuality, 0.0, 1.0) * clamp(spreadQuality, 0.0, 1.0));
+        return new FlipAttention(score, profitPerHour);
     }
 
     private static double ratioQuiet(double ratio, double halfSat) {

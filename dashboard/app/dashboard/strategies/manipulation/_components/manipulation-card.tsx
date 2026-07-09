@@ -173,6 +173,12 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                 {format(o.bidUpMovesPerHour, 1)} bid raises/h
               </Badge>
             )}
+            {o.flipperAttentionScore !== undefined && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-amber-500/50 text-amber-400">
+                <Search className="h-3 w-3 mr-1" />
+                {format(o.flipperAttentionScore * 100, 0)}% flip attention
+              </Badge>
+            )}
             {o.risky && (
               o.riskNote ? (
                 <Tooltip>
@@ -229,8 +235,10 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                     ["Sell pressure units / hour", o.sellPressureUnitsPerHour !== undefined ? format(o.sellPressureUnitsPerHour, 0) : "—"],
                     ["Top-bid raises / hour", o.bidUpMovesPerHour !== undefined ? format(o.bidUpMovesPerHour, 1) : "—"],
                     ["Top-bid rise / hour", o.bidUpPriceDeltaPerHour !== undefined ? `${format(o.bidUpPriceDeltaPerHour, 1)} coins` : "—"],
+                    ["Flip attention", o.flipperAttentionScore !== undefined ? `${format(o.flipperAttentionScore * 100, 0)}%` : "—"],
+                    ["Flip profit / hour", o.flipperProfitPerHour !== undefined ? `${formatCompact(o.flipperProfitPerHour)} coins` : "—"],
                   ]}
-                  note="Best targets have fresh buy-order depth, active top-bid raises, and very little sell pressure."
+                  note="Best targets have fresh buy-order depth, active top-bid raises, flipper attention, and very little sell pressure."
                 />
                 <PlanStep
                   color="red" icon={ShoppingCart} title="Step 2: Corner the market"

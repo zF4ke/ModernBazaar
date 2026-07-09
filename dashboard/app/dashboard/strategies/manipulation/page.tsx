@@ -24,6 +24,7 @@ const DEFAULT_QUERY: ManipulationQuery = {
   roi: 2,
   taxRate: 0.01125,
   maxCornerSupply: 20000,
+  formulaVersion: "overclocker",
 }
 
 export default function ManipulationPage() {
@@ -66,6 +67,7 @@ export default function ManipulationPage() {
           maxCornerSupply: parsed.maxCornerSupply === 50000
             ? prev.maxCornerSupply
             : parsed.maxCornerSupply ?? prev.maxCornerSupply,
+          formulaVersion: parsed.formulaVersion ?? prev.formulaVersion,
         }))
         if (parsed.budget) setBudgetInput(new Intl.NumberFormat("en-US").format(parsed.budget))
         if (parsed.pinFavoritesToTop !== undefined) setPinFavoritesToTop(parsed.pinFavoritesToTop)
@@ -92,10 +94,11 @@ export default function ManipulationPage() {
       cur.minDemandSupplyRatio = query.minDemandSupplyRatio
       cur.minProfit = query.minProfit
       cur.maxCornerSupply = query.maxCornerSupply
+      cur.formulaVersion = query.formulaVersion
       cur.pinFavoritesToTop = pinFavoritesToTop
       localStorage.setItem("manipSetup", JSON.stringify(cur))
     } catch {}
-  }, [query.sort, query.roi, query.taxRate, query.minDemandSupplyRatio, query.minProfit, query.maxCornerSupply, pinFavoritesToTop, isLoadingSetup])
+  }, [query.sort, query.roi, query.taxRate, query.minDemandSupplyRatio, query.minProfit, query.maxCornerSupply, query.formulaVersion, pinFavoritesToTop, isLoadingSetup])
 
   useEffect(() => {
     if (isLoadingSetup) return

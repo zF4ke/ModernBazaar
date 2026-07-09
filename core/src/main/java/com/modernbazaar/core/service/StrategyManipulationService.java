@@ -22,7 +22,7 @@ public class StrategyManipulationService {
     // page/limit deliberately excluded from the cache key so the expensive scan is
     // computed once per filter combo and sliced in memory across pages.
     @Cacheable(value = "manipulationOpportunities",
-            key = "#filter+'-'+#sort+'-'+#budget+'-'+#roi+'-'+#taxRate+'-'+#sellWallFactor+'-'+#minDemandSupplyRatio+'-'+#minProfit+'-'+#maxCornerSupply")
+            key = "#filter+'-'+#sort+'-'+#budget+'-'+#roi+'-'+#taxRate+'-'+#sellWallFactor+'-'+#minDemandSupplyRatio+'-'+#minProfit+'-'+#maxCornerSupply+'-'+#formulaVersion")
     @Transactional(readOnly = true)
     public PagedResponseDTO<ManipulationOpportunityResponseDTO> list(
             BazaarItemFilterDTO filter,
@@ -35,13 +35,14 @@ public class StrategyManipulationService {
             Double              sellWallFactor,
             Double              minDemandSupplyRatio,
             Double              minProfit,
-            Long                maxCornerSupply
+            Long                maxCornerSupply,
+            String              formulaVersion
     ) {
         if (limit <= 0) limit = 50;
         if (page < 0) page = 0;
 
         List<ManipulationOpportunityResponseDTO> all =
-                scorer.list(filter, budget, roi, taxRate, sellWallFactor, minDemandSupplyRatio, minProfit, maxCornerSupply);
+                scorer.list(filter, budget, roi, taxRate, sellWallFactor, minDemandSupplyRatio, minProfit, maxCornerSupply, formulaVersion);
 
         String key = sort.map(String::trim).filter(s -> !s.isEmpty()).map(String::toLowerCase).orElse("score");
         Comparator<ManipulationOpportunityResponseDTO> cmp = switch (key) {

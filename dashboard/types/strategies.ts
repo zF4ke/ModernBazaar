@@ -87,6 +87,8 @@ export interface ManipulationOpportunity {
   sellPressureUnitsPerHour?: number
   bidUpMovesPerHour?: number
   bidUpPriceDeltaPerHour?: number
+  flipperAttentionScore?: number
+  flipperProfitPerHour?: number
   sellVolume: number
   buyVolume: number
   // economics
@@ -108,6 +110,7 @@ export interface ManipulationQuery {
   minDemandSupplyRatio?: number
   minProfit?: number
   maxCornerSupply?: number
+  formulaVersion?: "overclocker" | "attention"
   sort?: string
   page?: number
   limit?: number

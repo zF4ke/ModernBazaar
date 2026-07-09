@@ -40,6 +40,8 @@ public record ManipulationOpportunityResponseDTO(
         Double  sellPressureUnitsPerHour, // new sell-order units + insta-sold units/hour fighting the play
         Double  bidUpMovesPerHour,        // times/hour the top buy order moved upward
         Double  bidUpPriceDeltaPerHour,   // coins/hour of positive top-buy-order movement
+        Double  flipperAttentionScore,     // 0..1 proxy for likely flipper visibility/interest
+        Double  flipperProfitPerHour,      // estimated raw flip profit/hour from current spread and flow
         long    sellVolume,            // total standing sell units (low = easier to control)
         long    buyVolume,             // total standing buy units (high = stronger demand depth)
 

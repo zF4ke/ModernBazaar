@@ -175,6 +175,17 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2"><Trophy className="h-4 w-4" />Formula</Label>
+                <Select value={query.formulaVersion ?? "overclocker"} onValueChange={(v) => updateQuery({ formulaVersion: v as ManipulationQuery["formulaVersion"] })}>
+                  <SelectTrigger className="h-10"><SelectValue placeholder="Choose formula" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="overclocker">Overclocker</SelectItem>
+                    <SelectItem value="attention">Attention</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2"><Scale className="h-4 w-4" />Min Demand / Supply</Label>
