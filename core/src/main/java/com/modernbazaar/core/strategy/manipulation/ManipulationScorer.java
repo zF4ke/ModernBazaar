@@ -294,6 +294,14 @@ public class ManipulationScorer {
         Map<String, SellSideAggregateRow> sellAgg = snapRepo.aggregateLatestSellSide(ids).stream()
                 .collect(Collectors.toMap(SellSideAggregateRow::getProductId, r -> r, (a, b) -> a));
         Map<String, FinanceAverages> avgs48 = finance.getAveragesFor(ids, 48);
+        Set<String> lowerEnchantIds = ids.stream()
+                .map(ManipulationScorer::lowerEnchantTierId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, BazaarItemSnapshot> lowerEnchantSnaps = lowerEnchantIds.isEmpty()
+                ? Map.of()
+                : snapRepo.findLatestByProductIds(lowerEnchantIds).stream()
+                .collect(Collectors.toMap(BazaarItemSnapshot::getProductId, s -> s, (a, b) -> a));
 
         final double effTax  = taxRate != null ? taxRate : BazaarConstants.DEFAULT_BAZAAR_TAX_RATE;
         final double effRoi  = roi != null ? roi : BazaarConstants.DEFAULT_MANIPULATION_ROI;
@@ -357,6 +365,7 @@ public class ManipulationScorer {
                     ra.riskScore());
             Plan p = plan(in);
             if (p.score() <= 0.0) continue;
+            if (hasCheaperEnchantCombineSupply(id, lowerEnchantSnaps, p.targetBuyOrderPrice())) continue;
 
             if (p.demandSupplyRatio() < fMinRatio) continue;
             if (p.totalProfit() < fMinProfit) continue;
@@ -409,6 +418,33 @@ public class ManipulationScorer {
         if (productId == null || productId.isBlank()) return false;
         String normalized = normalizeId(productId);
         return CRAFTABLE_ITEM_IDS.contains(normalized) || NPC_BUYABLE_ITEM_IDS.contains(normalized);
+    }
+
+    private static boolean hasCheaperEnchantCombineSupply(String productId,
+                                                          Map<String, BazaarItemSnapshot> lowerEnchantSnaps,
+                                                          double targetBuyOrderPrice) {
+        String lowerId = lowerEnchantTierId(productId);
+        if (lowerId == null || !Double.isFinite(targetBuyOrderPrice) || targetBuyOrderPrice <= 0) return false;
+        BazaarItemSnapshot lower = lowerEnchantSnaps.get(lowerId);
+        if (lower == null || !Double.isFinite(lower.getInstantBuyPrice()) || lower.getInstantBuyPrice() <= 0) {
+            return false;
+        }
+        double combineCost = lower.getInstantBuyPrice() * 2.0;
+        return combineCost <= targetBuyOrderPrice;
+    }
+
+    private static String lowerEnchantTierId(String productId) {
+        if (productId == null || !productId.startsWith("ENCHANTMENT_")) return null;
+        int sep = productId.lastIndexOf('_');
+        if (sep <= "ENCHANTMENT_".length() || sep >= productId.length() - 1) return null;
+        String levelPart = productId.substring(sep + 1);
+        try {
+            int level = Integer.parseInt(levelPart);
+            if (level <= 1) return null;
+            return productId.substring(0, sep + 1) + (level - 1);
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     private static Set<String> loadIdResource(String path) {
