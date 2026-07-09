@@ -23,7 +23,7 @@ const DEFAULT_QUERY: ManipulationQuery = {
   page: 0,
   roi: 2,
   taxRate: 0.01125,
-  maxCornerSupply: 50000,
+  maxCornerSupply: 20000,
 }
 
 export default function ManipulationPage() {
@@ -63,7 +63,9 @@ export default function ManipulationPage() {
           taxRate: parsed.taxRate ?? prev.taxRate,
           minDemandSupplyRatio: parsed.minDemandSupplyRatio,
           minProfit: parsed.minProfit,
-          maxCornerSupply: parsed.maxCornerSupply ?? prev.maxCornerSupply,
+          maxCornerSupply: parsed.maxCornerSupply === 50000
+            ? prev.maxCornerSupply
+            : parsed.maxCornerSupply ?? prev.maxCornerSupply,
         }))
         if (parsed.budget) setBudgetInput(new Intl.NumberFormat("en-US").format(parsed.budget))
         if (parsed.pinFavoritesToTop !== undefined) setPinFavoritesToTop(parsed.pinFavoritesToTop)
