@@ -110,6 +110,7 @@ export interface ManipulationQuery {
   minDemandSupplyRatio?: number
   minProfit?: number
   maxCornerSupply?: number
+  maxItemPrice?: number
   formulaVersion?: "overclocker" | "attention" | "balanced"
   sort?: string
   page?: number

@@ -323,6 +323,7 @@ public class ManipulationScorer {
                                                          Double minDemandSupplyRatio,
                                                          Double minProfit,
                                                          Long maxCornerSupply,
+                                                         Double maxItemPrice,
                                                          String formulaVersion) {
         List<BazaarItemSnapshot> snaps = snapRepo.searchLatest(
                 filter.q(), filter.minSell(), filter.maxSell(),
@@ -351,12 +352,18 @@ public class ManipulationScorer {
         final double fMinProfit = minProfit != null ? minProfit : Double.NEGATIVE_INFINITY;
         final long fMaxCornerSupply = maxCornerSupply != null && maxCornerSupply > 0
                 ? maxCornerSupply : Long.MAX_VALUE;
+        final double fMaxItemPrice = maxItemPrice != null && maxItemPrice > 0
+                ? maxItemPrice : Double.POSITIVE_INFINITY;
         final FormulaVersion fFormulaVersion = FormulaVersion.parse(formulaVersion);
 
         List<ManipulationOpportunityResponseDTO> out = new ArrayList<>(snaps.size());
         for (BazaarItemSnapshot s : snaps) {
             String id = s.getProductId();
             if (isExcludedAlternativeSupply(id)) continue;
+            if (Double.isFinite(fMaxItemPrice)
+                    && (!Double.isFinite(s.getInstantBuyPrice()) || s.getInstantBuyPrice() > fMaxItemPrice)) {
+                continue;
+            }
 
             SellSideAggregateRow agg = sellAgg.get(id);
             if (agg == null || agg.getUnits() <= 0 || agg.getCost() <= 0) continue; // nothing to corner

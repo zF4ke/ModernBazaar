@@ -24,6 +24,7 @@ import {
   Eraser,
   DollarSign,
   Package,
+  Tag,
 } from "lucide-react"
 
 interface ManipulationSetupProps {
@@ -187,7 +188,7 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
                 </Select>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2"><Scale className="h-4 w-4" />Min Demand / Supply</Label>
                   <Input
@@ -197,6 +198,16 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
                     className="h-10"
                   />
                   <p className="text-xs text-muted-foreground">Only items where buyers outnumber sellers by this much</p>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2"><Tag className="h-4 w-4" />Max Item Price</Label>
+                  <Input
+                    type="number" step="0.1" min="0" placeholder="e.g. 500000"
+                    value={query.maxItemPrice ?? ""}
+                    onChange={(e) => updateQuery({ maxItemPrice: e.target.value ? parseFloat(e.target.value) : undefined })}
+                    className="h-10"
+                  />
+                  <p className="text-xs text-muted-foreground">Uses the current lowest sell order price</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-2"><DollarSign className="h-4 w-4" />Min Total Profit</Label>

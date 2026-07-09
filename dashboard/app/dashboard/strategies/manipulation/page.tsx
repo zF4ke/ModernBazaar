@@ -64,6 +64,7 @@ export default function ManipulationPage() {
           taxRate: parsed.taxRate ?? prev.taxRate,
           minDemandSupplyRatio: parsed.minDemandSupplyRatio,
           minProfit: parsed.minProfit,
+          maxItemPrice: parsed.maxItemPrice,
           maxCornerSupply: parsed.maxCornerSupply === 50000
             ? prev.maxCornerSupply
             : parsed.maxCornerSupply ?? prev.maxCornerSupply,
@@ -95,12 +96,13 @@ export default function ManipulationPage() {
       cur.taxRate = query.taxRate
       cur.minDemandSupplyRatio = query.minDemandSupplyRatio
       cur.minProfit = query.minProfit
+      cur.maxItemPrice = query.maxItemPrice
       cur.maxCornerSupply = query.maxCornerSupply
       cur.formulaVersion = query.formulaVersion
       cur.pinFavoritesToTop = pinFavoritesToTop
       localStorage.setItem("manipSetup", JSON.stringify(cur))
     } catch {}
-  }, [query.sort, query.roi, query.taxRate, query.minDemandSupplyRatio, query.minProfit, query.maxCornerSupply, query.formulaVersion, pinFavoritesToTop, isLoadingSetup])
+  }, [query.sort, query.roi, query.taxRate, query.minDemandSupplyRatio, query.minProfit, query.maxItemPrice, query.maxCornerSupply, query.formulaVersion, pinFavoritesToTop, isLoadingSetup])
 
   useEffect(() => {
     if (isLoadingSetup) return
