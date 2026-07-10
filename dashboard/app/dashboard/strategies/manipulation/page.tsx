@@ -28,6 +28,16 @@ const DEFAULT_QUERY: ManipulationQuery = {
   formulaVersion: "balanced",
 }
 
+const parseCoinInput = (value: string): number | undefined => {
+  const parsed = parseFloat(value.replace(/[^0-9]/g, ""))
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+}
+
+const defaultMinProfitForBudget = (budget?: number): number | undefined => {
+  if (!budget || !Number.isFinite(budget) || budget <= 0) return undefined
+  return Math.min(budget * 0.1, 50_000_000)
+}
+
 export default function ManipulationPage() {
   const [query, setQuery] = useState<ManipulationQuery>(DEFAULT_QUERY)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -117,7 +127,8 @@ export default function ManipulationPage() {
   const finalQuery: ManipulationQuery = useMemo(() => ({
     ...query,
     q: debouncedSearch || undefined,
-    budget: debouncedBudget ? parseFloat(debouncedBudget.replace(/[^0-9]/g, "")) : undefined,
+    budget: parseCoinInput(debouncedBudget),
+    minProfit: query.minProfit ?? defaultMinProfitForBudget(parseCoinInput(debouncedBudget)),
   }), [query, debouncedSearch, debouncedBudget])
 
   const params = buildQueryParams(finalQuery as Record<string, any>)

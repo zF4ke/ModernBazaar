@@ -50,12 +50,25 @@ const taxValue = (rate: number | undefined): string => {
   return "1.125"
 }
 
+const parseCoinInput = (value: string): number | undefined => {
+  const parsed = parseFloat(value.replace(/[^0-9]/g, ""))
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
+}
+
+const formatCoins = (value: number): string => new Intl.NumberFormat("en-US").format(Math.round(value))
+
+const defaultMinProfitForBudget = (budget?: number): number | undefined => {
+  if (!budget || !Number.isFinite(budget) || budget <= 0) return undefined
+  return Math.min(budget * 0.1, 50_000_000)
+}
+
 export function ManipulationSetup(props: ManipulationSetupProps) {
   const {
     query, updateQuery, resetSetup, searchText, setSearchText,
     budgetInput, setBudgetInput, filtersOpen, setFiltersOpen,
     pinFavoritesToTop, setPinFavoritesToTop, favCount,
   } = props
+  const autoMinProfit = defaultMinProfitForBudget(parseCoinInput(budgetInput))
 
   return (
     <FeatureCard backgroundStyle="flat">
@@ -217,7 +230,11 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
                     onChange={(e) => updateQuery({ minProfit: e.target.value ? parseFloat(e.target.value) : undefined })}
                     className="h-10"
                   />
-                  <p className="text-xs text-muted-foreground">Hide opportunities below this expected profit</p>
+                  <p className="text-xs text-muted-foreground">
+                    {query.minProfit === undefined && autoMinProfit
+                      ? `Auto: ${formatCoins(autoMinProfit)} coins`
+                      : "Hide opportunities below this expected profit"}
+                  </p>
                 </div>
               </div>
 

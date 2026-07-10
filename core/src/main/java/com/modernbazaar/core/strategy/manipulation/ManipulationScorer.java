@@ -115,6 +115,9 @@ public class ManipulationScorer {
     private static final double MAX_RISK_SCORE = 0.85;
     /** Default cap for current item price, before any inflated manipulation target. */
     private static final double DEFAULT_MAX_ITEM_PRICE = 1_500_000.0;
+    /** Auto profit floor: 10% of budget until 500m budget, then 50m flat. */
+    private static final double DEFAULT_MIN_PROFIT_BUDGET_SHARE = 0.10;
+    private static final double DEFAULT_MIN_PROFIT_CAP = 50_000_000.0;
     /** manipPenalty = 1 - RISK_PENALTY_WEIGHT * riskScore (so risk 0→1.0, risk 0.5→0.55). */
     private static final double RISK_PENALTY_WEIGHT = 0.9;
     private static final Set<String> CRAFTABLE_ITEM_IDS =
@@ -351,7 +354,7 @@ public class ManipulationScorer {
         final double effWall = sellWallFactor != null ? sellWallFactor : BazaarConstants.DEFAULT_SELL_WALL_FACTOR;
         final double fBudget = budget != null ? budget : Double.POSITIVE_INFINITY;
         final double fMinRatio = minDemandSupplyRatio != null ? minDemandSupplyRatio : Double.NEGATIVE_INFINITY;
-        final double fMinProfit = minProfit != null ? minProfit : Double.NEGATIVE_INFINITY;
+        final double fMinProfit = minProfit != null ? minProfit : defaultMinProfitForBudget(budget);
         final long fMaxCornerSupply = maxCornerSupply != null && maxCornerSupply > 0
                 ? maxCornerSupply : Long.MAX_VALUE;
         final double fMaxItemPrice = maxItemPrice != null && maxItemPrice > 0
@@ -563,6 +566,13 @@ public class ManipulationScorer {
     }
 
     private static double nonNeg(double v) { return (Double.isFinite(v) && v > 0) ? v : 0.0; }
+
+    private static double defaultMinProfitForBudget(Double budget) {
+        if (budget == null || !Double.isFinite(budget) || budget <= 0) {
+            return Double.NEGATIVE_INFINITY;
+        }
+        return Math.min(budget * DEFAULT_MIN_PROFIT_BUDGET_SHARE, DEFAULT_MIN_PROFIT_CAP);
+    }
     private static double clamp(double x, double lo, double hi) { return Math.max(lo, Math.min(hi, x)); }
     private static double safeLog10(double x) { return Math.log10(Math.max(1e-9, x)); }
     private static double log2(double x) { return Math.log(x) / Math.log(2.0); }

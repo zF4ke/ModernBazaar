@@ -124,7 +124,7 @@ public class StrategiesController {
      * @param taxRate    Selling tax assumed in the math (default 0.01125 = 1.125%)
      * @param sellWallFactor Sell wall = targetBuyOrder * factor (default 2.0)
      * @param minDemandSupplyRatio Hide items whose demand/supply ratio is below this
-     * @param minProfit  Hide items whose total expected profit is below this
+     * @param minProfit  Hide items whose total expected profit is below this (default with budget: min(10% of budget, 50m))
      * @param maxCornerSupply Hide items requiring more than this many units to corner
      * @param maxItemPrice Hide items whose current insta-buy price is above this (default: 1,500,000)
      * @param formulaVersion Scoring formula: balanced | overclocker | attention (default: balanced)
