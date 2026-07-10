@@ -16,6 +16,7 @@ import { GradientSection } from "@/components/gradient-section"
 import { PERMISSIONS } from "@/constants/permissions"
 import { ManipulationSetup } from "./_components/manipulation-setup"
 import { ManipulationGrid } from "./_components/manipulation-grid"
+import { ManipulationInspector } from "./_components/manipulation-inspector"
 
 const DEFAULT_QUERY: ManipulationQuery = {
   sort: "score",
@@ -84,6 +85,8 @@ export default function ManipulationPage() {
   // debounced inputs
   const [searchText, setSearchText] = useState("")
   const debouncedSearch = useDebounce(searchText, 300)
+  const [inspectText, setInspectText] = useState("")
+  const debouncedInspect = useDebounce(inspectText, 400)
   const [budgetInput, setBudgetInput] = useState("")
   const debouncedBudget = useDebounce(budgetInput, 800)
 
@@ -126,6 +129,28 @@ export default function ManipulationPage() {
     staleTime: 30000,
     refetchOnWindowFocus: false,
   })
+
+  const inspectorEnabled = debouncedInspect.trim().length >= 2
+  const inspectorQuery: ManipulationQuery = useMemo(() => ({
+    q: debouncedInspect.trim() || undefined,
+    sort: "score",
+    limit: 12,
+    page: 0,
+    roi: query.roi,
+    taxRate: query.taxRate,
+    sellWallFactor: query.sellWallFactor,
+    formulaVersion: query.formulaVersion,
+    maxItemPrice: 1_000_000_000,
+    maxCornerSupply: 1_000_000_000,
+  }), [debouncedInspect, query.roi, query.taxRate, query.sellWallFactor, query.formulaVersion])
+  const inspectorParams = buildQueryParams(inspectorQuery as Record<string, any>)
+  const inspectorEndpoint = `/api/strategies/manipulation?${inspectorParams}`
+  const { data: inspectorResponse, isLoading: isInspectorLoading, isFetching: isInspectorFetching } = useBackendQuery<PagedResponse<ManipulationOpportunity>>(inspectorEndpoint, {
+    enabled: inspectorEnabled,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+  })
+  const inspectorItems = inspectorResponse?.items || []
 
   const allItems = response?.items || []
   const itemsArray = pinFavoritesToTop
@@ -211,6 +236,19 @@ export default function ManipulationPage() {
               pinFavoritesToTop={pinFavoritesToTop}
               setPinFavoritesToTop={setPinFavoritesToTop}
               favCount={favs.size}
+            />
+
+            <ManipulationInspector
+              searchText={inspectText}
+              setSearchText={setInspectText}
+              items={inspectorItems}
+              isLoading={isInspectorLoading}
+              isFetching={isInspectorFetching}
+              enabled={inspectorEnabled}
+              favs={favs}
+              toggleFav={toggleFav}
+              expandedCard={expandedCard}
+              setExpandedCard={setExpandedCard}
             />
 
             <ManipulationGrid
