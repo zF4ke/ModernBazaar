@@ -1,0 +1,1048 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs,longtable,array,tabularx}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{caption}
+
+\geometry{margin=25mm,headheight=15pt}
+\definecolor{navy}{HTML}{17324D}
+\definecolor{blue}{HTML}{2563A6}
+\definecolor{teal}{HTML}{147D73}
+\definecolor{red}{HTML}{A53B3B}
+\definecolor{amber}{HTML}{A66518}
+\definecolor{light}{HTML}{F3F6F8}
+\definecolor{mid}{HTML}{D5DEE5}
+\definecolor{textgray}{HTML}{4B5563}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=navy,
+  urlcolor=blue,
+  citecolor=teal,
+  pdftitle={Modern Bazaar: A Quantitative Market Intelligence System},
+  pdfauthor={Pedro Silva}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\textcolor{textgray}{Modern Bazaar}}
+\rhead{\textcolor{textgray}{Quantitative System Specification}}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+\setlist[itemize]{leftmargin=1.5em,itemsep=0.25em,topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.6em,itemsep=0.25em,topsep=0.3em}
+\captionsetup{font=small,labelfont=bf}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\clip}[1]{\min\!\left(1,\max(0,#1)\right)}
+\newcommand{\halfSat}[2]{\frac{#1}{#1+#2}}
+\newcommand{\quality}[1]{\textcolor{teal}{#1}}
+\newcommand{\risk}[1]{\textcolor{red}{#1}}
+\newcommand{\implementation}[1]{%
+  \vspace{0.2em}\noindent
+  \colorbox{light}{\parbox{0.95\linewidth}{\textbf{Implementation note.} #1}}
+  \vspace{0.2em}}
+
+\begin{document}
+\pagenumbering{gobble}
+
+\begin{titlepage}
+  \centering
+  \vspace*{24mm}
+  {\color{navy}\rule{\textwidth}{1.2pt}}\\[12mm]
+  {\Huge\bfseries\color{navy} Modern Bazaar\\[4mm]}
+  {\LARGE A Quantitative Market Intelligence System\\[4mm]}
+  {\large Data Engineering, Market Metrics, Flipping, Risk, and Manipulation Ranking}
+  \\[12mm]
+  {\color{navy}\rule{\textwidth}{1.2pt}}
+  \vfill
+  \begin{tabular}{rl}
+    \textbf{Author:} & Pedro Silva\\
+    \textbf{Document type:} & Quantitative system specification\\
+    \textbf{System version:} & Repository state as of 10 July 2026\\
+    \textbf{Status:} & Implemented system with documented limitations
+  \end{tabular}
+  \vfill
+  \begin{minipage}{0.86\textwidth}
+  \small\color{textgray}
+  This document explains the implemented Modern Bazaar system in precise but readable
+  terms. Equations describe the software as it exists; they are not promises of profit.
+  Market conditions, hidden order-book depth, competing players, and game mechanics can
+  cause realized outcomes to differ materially from model estimates.
+  \end{minipage}
+\end{titlepage}
+
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\section{Executive Summary}
+
+Modern Bazaar is a market-intelligence platform for the Hypixel SkyBlock Bazaar. It turns
+frequent public API observations into a compact historical record, rolling liquidity
+metrics, risk estimates, and ranked trading opportunities. Its quantitative core answers
+two different questions:
+
+\begin{enumerate}
+  \item \textbf{Flipping:} can a trader repeatedly buy at the current bid, sell at the
+  current ask, and earn an attractive risk-adjusted profit within a chosen time horizon?
+  \item \textbf{Market manipulation analysis:} can the visible and estimated sell side be
+  acquired within budget, and does historical order flow suggest that an inflated position
+  could be exited before competing supply overwhelms it?
+\end{enumerate}
+
+The system is deliberately empirical. Live prices describe the current opportunity;
+hourly summaries describe how the market normally behaves; rolling averages reduce noise;
+and scoring functions combine profitability with liquidity, competition, market control,
+attention, and adverse sell pressure.
+
+The default manipulation model, called \emph{Balanced}, is the most important recent
+development. It combines the bidder-attraction behavior of the Attention model with the
+sell-pressure discipline learned from the Overclocker model. Its design reflects a practical
+observation: attention is valuable only when a position can survive the sellers attracted by
+the same price movement.
+
+\section{System Boundary and Architecture}
+
+The production system contains five cooperating layers:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash\bfseries}p{0.18\textwidth}X}
+\toprule
+Layer & Responsibility\\
+\midrule
+Hypixel API & Supplies current Bazaar products, prices, aggregate volumes, order counts,
+and the visible top of each order book.\\
+Spring Boot core & Polls, validates, deduplicates, stores, compacts, aggregates, scores,
+and exposes REST endpoints.\\
+PostgreSQL & Stores product metadata, raw snapshots, visible order-book entries, hourly
+summaries, retained hour points, and precomputed finance metrics.\\
+Next.js dashboard & Presents searchable market data, strategy filters, ranked opportunities,
+and detailed plans.\\
+Operations stack & Caddy terminates TLS and routes traffic; Prometheus collects application
+and database metrics; Grafana presents operational dashboards.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+In production, the core services share an internal Docker network. Only Caddy binds public
+ports. It routes the API, Grafana, and Prometheus subdomains to their internal services.
+PostgreSQL is not directly exposed to the Internet.
+
+\subsection{Data-flow overview}
+
+The principal data path is:
+
+\begin{align*}
+\text{Hypixel API}&\longrightarrow \text{snapshots}
+\longrightarrow \text{hourly summaries and points}\\
+&\longrightarrow \text{rolling metrics}
+\longrightarrow \text{strategy scores}
+\longrightarrow \text{dashboard}.
+\end{align*}
+
+This separation is useful quantitatively. A live snapshot determines executable-looking
+prices and visible depth, while historical summaries determine whether those prices are
+supported by normal market behavior.
+
+\section{Market Notation}
+
+Hypixel's API naming can be unintuitive, so this document uses economic notation.
+
+\begin{longtable}{p{0.18\textwidth}p{0.23\textwidth}p{0.50\textwidth}}
+\toprule
+Symbol & System field & Meaning\\
+\midrule
+\endhead
+$a_t$ & instant buy price & Lowest standing sell-order price: the approximate price paid
+to buy immediately. This is the market ask.\\
+$b_t$ & instant sell price & Highest standing buy-order price: the approximate price received
+when selling immediately. This is the market bid.\\
+$s_t=a_t-b_t$ & spread & Gross quoted spread per unit.\\
+$\rho_t=s_t/b_t$ & spread percentage & Spread relative to the approximate buy-order entry price.\\
+$V_t^B,V_t^S$ & buy/sell volume & Current aggregate unit depth reported by the API.\\
+$N_t^B,N_t^S$ & active buy/sell orders & Current number of standing orders on each side.\\
+$M_t^B,M_t^S$ & moving-week volumes & Rolling seven-day cumulative activity fields used to
+infer executed units between snapshots.\\
+$\tau$ & tax rate & Fraction removed from sale proceeds; default $\tau=0.01125$.\\
+\bottomrule
+\end{longtable}
+
+All prices are in coins and all flow metrics are normalized to units or events per hour.
+
+\section{Ingestion and Persistence}
+
+\subsection{Polling and deduplication}
+
+The core polls the Bazaar endpoint every 60 seconds by default. If the API reports timestamp
+$T$, the system persists at most one snapshot for each pair
+
+\begin{equation}
+(\text{productId},T).
+\end{equation}
+
+This avoids storing repeated scheduler observations when Hypixel has not published a new
+market state. Products absent from the local catalog are inserted before their snapshots.
+Snapshots are written in batches of 50 to bound persistence-context memory.
+
+For every product, a snapshot stores prices, reported volume and moving-week statistics,
+active order counts, weighted two-percent prices, and the visible buy and sell order entries
+returned by the API.
+
+\subsection{Hourly compaction}
+
+Every five minutes, a compaction job checks the oldest unprocessed snapshot. Once a complete
+one-hour interval plus a two-minute grace period exists, snapshots in that interval are
+reduced to an hourly summary and a selected set of representative points.
+
+Let the snapshots in hour $h$ be ordered as $x_0,x_1,\ldots,x_n$. The summary records open,
+close, minimum, and maximum prices, plus order-flow and execution proxies. Representative
+points are retained when there is a sufficiently large time gap or price movement, preserving
+chart shape without retaining every raw observation forever.
+
+The configured price-movement threshold is $0.2\%$, and the default maximum gap between kept
+points is five minutes. Conceptually, a point is retained when
+
+\begin{equation}
+\left|\frac{p_i-p_k}{p_k}\right|\ge 0.002
+\quad\text{or}\quad
+t_i-t_k\ge 5\text{ minutes},
+\end{equation}
+
+where $k$ is the previously retained observation.
+
+\subsection{Retention}
+
+At application startup and daily at 03:00, the retention job deletes snapshots, hour points,
+and hourly summaries older than the configured retention interval. The repository documents
+a 45-day operational target, while the code-level default is 30 days if configuration is
+absent. Production behavior therefore depends on the active profile configuration.
+
+The storage policy is a compromise:
+
+\begin{itemize}
+  \item detailed recent observations support debugging and short-term analysis;
+  \item hourly summaries preserve the variables needed by current scorers;
+  \item representative hour points preserve visual price paths;
+  \item bounded retention prevents indefinite database growth.
+\end{itemize}
+
+\section{Hourly Market Metrics}
+
+\subsection{Order-count activity proxies}
+
+For consecutive snapshots $i-1$ and $i$, increases in active order count are treated as
+newly created orders:
+
+\begin{align}
+C_h^B &= \sum_i \max(0,N_i^B-N_{i-1}^B),\\
+C_h^S &= \sum_i \max(0,N_i^S-N_{i-1}^S).
+\end{align}
+
+These are \emph{observed net-increase events}, not a perfect event log. If ten orders are
+created while ten existing orders disappear between polls, the active count does not change
+and those creations are unobservable.
+
+When the order count rises, the implementation estimates newly added units using the absolute
+change in aggregate volume:
+
+\begin{align}
+A_h^B &= \sum_{i:N_i^B>N_{i-1}^B}\left|V_i^B-V_{i-1}^B\right|,\\
+A_h^S &= \sum_{i:N_i^S>N_{i-1}^S}\left|V_i^S-V_{i-1}^S\right|.
+\end{align}
+
+These variables are useful pressure proxies, but executions and cancellations occurring in
+the same polling interval can distort them.
+
+\subsection{Insta-trade flow}
+
+Positive changes in the rolling seven-day fields estimate executed flow:
+
+\begin{align}
+I_h^{\mathrm{sold}} &= \sum_i \max(0,M_i^B-M_{i-1}^B),\\
+I_h^{\mathrm{bought}} &= \sum_i \max(0,M_i^S-M_{i-1}^S).
+\end{align}
+
+$I_h^{\mathrm{sold}}$ represents units players insta-sold into standing buy orders.
+$I_h^{\mathrm{bought}}$ represents units players insta-bought from standing sell orders.
+
+\subsection{Top-bid chase behavior}
+
+The system measures how often the best bid rises:
+
+\begin{align}
+U_h &= \sum_i \mathbf{1}\{b_i>b_{i-1}\},\\
+\Delta_h^+ &= \sum_i \max(0,b_i-b_{i-1}).
+\end{align}
+
+$U_h$ is the number of upward moves and $\Delta_h^+$ is their cumulative coin magnitude.
+The current Balanced formula uses $U_h$ but exposes $\Delta_h^+$ only diagnostically.
+
+\subsection{Rolling arithmetic averages}
+
+For metric $X_h$ and a window containing $n$ available hourly observations,
+
+\begin{equation}
+\bar X_n=\frac{1}{n}\sum_{j=1}^{n}X_{h-j+1}.
+\end{equation}
+
+The system precomputes windows of 1, 6, and 48 hours every 60 minutes. If fewer than the
+requested number of observations exist, the mean uses the available observations. Thus the
+stored \code{windowHours} may represent a target while the observation count represents the
+actual sample size.
+
+\implementation{The manipulation scorer currently uses the 48-hour averages. The flipping
+scorer uses all three windows and selects the smallest positive flow estimate, producing a
+conservative liquidity estimate.}
+
+\section{Shared Price-Risk Model}
+
+The risk toolkit measures whether current prices are unusually far from two references:
+the latest weighted two-percent price and the historical mean closing price.
+
+For value $v$ and valid reference $r>0$, define relative deviation
+
+\begin{equation}
+d(v,r)=\frac{|v-r|}{r}.
+\end{equation}
+
+For each side of the book, the system takes the largest available deviation:
+
+\begin{align}
+d_B &= \max\{d(a_t,a_t^{2\%}),d(a_t,\bar a^{\mathrm{close}})\},\\
+d_S &= \max\{d(b_t,b_t^{2\%}),d(b_t,\bar b^{\mathrm{close}})\}.
+\end{align}
+
+It also measures a reference shock between the weighted and historical values:
+
+\begin{equation}
+q=\max\left\{d(a_t^{2\%},\bar a^{\mathrm{close}}),
+d(b_t^{2\%},\bar b^{\mathrm{close}})\right\}.
+\end{equation}
+
+The normalized risk score is
+
+\begin{equation}
+R=\clip{\max\left(\frac{\max(d_B,d_S)}{0.20},\frac{q}{0.25}\right)}.
+\end{equation}
+
+The market is flagged as likely atypical or already manipulated if
+
+\begin{equation}
+\max(d_B,d_S)\ge0.15
+\quad\lor\quad q\ge0.12
+\quad\lor\quad R\ge0.85.
+\end{equation}
+
+This is an anomaly heuristic, not a causal classifier: it detects unusual price regimes but
+cannot prove why they occurred.
+
+\section{Bazaar Flipping Model}
+
+\subsection{Liquidity selection}
+
+Let $D_w$ and $S_w$ denote average insta-bought and insta-sold units for window
+$w\in\{1,6,48\}$ hours. The selected demand and supply are the smallest positive values:
+
+\begin{equation}
+D=\min{}^+(D_1,D_6,D_{48}),\qquad
+S=\min{}^+(S_1,S_6,S_{48}).
+\end{equation}
+
+This avoids projecting an unusually active short period across the whole trading horizon.
+Executable throughput is constrained by both sides:
+
+\begin{equation}
+Q=\min(D,S).
+\end{equation}
+
+Markets with $Q<1$ unit/hour receive score zero.
+
+\subsection{Budget, horizon, and competition}
+
+For budget $B$ and horizon $H$, affordable units per hour are
+
+\begin{equation}
+Q_B=\left\lfloor\frac{B}{b_tH}\right\rfloor,
+\end{equation}
+
+and planned capacity is $Q_P=\min(Q,Q_B)$ when a budget is supplied.
+
+Let $C_B$ and $C_S$ be average created-order proxies. Define
+
+\begin{align}
+C_{\max}&=\max(C_B,C_S),& C_{\min}&=\min(C_B,C_S),\\
+\eta&=\frac{C_{\max}-C_{\min}}{C_{\max}+1},&
+C_{\mathrm{eff}}&=C_{\max}(1+0.5\eta).
+\end{align}
+
+The side-balance adjustment is approximately
+
+\begin{equation}
+L=\min\left(1,\frac{S}{D+1}\right),
+\end{equation}
+
+with explicit edge handling for absent demand or supply. With competition coefficient
+$\kappa$, suggested units per hour become
+
+\begin{equation}
+Q_{\mathrm{sugg}}=
+\frac{\min(Q_PH,QHL)}{H\max(10^{-6},1+\kappa C_{\mathrm{eff}})}.
+\end{equation}
+
+\subsection{Profit and score}
+
+The current implementation treats the gross spread as the pre-risk unit margin and discounts
+it by risk:
+
+\begin{align}
+\pi_u &= s_t(1-R),\\
+\Pi_h &= \pi_u Q_{\mathrm{sugg}}.
+\end{align}
+
+Define
+
+\begin{align}
+P &= \log_{10}(\Pi_h+1),\\
+G &= \min(0.8,12\rho_t),\\
+P_R &= 0.1R,\\
+P_C &= \min(0.10,0.0007C_{\mathrm{eff}}),\\
+L_Q &= \min(1,Q/8).
+\end{align}
+
+The final flipping score is
+
+\begin{equation}
+\boxed{S_{\mathrm{flip}}=P(1+G)(1-P_R)(1-P_C)L_Q.}
+\end{equation}
+
+Estimated fill times for the suggested quantity $Q_{\mathrm{sugg}}H$ are
+
+\begin{align}
+T_{\mathrm{buy}}&=\frac{Q_{\mathrm{sugg}}H}{S},&
+T_{\mathrm{sell}}&=\frac{Q_{\mathrm{sugg}}H}{D},&
+T_{\mathrm{total}}&=T_{\mathrm{buy}}+T_{\mathrm{sell}}.
+\end{align}
+
+\risk{Important: the implemented flipping margin does not explicitly subtract Bazaar tax.
+The score is therefore best interpreted as a comparative ranking signal, not an accounting
+statement of guaranteed net profit.}
+
+\section{Manipulation Planning Model}
+
+This section documents the model used to rank markets that appear cornerable. It describes
+the system's analytical behavior; actual market actions remain exposed to hidden liquidity,
+competing supply, execution delay, game rules, and substantial loss risk.
+
+\subsection{Estimating total sell-side depth}
+
+The API exposes only the top portion of the order book. Let
+
+\begin{itemize}
+  \item $U_v$ be visible sell units,
+  \item $K_v$ be visible sell orders,
+  \item $K$ be the API's total active sell-order count,
+  \item $V^S$ be aggregate sell volume,
+  \item $C_v$ be cost of all visible units,
+  \item $p_{\max}$ be the worst visible ask.
+\end{itemize}
+
+Missing orders are $K_m=\max(0,K-K_v)$. If $K_v>0$, units are extrapolated as
+
+\begin{equation}
+\widehat U=\max\left(U_v,
+U_v+K_m\frac{U_v}{K_v},
+V^S\right).
+\end{equation}
+
+The base hidden-unit price is conservatively selected as
+
+\begin{equation}
+p_h^{(0)}=\max\left(\frac{C_v}{U_v},p_{\max}\right).
+\end{equation}
+
+It receives a premium based on the proportion of hidden orders:
+
+\begin{align}
+r_h&=\min\left(1,\frac{K_m}{K_v}\right),\\
+p_h&=p_h^{(0)}(1+0.25r_h).
+\end{align}
+
+The estimated corner cost is therefore
+
+\begin{equation}
+\boxed{\widehat C=C_v+\max(0,\widehat U-U_v)p_h.}
+\end{equation}
+
+This extrapolation deliberately charges hidden units at no less than the worst visible price.
+It cannot recover the true hidden distribution, but it is safer than assuming every hidden
+unit trades at the visible average.
+
+\subsection{Break-even, target, and projected profit}
+
+Average acquisition cost is
+
+\begin{equation}
+\bar c=\frac{\widehat C}{\widehat U}.
+\end{equation}
+
+With sale tax $\tau$, the break-even resell price is
+
+\begin{equation}
+p_{\mathrm{BE}}=\frac{\bar c}{1-\tau}.
+\end{equation}
+
+For selected return multiplier $r\ge1$ and sell-wall multiplier $w>1$,
+
+\begin{align}
+p_T&=rp_{\mathrm{BE}},\\
+p_W&=wp_T.
+\end{align}
+
+The projected net profit per unit and total projected profit are
+
+\begin{align}
+\pi_u&=p_T(1-\tau)-\bar c,\\
+\Pi&=\widehat U\pi_u.
+\end{align}
+
+Because $p_T=r\bar c/(1-\tau)$, this simplifies to
+
+\begin{equation}
+\Pi=\widehat C(r-1).
+\end{equation}
+
+This identity is important: for fixed $r$, projected profit is proportional to capital
+deployed. The later quality terms must therefore prevent large but operationally poor markets
+from dominating the ranking.
+
+\subsection{Required bid movement and exit time}
+
+Starting from current best bid $b_t$, required doubling steps are
+
+\begin{equation}
+n_2=\left\lceil\log_2\left(\frac{p_T}{b_t}\right)\right\rceil_+,
+\end{equation}
+
+where the value is zero when $p_T\le b_t$.
+
+Let $E=\bar A^B$ be average newly added buy-order units/hour. The estimated exit time is
+
+\begin{equation}
+T_E=\frac{\widehat U}{E}.
+\end{equation}
+
+Let $A^S$ be added sell-order units/hour and $I^{\mathrm{sold}}$ be insta-sold units/hour.
+The adverse unit-pressure estimate is
+
+\begin{equation}
+P_S=A^S+I^{\mathrm{sold}}.
+\end{equation}
+
+The exit estimate assumes historical new buy-order units are potentially available to absorb
+the position. It does not guarantee that those orders appear above the required exit price or
+remain in place.
+
+\section{Common Manipulation Score}
+
+Before the versioned order-flow formula is applied, all manipulation models share the same
+hard gates and broad market-quality terms.
+
+\subsection{Hard gates}
+
+An opportunity receives score zero if any of the following holds:
+
+\begin{align*}
+\Pi&\le0,& D&<1\text{ unit/hour},& E&\le0,\\
+n_2&>6,& R&\ge0.85,& T_E&>24\text{ hours}.
+\end{align*}
+
+The list endpoint adds practical filters for budget, maximum units, current item price,
+demand/supply ratio, and minimum profit. Craftable and NPC-buyable products on maintained
+exclusion lists are removed. Higher-tier enchantments are removed when two lower-tier units
+can be combined more cheaply than the proposed target price.
+
+With budget $B$, the default minimum-profit floor is
+
+\begin{equation}
+\Pi_{\min}=\min(0.10B,50{,}000{,}000).
+\end{equation}
+
+The default current item-price cap is 1.5 million coins.
+
+\subsection{Base quality factors}
+
+Projected profit is compressed logarithmically:
+
+\begin{equation}
+Q_\Pi=\log_{10}(\Pi+1).
+\end{equation}
+
+Corner-size quality favors operationally manageable inventories:
+
+\begin{equation}
+Q_U=\frac{10{,}000}{10{,}000+\widehat U}.
+\end{equation}
+
+Let $D$ be insta-buy demand, $S$ insta-sell supply, and
+
+\begin{equation}
+z=\begin{cases}
+\min(5,D/S),&S>0,\\
+5,&S=0,D>0,\\
+0,&D=S=0.
+\end{cases}
+\end{equation}
+
+Demand quality is
+
+\begin{equation}
+Q_D=\frac{D}{D+10}\left(0.35+0.65\frac{z}{z+3}\right).
+\end{equation}
+
+Exit-speed quality is
+
+\begin{equation}
+Q_T=\frac{3}{3+T_E}.
+\end{equation}
+
+Bid-climb realism and anomaly survival are
+
+\begin{align}
+Q_2&=\exp(-n_2/2.5),\\
+Q_R&=\clip{1-0.9R}.
+\end{align}
+
+\subsection{Standing market-control quality}
+
+Let active sell orders, active buy orders, sell units, and buy units be
+$N^S,N^B,V^S,V^B$. Define
+
+\begin{align}
+t_{SO}&=\frac{60}{60+N^S},&
+t_{SV}&=\frac{50{,}000}{50{,}000+V^S},\\
+d_{BO}&=\frac{N^B}{N^B+120},&
+d_{BV}&=\frac{V^B}{V^B+50{,}000},\\
+i_O&=\frac{N^B+1}{N^B+N^S+2},&
+i_V&=\frac{V^B+1}{V^B+V^S+2}.
+\end{align}
+
+Then
+
+\begin{equation}
+Q_M=0.15+0.85(0.25t_{SO}+0.25t_{SV}+0.20d_{BO}
++0.15d_{BV}+0.10i_O+0.05i_V).
+\end{equation}
+
+This rewards thin sell-side control and substantial buyer-side depth without allowing market
+control alone to reduce the score all the way to zero.
+
+\section{Order-Flow Signals}
+
+For readability, define the half-saturation transform
+
+\begin{equation}
+H(x;k)=\frac{x}{x+k}
+\end{equation}
+
+and the squared quietness transform
+
+\begin{equation}
+L(x;k)=\frac{1}{1+(x/k)^2}.
+\end{equation}
+
+Using created buy orders $C_B$, created sell orders $C_S$, exit units $E$, adverse sell
+pressure $P_S$, bid raises $U$, and flipper-attention score $F$, the primitive signals are
+
+\begin{align}
+B_H &= H(C_B;3) && \text{buy-order heat},\\
+S_Q &= \frac{2}{2+C_S} && \text{absolute sell-order quietness},\\
+B_\% &= \frac{C_B+0.5}{C_B+C_S+1} && \text{buy-side order share},\\
+P_Q &= \frac{E}{E+P_S+1} && \text{simple pressure quietness},\\
+C_Q &= L\!\left(\frac{C_S}{C_B+1};2\right) && \text{sell-creation dominance survival},\\
+P_Q^*&=L\!\left(\frac{P_S}{E+1};0.20\right) && \text{strong pressure survival},\\
+B_C &= H(U;3) && \text{bid-chase activity}.
+\end{align}
+
+\subsection{Flipper attention}
+
+The attention proxy estimates whether the current quoted flip is attractive enough to be
+noticed. Let $Q_f=\min(D,S)$ and raw quoted flip profit/hour be
+
+\begin{equation}
+\Pi_f=(a_t-b_t)Q_f.
+\end{equation}
+
+Then
+
+\begin{align}
+F_\Pi&=H(\Pi_f;2{,}000{,}000),\\
+F_\rho&=H(\rho_t;0.035),\\
+F&=\sqrt{F_\Pi F_\rho}.
+\end{align}
+
+This is an internal visibility proxy. It does not query external flipping websites and does
+not use the Modern Bazaar flipping rank directly.
+
+\section{Versioned Manipulation Formulas}
+
+The final manipulation score has the common form
+
+\begin{equation}
+\boxed{S_{\mathrm{manip}}=
+Q_\Pi Q_U Q_M Q_D Q_T Q_O Q_2 Q_R,}
+\end{equation}
+
+where $Q_O$ is selected by formula version.
+
+\subsection{Overclocker formula (v1)}
+
+The original empirically successful model strongly rewards buy activity and penalizes
+adverse pressure:
+
+\begin{align}
+Z_O&=0.30B_H+0.20B_\%+0.15S_Q+0.25P_Q+0.10C_Q,\\
+Q_O^{(1)}&=(0.05+0.95Z_O)(0.55+0.45C_Q)(0.10+0.90P_Q^*).
+\end{align}
+
+Its strength is practical market control. Its weakness is that a quiet, apparently favorable
+market may still fail to attract enough new bidders.
+
+\subsection{Attention formula (v2)}
+
+The Attention model adds direct bidder-chase and flipper-visibility requirements:
+
+\begin{align}
+Z_A={}&0.30B_H+0.25B_C+0.15B_\%+0.15S_Q\\
+&+0.20P_Q+0.05F+0.05C_Q,\\
+Q_O^{(2)}={}&(0.05+0.95Z_A)(0.35+0.65B_C)(0.45+0.55F)\\
+&\cdot(0.55+0.45C_Q)(0.10+0.90P_Q^*).
+\end{align}
+
+Its strength is evidence of visible competition. Its weakness is that requiring historical
+attention can favor markets where the crowd also supplies inventory aggressively.
+
+\subsection{Balanced formula (v3, default)}
+
+Balanced separates attraction from survival before recombining them. Define attention
+
+\begin{equation}
+A=0.30B_H+0.25B_C+0.25F+0.20B_\%,
+\end{equation}
+
+pressure survival
+
+\begin{equation}
+G=0.55P_Q^*+0.25C_Q+0.20P_Q,
+\end{equation}
+
+and a broad base
+
+\begin{equation}
+Z_B=0.25B_H+0.20B_\%+0.20P_Q+0.15S_Q+0.10B_C+0.10F.
+\end{equation}
+
+The order-flow quality is
+
+\begin{equation}
+\boxed{
+Q_O^{(3)}=(0.05+0.95Z_B)(0.30+0.70A)(0.15+0.85G)
+(0.35+0.65P_Q^*)(0.50+0.50C_Q).}
+\end{equation}
+
+This is the key quantitative compromise. Attention is valuable, but it cannot compensate
+freely for sell pressure because pressure survival enters through several multiplicative
+terms. Conversely, a perfectly quiet market is not automatically ranked highly if it lacks
+buy heat, bid chasing, and flipper visibility.
+
+\section{Why Balanced Has Worked}
+
+Balanced corresponds closely to the actual execution problem:
+
+\begin{enumerate}
+  \item A market must contain enough existing and newly created buyer capacity to provide an
+  exit. This is represented by $E$, $C_B$, $N^B$, $V^B$, and $B_C$.
+  \item It must attract participants who perceive a profitable spread. This is represented by
+  $F$ and historical upward bid movement.
+  \item The position must remain controllable while those buyers arrive. This is represented by
+  $C_S$, $A^S$, insta-sold units, standing sell depth, and corner size.
+  \item The price path must remain plausible and not already look anomalous. This is represented
+  by $n_2$ and $R$.
+\end{enumerate}
+
+The model is multiplicative because a fatal weakness should not be averaged away by an
+unrelated strength. For example, excellent projected profit should not rescue an item with
+nearly no exit flow. Balanced softens this principle with nonzero floors so that moderate
+imperfections reduce rather than automatically eliminate an opportunity.
+
+\section{Interpretation of Dashboard Outputs}
+
+\begin{longtable}{p{0.25\textwidth}p{0.67\textwidth}}
+\toprule
+Output & Correct interpretation\\
+\midrule
+\endhead
+Corner cost & Estimated cost of visible plus extrapolated hidden sell-side units.\\
+Average buy cost & Corner cost divided by estimated total corner units.\\
+Minimum resell & Tax-adjusted break-even price, not a recommended guaranteed exit.\\
+Projected profit & Profit if all cornered units exit at the chosen target multiplier.\\
+Sell-through & Corner units divided by historical new buy-order units/hour. It is an optimistic
+capacity estimate, not a queue simulation.\\
+Buy orders/hour & Average observed increases in active buy-order count. It may undercount true creation.\\
+Sell orders/hour & Average observed increases in active sell-order count. Lower is generally preferable.\\
+Exit units/hour & Estimated units newly added to buy orders.\\
+Pressure units/hour & Newly listed sell units plus units insta-sold into bids.\\
+Bid raises/hour & Frequency of positive changes in the best bid, independent of jump magnitude.\\
+Flip attention & Internal proxy derived from current spread and historical two-sided throughput.\\
+Score & Relative ranking utility. It has no direct coin, probability, or expected-return unit.\\
+\bottomrule
+\end{longtable}
+
+\section{Operational Observability}
+
+The application publishes Micrometer/Actuator metrics to Prometheus. Explicit ingestion
+counters include fetched products, persisted snapshots, and poll failures. PostgreSQL metrics
+are collected by a dedicated exporter. Grafana reads Prometheus as a provisioned data source.
+
+Operational monitoring should answer four classes of questions:
+
+\begin{itemize}
+  \item \textbf{Freshness:} is Hypixel being polled and are new snapshots arriving?
+  \item \textbf{Completeness:} are hourly compaction and rolling aggregation keeping up?
+  \item \textbf{Capacity:} are database size, connection usage, CPU, memory, and disk healthy?
+  \item \textbf{Correctness symptoms:} did opportunity counts collapse, did metrics become flat,
+  or did API error rates rise?
+\end{itemize}
+
+Prometheus is protected with HTTP Basic authentication at Caddy. Grafana uses its own login.
+The API and Actuator endpoints are protected by the application's security configuration.
+
+\section{Statistical and Modeling Limitations}
+
+\subsection{Observation is not an event stream}
+
+The API provides periodic market states, not every order creation, cancellation, fill, or
+replacement. Metrics derived from state differences are therefore interval-censored. Events
+that cancel each other between polls cannot be reconstructed exactly.
+
+\subsection{Hidden depth is estimated}
+
+Only part of the order book is visible. The corner estimator extrapolates average units/order
+and applies a price premium, but a single large hidden order or sharply rising hidden price
+ladder can make actual acquisition cost much higher.
+
+\subsection{Averages mix market regimes}
+
+The 48-hour manipulation window stabilizes rankings but reacts slowly to sudden changes.
+Maintenance, game updates, weekends, creator attention, or an active manipulator can shift the
+current regime away from the historical mean.
+
+\subsection{Exit flow is not price-conditioned}
+
+$E$ measures new buy-order units at historical prices. The current model does not estimate
+
+\begin{equation}
+\Pr(\text{new bid price}\ge p_T)
+\end{equation}
+
+or model the probability that another seller consumes those units first. This is why displayed
+sell-through can be materially faster than realized liquidation.
+
+\subsection{Bid raises are sampling-sensitive}
+
+The count $U_h$ depends on polling frequency and treats a minimal increase like a major move.
+The stored magnitude $\Delta_h^+$ could eventually distinguish economically meaningful bidder
+competition from noise.
+
+\subsection{Scores are calibrated rankings, not probabilities}
+
+Neither strategy score is a probability of success. Coefficients and half-saturation constants
+encode practical preferences and observed behavior. Their strongest validation is comparative:
+better-ranked items should produce better realized outcomes on average under comparable execution.
+
+\section{Validation Framework}
+
+The next quantitative step should preserve the successful Balanced formula and evaluate it
+against a trade journal. For trade $j$, record at decision time:
+
+\begin{equation*}
+x_j=(\widehat U,\widehat C,D,S,C_B,C_S,E,P_S,U,F,R,n_2,T_E,S_{\mathrm{manip}})
+\end{equation*}
+
+and after execution:
+
+\begin{equation*}
+y_j=(C_j^{\mathrm{actual}},T_j^{\mathrm{exit}},\Pi_j^{\mathrm{realized}},
+\mathrm{drawdown}_j,\mathrm{success}_j).
+\end{equation*}
+
+Recommended validation statistics include:
+
+\begin{align}
+\text{Corner cost error}_j&=\frac{C_j^{\mathrm{actual}}-\widehat C_j}{\widehat C_j},\\
+\text{Exit-time error}_j&=\frac{T_j^{\mathrm{exit}}-T_{E,j}}{T_{E,j}},\\
+\text{Profit realization}_j&=\frac{\Pi_j^{\mathrm{realized}}}{\widehat\Pi_j}.
+\end{align}
+
+Rank quality can be measured using Spearman correlation between score and realized profit,
+precision among the top $k$ opportunities, median drawdown by score decile, and calibration
+curves for any later success-probability model.
+
+An especially useful design is an immutable \emph{decision snapshot}: store exactly the
+features and formula version shown when a trade is selected. This prevents later data updates
+from contaminating historical backtests.
+
+\section{Path Toward Simulation and Machine Learning}
+
+A future learning system should not begin by replacing the scorer. Balanced can serve as a
+strong policy prior and benchmark.
+
+\subsection{Replay environment}
+
+At decision time $t$, the state may contain live book features, rolling windows, risk, item
+metadata, and current inventory. An action specifies whether to enter, capital allocated,
+target price, wall configuration, and exit policy. Reward should be realized net profit minus
+explicit penalties for drawdown, time in position, and unliquidated inventory:
+
+\begin{equation}
+r_t=\Delta\mathrm{coins}_t
+-\lambda_D\mathrm{drawdown}_t
+-\lambda_T\mathrm{capital\ time}_t
+-\lambda_I\mathrm{inventory}_t.
+\end{equation}
+
+The replay engine must enforce causality: the model may use only information available at time
+$t$. Random train/test splitting is inappropriate for market data; evaluation should use
+walk-forward time splits.
+
+\subsection{Recommended modeling sequence}
+
+\begin{enumerate}
+  \item Predict realized exit time and adverse sell pressure as supervised targets.
+  \item Predict probability of reaching several return thresholds within 1, 2, and 6 hours.
+  \item Use those calibrated predictions to rerank Balanced candidates.
+  \item Introduce policy optimization only after the replay environment reproduces actual
+  historical trades with acceptable error.
+\end{enumerate}
+
+This sequence is easier to debug than immediately training a reinforcement-learning agent and
+provides measurable improvements at every stage.
+
+\section{Recommended Quantitative Improvements}
+
+The following changes offer the highest information gain without discarding the empirically
+successful Balanced model:
+
+\begin{enumerate}
+  \item \textbf{Outcome logging.} Record actual entry cost, fills, new orders, competing sells,
+  exit time, realized profit, and formula version.
+  \item \textbf{Multi-window manipulation features.} Keep the 48-hour baseline, but expose 1-hour
+  and 6-hour ratios to detect regime changes rather than replacing the baseline outright.
+  \item \textbf{Metric confidence.} Attach observation count, missing-hour ratio, and sample
+  freshness to every rolling feature.
+  \item \textbf{Pressure decomposition.} Keep new sell listings and insta-sells separate in
+  analysis so their independent effects can be estimated from outcomes.
+  \item \textbf{Price-conditioned exits.} Estimate the distribution of newly created bid prices,
+  not only their total units.
+  \item \textbf{Magnitude-aware bidder chase.} Combine $U_h$ with normalized $\Delta_h^+$ while
+  retaining the present count as a stable feature.
+  \item \textbf{Robust aggregation.} Compare arithmetic means with medians, trimmed means, and
+  exponentially weighted averages during offline evaluation.
+\end{enumerate}
+
+These are research directions, not immediate formula edits. The present Balanced model should
+remain versioned and reproducible while evidence is collected.
+
+\section{Conclusion}
+
+Modern Bazaar is best understood as a layered quantitative decision system. It does not merely
+sort products by spread. It observes the market repeatedly, compresses those observations into
+hourly behavior, compares current prices with historical references, estimates feasible trade
+size, and ranks opportunities using explicit economic constraints.
+
+The Balanced manipulation formula is strong because it models the central tension directly:
+a profitable-looking market needs enough attention to create buyers, but not so much adverse
+supply that the position becomes uncontrollable. Its current success is plausible from both
+the mathematics and observed execution. The system's main uncertainties lie upstream in
+partial order-book visibility and state-difference proxies, and downstream in the absence of
+price-conditioned exit probabilities.
+
+The correct next phase is measurement rather than uncontrolled coefficient tuning. A reliable
+decision-time feature log and realized-trade journal would transform the scorer from an
+empirically promising ranking into a system that can be calibrated, backtested, and eventually
+used as the foundation for simulation and machine learning.
+
+\clearpage
+\appendix
+\section{Principal Constants}
+
+\begin{longtable}{p{0.38\textwidth}p{0.14\textwidth}p{0.36\textwidth}}
+\toprule
+Constant & Value & Interpretation\\
+\midrule
+\endhead
+Default Bazaar sale tax & 1.125\% & Deducted from manipulation sale proceeds\\
+Maximum demand/supply ratio & 5.0 & Prevents unbounded ratios near zero supply\\
+Minimum demand & 1 unit/h & Manipulation hard gate\\
+Maximum exit time & 24 h & Manipulation hard gate\\
+Maximum bid doublings & 6 & Manipulation hard gate\\
+Risk hard gate & 0.85 & Excludes highly atypical regimes\\
+Demand half-saturation & 10 units/h & Common demand quality\\
+Exit-time half-saturation & 3 h & Common exit quality\\
+Created-buy half-saturation & 3 orders/h & Order-flow buy heat\\
+Bid-raise half-saturation & 3 raises/h & Bidder-chase confidence\\
+Sell-order half-saturation & 2 orders/h & Sell quietness\\
+Pressure-ratio half-saturation & 0.20 & Strong adverse-pressure penalty\\
+Corner-size half-saturation & 10,000 units & Practical inventory preference\\
+Active sell-order half-saturation & 60 & Standing control\\
+Active buy-order half-saturation & 120 & Standing buyer depth\\
+Flip-attention profit half-saturation & 2,000,000 coins/h & Internal visibility proxy\\
+Flip-attention spread half-saturation & 3.5\% & Internal visibility proxy\\
+Default max current item price & 1,500,000 coins & List filter\\
+Default automatic profit floor & 10\% of budget & Capped at 50 million coins\\
+\bottomrule
+\end{longtable}
+
+\section{Notation Summary}
+
+\begin{longtable}{p{0.20\textwidth}p{0.72\textwidth}}
+\toprule
+Symbol & Definition\\
+\midrule
+\endhead
+$a_t,b_t$ & Current ask and bid\\
+$D,S$ & Average insta-buy demand and insta-sell supply, units/hour\\
+$C_B,C_S$ & Observed created buy/sell order proxies, orders/hour\\
+$E$ & Newly added buy-order units/hour, used as exit capacity\\
+$P_S$ & Added sell-order units plus insta-sold units/hour\\
+$U$ & Positive best-bid movements/hour\\
+$F$ & Internal flipper-attention score in $[0,1]$\\
+$R$ & Price-deviation risk score in $[0,1]$\\
+$\widehat U,\widehat C$ & Estimated corner units and cost\\
+$p_{\mathrm{BE}},p_T,p_W$ & Break-even, target buy-order, and sell-wall prices\\
+$T_E$ & Estimated position exit time\\
+$Q_O^{(1)},Q_O^{(2)},Q_O^{(3)}$ & Overclocker, Attention, and Balanced order-flow quality\\
+\bottomrule
+\end{longtable}
+
+\vfill
+\begin{center}
+\small\color{textgray}
+Prepared for the Modern Bazaar project.\\
+Author: Pedro Silva.
+\end{center}
+
+\end{document}

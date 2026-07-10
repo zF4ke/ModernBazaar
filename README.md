@@ -28,6 +28,14 @@ A cleanly separated system:
 - Optional Python/Java modules for heavier analysis or ML.
 - Production-style observability and reliability
 
+## 📐 Quantitative documentation
+
+The complete mathematical and architectural specification is available as a
+[compiled PDF](output/pdf/MODERN_BAZAAR_QUANTITATIVE_SYSTEM.pdf) and as
+[LaTeX source](docs/MODERN_BAZAAR_QUANTITATIVE_SYSTEM.tex). It documents the data
+pipeline, market metrics, risk model, flipping scorer, versioned manipulation
+formulas, validation framework, and future simulation/ML direction.
+
 ## 🛣️ Roadmap
 I'll try to keep this updated as I make progress, but it will not be exhaustive (especially around the specific trading strategies I want to implement).
 
