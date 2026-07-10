@@ -164,7 +164,12 @@ export default function ManipulationPage() {
     setSearchText("")
   }
 
-  const { hasPermission, loading: permissionLoading } = useHasPermission(PERMISSIONS.USE_BAZAAR_MANIPULATION)
+  const {
+    hasPermission,
+    loading: permissionLoading,
+    error: permissionError,
+    checkPermission,
+  } = useHasPermission(PERMISSIONS.USE_BAZAAR_MANIPULATION)
 
   return (
     <LoginCheck
@@ -179,6 +184,8 @@ export default function ManipulationPage() {
         icon={<Crosshair className="h-8 w-8 text-muted-foreground" />}
         hasPermission={hasPermission}
         loading={permissionLoading}
+        error={permissionError}
+        onRetry={() => { void checkPermission() }}
         upgradeMessage="Unlock Bazaar Manipulation to find thin-supply, high-demand markets you can corner within your budget, with a full step-by-step plan: cost to corner, break-even resell, the inflated buy/sell orders, and expected profit."
         adminErrorDetails={
           <div className="space-y-2 text-sm">

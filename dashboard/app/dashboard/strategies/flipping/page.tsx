@@ -324,7 +324,13 @@ export default function FlippingPage() {
 
   // Permission check using the new component
   // You can also check multiple permissions: useHasPermission([PERMISSIONS.USE_BAZAAR_FLIPPING, PERMISSIONS.USE_FLIPPER])
-  const { hasPermission, hasAdminAccess, loading: permissionLoading } = useHasPermission(PERMISSIONS.USE_BAZAAR_FLIPPING)
+  const {
+    hasPermission,
+    hasAdminAccess,
+    loading: permissionLoading,
+    error: permissionError,
+    checkPermission,
+  } = useHasPermission(PERMISSIONS.USE_BAZAAR_FLIPPING)
 
   return (
     <LoginCheck
@@ -340,6 +346,8 @@ export default function FlippingPage() {
         // hasAdminAccess={hasAdminAccess}
         hasPermission={hasPermission}
         loading={permissionLoading}
+        error={permissionError}
+        onRetry={() => { void checkPermission() }}
         upgradeMessage="Unlock Bazaar Flipping to access our advanced trading algorithms, real-time market analysis, and intelligent opportunity scoring. This premium feature helps you identify the most profitable items to flip with confidence."
         adminErrorDetails={
           <div className="space-y-2 text-sm">

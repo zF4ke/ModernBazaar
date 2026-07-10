@@ -74,34 +74,34 @@ export function useBackendQuery<T>(
       return response.json()
     },
     enabled: enabled && (!requireAuth || isAuthenticated),
-    // Smart retry logic - don't retry on permission errors
+    // Smart retry logic. A 401 is an authentication/token-refresh failure, not a
+    // subscription decision. Retry it once so middleware can persist a refreshed
+    // token; a 403 is the actual permission-denied response.
     retry: (failureCount, error) => {
       const status = errorStatus(error)
-      // Don't retry on permission errors (401, 403) - these won't change
-      if (status === 401 || status === 403) {
-        console.log(`🚫 Permission error (${status}) for ${endpoint} - not retrying`)
+      if (status === 401) {
+        return failureCount < 1
+      }
+
+      // A real authorization decision will not change on retry.
+      if (status === 403) {
         return false
       }
 
       // Don't retry on 404 - resource doesn't exist
       if (status === 404) {
-        console.log(`🚫 Resource not found (404) for ${endpoint} - not retrying`)
         return false
       }
 
       // Don't retry on 422 - validation errors won't change
       if (status === 422) {
-        console.log(`🚫 Validation error (422) for ${endpoint} - not retrying`)
         return false
       }
 
       // Retry up to 2 times for other errors (network issues, 500s, etc.)
       if (failureCount < 2) {
-        console.log(`🔄 Retrying ${endpoint} (attempt ${failureCount + 1}/3)`)
         return true
       }
-      
-      console.log(`❌ Max retries reached for ${endpoint}`)
       return false
     },
     // Longer retry delay to avoid spamming

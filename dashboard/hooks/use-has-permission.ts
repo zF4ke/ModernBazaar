@@ -41,9 +41,10 @@ export function useHasPermission(requiredPermissions: Permission | Permission[])
     },
   )
 
-  // 403 (and 401) mean "you don't have it", which is a valid answer, not an error.
+  // Only 403 means the authenticated user lacks the entitlement. A 401 means the
+  // session token failed and must never be displayed as a lost subscription.
   const status = errorStatus(queryError)
-  const isPermissionError = status === 401 || status === 403
+  const isPermissionError = status === 403
 
   const hasPermission = data ? permissionsArray.every((p) => data.permissions.includes(p)) : false
 
@@ -51,7 +52,9 @@ export function useHasPermission(requiredPermissions: Permission | Permission[])
     hasPermission,
     hasAdminAccess,
     loading: userLoading || (isAuthenticated && isLoading),
-    error: queryError && !isPermissionError ? 'Failed to verify permissions' : null,
+    error: queryError && !isPermissionError
+      ? status === 401 ? 'Your session needs to be refreshed' : 'Failed to verify permissions'
+      : null,
     checkPermission: async () => { await refetch() },
   }
 }

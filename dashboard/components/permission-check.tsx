@@ -24,6 +24,10 @@ interface PermissionCheckProps {
   hasPermission: boolean
   // Loading state
   loading?: boolean
+  // Authentication/query failure; distinct from a genuine permission denial
+  error?: string | null
+  // Retry the entitlement lookup after a transient session failure
+  onRetry?: () => void
   // Custom upgrade message
   upgradeMessage?: string
   // Custom admin error details
@@ -40,6 +44,8 @@ export function PermissionCheck({
   hasAdminAccess = false,
   hasPermission,
   loading = false,
+  error = null,
+  onRetry,
   upgradeMessage,
   adminErrorDetails,
   children
@@ -65,6 +71,35 @@ export function PermissionCheck({
             <div className="h-4 bg-muted rounded w-3/4"></div>
             <div className="h-4 bg-muted rounded w-1/2"></div>
             <div className="h-4 bg-muted rounded w-2/3"></div>
+          </div>
+        </FeatureCard>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <GradientSection variant="hero" padding="sm">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-muted/50 border">{icon}</div>
+            <div className="space-y-2">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight">{featureName}</h1>
+              <p className="text-muted-foreground text-sm">{featureDescription}</p>
+            </div>
+          </div>
+        </GradientSection>
+        <FeatureCard backgroundStyle="flat" blur="sm">
+          <div className="flex flex-col items-center gap-4 py-10 text-center">
+            <RefreshCw className="h-8 w-8 text-muted-foreground" />
+            <div>
+              <h2 className="text-lg font-semibold">Could not verify your plan</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{error}. Your subscription has not been changed.</p>
+            </div>
+            <Button type="button" variant="outline" onClick={onRetry ?? (() => location.reload())}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try again
+            </Button>
           </div>
         </FeatureCard>
       </div>
