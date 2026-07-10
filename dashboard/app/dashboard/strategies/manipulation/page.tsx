@@ -132,13 +132,20 @@ export default function ManipulationPage() {
     ? [...allItems.filter((i) => favs.has(i.productId)), ...allItems.filter((i) => !favs.has(i.productId))]
     : allItems
   const currentPage = response?.page ?? 0
+  const requestedPage = query.page ?? currentPage
   const totalPages = response?.totalPages ?? 1
   const totalItems = response?.totalItems ?? 0
 
+  useEffect(() => {
+    if (response && query.page !== undefined && response.page !== query.page) {
+      setQuery((prev) => ({ ...prev, page: response.page }))
+    }
+  }, [response, query.page])
+
   const updateQuery = (updates: Partial<ManipulationQuery>) => setQuery((prev) => ({ ...prev, ...updates, page: 0 }))
   const updatePage = (page: number) => setQuery((prev) => ({ ...prev, page }))
-  const goToPreviousPage = () => currentPage > 0 && updatePage(currentPage - 1)
-  const goToNextPage = () => currentPage < totalPages - 1 && updatePage(currentPage + 1)
+  const goToPreviousPage = () => requestedPage > 0 && updatePage(requestedPage - 1)
+  const goToNextPage = () => requestedPage < totalPages - 1 && updatePage(requestedPage + 1)
 
   const resetSetup = () => {
     setQuery({ ...DEFAULT_QUERY })
@@ -211,7 +218,7 @@ export default function ManipulationPage() {
               isLoading={isLoading}
               isFetching={isFetching}
               totalPages={totalPages}
-              currentPage={currentPage}
+              currentPage={requestedPage}
               totalItems={totalItems}
               query={query}
               limit={query.limit || 50}
