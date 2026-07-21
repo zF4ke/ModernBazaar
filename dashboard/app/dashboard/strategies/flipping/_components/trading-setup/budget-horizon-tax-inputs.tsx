@@ -27,13 +27,13 @@ export function BudgetHorizonTaxInputs({
     <div className="grid gap-4 md:grid-cols-3">
       <div className="space-y-2">
         <Label className="text-sm font-medium flex items-center gap-2">
-          <Coins className="h-4 w-4" />
+          <Coins className="h-4 w-4 text-muted-foreground" />
           Your Budget
         </Label>
         <Input
           inputMode="numeric"
           type="text"
-          placeholder="Enter your budget (e.g. 1,000,000)"
+          placeholder="e.g. 1,000,000"
           value={budgetInput}
           onChange={(e) => {
             const value = e.target.value.replace(/[^0-9]/g, '')
@@ -45,14 +45,14 @@ export function BudgetHorizonTaxInputs({
               setBudgetInput("")
             }
           }}
-          className="h-12 text-base"
+          className="h-12 font-mono text-base"
         />
         <p className="text-xs text-muted-foreground">How many coins you want to invest</p>
       </div>
 
       <div className="space-y-2">
         <Label className="text-sm font-medium flex items-center gap-2">
-          <Timer className="h-4 w-4" />
+          <Timer className="h-4 w-4 text-muted-foreground" />
           Time Horizon & Max Time
         </Label>
         <Select value={query.horizonHours?.toString() ?? "1"} onValueChange={(value) => {
@@ -78,7 +78,7 @@ export function BudgetHorizonTaxInputs({
 
       <div className="space-y-2">
         <Label className="text-sm font-medium flex items-center gap-2">
-          <Calculator className="h-4 w-4" />
+          <Calculator className="h-4 w-4 text-muted-foreground" />
           Bazaar Tax Rate
         </Label>
         <Select

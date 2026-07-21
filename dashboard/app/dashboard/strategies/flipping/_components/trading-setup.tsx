@@ -105,12 +105,15 @@ export function TradingSetup(props: TradingSetupProps) {
           getTaxRateValue={getTaxRateValue}
         />
 
-        {filtersOpen && (
-          <>
-            <Separator />
-
-            {/* Advanced options */}
-            <div className="space-y-4">
+        {/* Advanced options collapse smoothly (grid-rows 0fr -> 1fr, no magic
+            pixel heights) instead of popping in and out. */}
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${filtersOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+          aria-hidden={!filtersOpen}
+        >
+          <div className="overflow-hidden">
+            <div className={`space-y-4 pt-0 ${filtersOpen ? "" : "pointer-events-none"}`}>
+              <Separator />
               <AdvancedFilters
                 query={query}
                 updateQuery={updateQuery}
@@ -128,8 +131,8 @@ export function TradingSetup(props: TradingSetupProps) {
                 favCount={favCount}
               />
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </FeatureCard>
   )

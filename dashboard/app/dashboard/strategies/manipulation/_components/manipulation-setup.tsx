@@ -166,12 +166,16 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
           </div>
         </div>
 
-        {filtersOpen && (
-          <>
-            <Separator />
-            <div className="space-y-4">
+        {/* Filters collapse smoothly (grid-rows 0fr -> 1fr) instead of popping. */}
+        <div
+          className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${filtersOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+          aria-hidden={!filtersOpen}
+        >
+          <div className="overflow-hidden">
+            <div className={`space-y-4 ${filtersOpen ? "" : "pointer-events-none"}`}>
+              <Separator />
               <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2"><Search className="h-4 w-4" />Search Items</Label>
+                <Label className="text-sm font-medium flex items-center gap-2"><Search className="h-4 w-4 text-muted-foreground" />Search Items</Label>
                 <Input value={searchText} onChange={(e) => setSearchText(e.target.value)} placeholder="Search by item name or ID..." className="h-10" />
               </div>
 
@@ -241,14 +245,14 @@ export function ManipulationSetup(props: ManipulationSetupProps) {
               <Separator />
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                  <Label className="text-sm font-medium flex items-center gap-2"><Star className="h-4 w-4" />Pin Favorites to Top</Label>
+                  <Label className="text-sm font-medium flex items-center gap-2"><Star className="h-4 w-4 text-muted-foreground" />Pin Favorites to Top</Label>
                   <p className="text-xs text-muted-foreground">Show your starred opportunities first ({favCount} items)</p>
                 </div>
                 <Switch checked={pinFavoritesToTop} onCheckedChange={setPinFavoritesToTop} />
               </div>
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </FeatureCard>
   )
