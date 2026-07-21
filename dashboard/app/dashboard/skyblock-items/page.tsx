@@ -154,20 +154,17 @@ export default function SkyblockItemsPage() {
       featureDescription="Browse and search Hypixel SkyBlock item catalog"
       icon={<Layers className="h-8 w-8 text-muted-foreground" />}
     >
-      <div className="space-y-4 w-full max-w-full overflow-hidden">
-        <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Layers className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Skyblock Items</h2>
-            <p className="text-muted-foreground">Browse and search Hypixel SkyBlock item catalog</p>
+      <div className="w-full max-w-full space-y-6 overflow-hidden">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Skyblock Items</h1>
+            <p className="text-sm text-muted-foreground md:text-base">Browse and search Hypixel SkyBlock item catalog</p>
           </div>
-        </div>
-        <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-          {isFetching ? 'Refreshing...' : 'Refresh'}
-        </Button>
-      </div>
+          <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? 'Refreshing' : 'Refresh'}
+          </Button>
+        </header>
 
       {/* Filters */}
       <FeatureCard backgroundStyle="flat">

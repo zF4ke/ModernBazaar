@@ -452,18 +452,18 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           
           let result = `<div style="margin-bottom: 8px;">
             <div style="font-weight: bold; margin-bottom: 4px;">${formattedDate}</div>
-            <div style="font-size: 11px; color: #9ca3af; opacity: 0.7;">${formattedTime}</div>
+            <div style="font-size: 11px; color: #98a0b3; opacity: 0.7;">${formattedTime}</div>
           </div>`
           
           // Find the data point for this timestamp
           const dataPoint = chartData.find(d => d.timestamp === timestamp)
           if (dataPoint) {
             if (dataPoint.isHourlySummary) {
-              result += `<div style="font-size: 10px; color: #9ca3af; margin-bottom: 8px; padding: 4px; background: rgba(59, 130, 246, 0.1); border-radius: 4px;">
+              result += `<div style="font-size: 10px; color: #98a0b3; margin-bottom: 8px; padding: 4px; background: rgba(59, 130, 246, 0.1); border-radius: 4px;">
                 📊 Hourly Summary
               </div>`
             } else {
-              result += `<div style="font-size: 10px; color: #9ca3af; margin-bottom: 8px; padding: 4px; background: rgba(16, 185, 129, 0.1); border-radius: 4px;">
+              result += `<div style="font-size: 10px; color: #98a0b3; margin-bottom: 8px; padding: 4px; background: rgba(16, 185, 129, 0.1); border-radius: 4px;">
                 📈 Individual Snapshot
               </div>`
             }
@@ -578,13 +578,13 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         data: legendData,
         bottom: 25, // Moved up significantly
         textStyle: {
-          color: '#9ca3af'
+          color: '#98a0b3'
         }
       },
       xAxis: {
         type: 'time',
         axisLabel: {
-          color: '#9ca3af',
+          color: '#98a0b3',
           formatter: function(value: number) {
             const date = new Date(value)
             return date.toLocaleString('en-US', {
@@ -597,7 +597,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         },
         axisLine: {
           lineStyle: {
-            color: '#374151'
+            color: '#23262f'
           }
         },
         splitLine: {
@@ -608,16 +608,16 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         type: 'value',
         position: 'left',
         axisLabel: {
-          color: '#9ca3af'
+          color: '#98a0b3'
         },
         axisLine: {
           lineStyle: {
-            color: '#374151'
+            color: '#23262f'
           }
         },
         splitLine: {
           lineStyle: {
-            color: '#374151',
+            color: '#23262f',
             type: 'dashed'
           }
         }
@@ -635,7 +635,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
           end: 100,
           bottom: 0, // At the very bottom
           height: 20,
-          borderColor: '#374151',
+          borderColor: '#23262f',
           fillerColor: 'rgba(59, 130, 246, 0.1)',
           handleStyle: {
             color: '#3b82f6'

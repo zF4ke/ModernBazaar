@@ -152,20 +152,17 @@ export default function BazaarItemsPage() {
       featureDescription="Browse and analyze Hypixel SkyBlock bazaar items"
       icon={<Package className="h-8 w-8 text-muted-foreground" />}
     >
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Package className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Bazaar Items</h2>
-            <p className="text-muted-foreground">Browse and analyze Hypixel SkyBlock bazaar items</p>
+      <div className="space-y-6">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Bazaar Items</h1>
+            <p className="text-sm text-muted-foreground md:text-base">Browse and analyze Hypixel SkyBlock bazaar items</p>
           </div>
-        </div>
-        <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-          {isFetching ? 'Refreshing...' : 'Refresh'}
-        </Button>
-      </div>
+          <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? 'Refreshing' : 'Refresh'}
+          </Button>
+        </header>
 
       {/* Filters */}
       <FeatureCard backgroundStyle="flat">

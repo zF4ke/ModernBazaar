@@ -214,30 +214,24 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Package className="h-8 w-8 text-muted-foreground" />
-            <h2 className="text-3xl font-bold tracking-tight">{snapshot.displayName || snapshot.productId}</h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <Target className="h-3 w-3 text-muted-foreground" />
-              <p className="text-muted-foreground">Product ID: {snapshot.productId}</p>
-            </div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{snapshot.displayName || snapshot.productId}</h1>
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span className="font-mono text-xs">{snapshot.productId}</span>
             {isFetching && !isLoading && (
-              <div className="flex items-center gap-1">
-                <Zap className="h-3 w-3 text-muted-foreground animate-pulse" />
-                <span className="text-xs text-muted-foreground">Updating...</span>
-              </div>
+              <span className="inline-flex items-center gap-1.5 text-xs">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gain" />
+                Updating
+              </span>
             )}
           </div>
         </div>
         <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-          {isFetching ? 'Refreshing...' : 'Refresh'}
+          <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+          {isFetching ? 'Refreshing' : 'Refresh'}
         </Button>
-      </div>
+      </header>
 
       {/* Current Prices */}
       <div className="grid gap-4 md:grid-cols-4">
@@ -247,10 +241,10 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{snapshot.instantBuyPrice.toFixed(2)}</div>
+            <div className="font-mono text-2xl font-bold tracking-tight">{snapshot.instantBuyPrice.toFixed(2)}</div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Scale className="h-3 w-3" />
-              <span>weighted 2%: {snapshot.weightedTwoPercentBuyPrice.toFixed(2)}</span>
+              <span>weighted 2%: <span className="font-mono">{snapshot.weightedTwoPercentBuyPrice.toFixed(2)}</span></span>
             </div>
           </CardContent>
         </Card>
@@ -261,10 +255,10 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{snapshot.instantSellPrice.toFixed(2)}</div>
+            <div className="font-mono text-2xl font-bold tracking-tight">{snapshot.instantSellPrice.toFixed(2)}</div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Scale className="h-3 w-3" />
-              <span>weighted 2%: {snapshot.weightedTwoPercentSellPrice.toFixed(2)}</span>
+              <span>weighted 2%: <span className="font-mono">{snapshot.weightedTwoPercentSellPrice.toFixed(2)}</span></span>
             </div>
           </CardContent>
         </Card>
@@ -275,7 +269,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
             <Minus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{snapshot.spread.toFixed(2)}</div>
+            <div className="font-mono text-2xl font-bold tracking-tight">{snapshot.spread.toFixed(2)}</div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <BarChart3 className="h-3 w-3" />
               <span>Buy-sell spread</span>
