@@ -50,9 +50,9 @@ export default function Dashboard() {
 
         {/* Stat tiles: big tabular numbers, small labels */}
         <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border/60 md:grid-cols-4">
-          <StatTile label="Items tracked" value={metrics ? metrics.totalItems.toLocaleString('en-US') : null} />
-          <StatTile label="Profitable now" value={metrics ? metrics.profitableItems.toLocaleString('en-US') : null} />
-          <StatTile label="Avg margin" value={metrics ? `${metrics.avgProfitMargin.toFixed(1)}%` : null} />
+          <StatTile label="Items tracked" value={metrics ? safeCount(metrics.totalItems) : null} />
+          <StatTile label="Profitable now" value={metrics ? safeCount(metrics.profitableItems) : null} />
+          <StatTile label="Market activity" value={metrics ? safeCount(metrics.marketActivityScore) : null} />
           <StatTile label="Last update" value={updated} live={!!updated} />
         </div>
 
@@ -115,6 +115,13 @@ export default function Dashboard() {
       </section>
     </div>
   )
+}
+
+/* Never show a nonsense number: anything non-finite or clearly out of range
+   renders as an em-width placeholder instead of screaming 2727887.4%. */
+function safeCount(n: number | undefined): string {
+  if (n === undefined || !Number.isFinite(n) || n < 0 || n > 10_000_000) return "–"
+  return Math.round(n).toLocaleString('en-US')
 }
 
 /* Big mono number, small label. Reserves the number's line so tiles never jump
