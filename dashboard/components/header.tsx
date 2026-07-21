@@ -1,6 +1,6 @@
 "use client"
 
-import { Moon, Sun, LogIn, LogOut, User, Settings, ChevronDown, Wifi, WifiOff } from "lucide-react"
+import { LogIn, LogOut, User, Settings, ChevronDown } from "lucide-react"
 import { useTheme } from "next-themes"
 import { useUser } from '@auth0/nextjs-auth0'
 import { useBackendHealthContext } from '@/components/backend-health-provider'
@@ -98,52 +98,28 @@ export function Header() {
         </BreadcrumbList>
       </Breadcrumb>
       <div className="ml-auto flex items-center gap-2">
-        {/* Backend Health Indicator with Tooltip */}
-        <TooltipProvider>
+        {/* Backend status: a dot and a word. The dot carries the state. */}
+        <TooltipProvider delayDuration={200}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-muted/50 cursor-help transition-all duration-200 hover:bg-muted/70">
-                {isOnline ? (
-                  <Wifi className="h-3 w-3 text-green-500" />
-                ) : (
-                  <WifiOff className="h-3 w-3 text-red-500" />
-                )}
-                <span className="text-xs text-muted-foreground">
-                  {isOnline ? 'Online' : 'Offline'}
+              <div className="flex cursor-default items-center gap-2 rounded-md px-2 py-1">
+                <span className="relative flex h-2 w-2">
+                  {isOnline && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gain opacity-40 [animation-duration:2.5s]" />
+                  )}
+                  <span className={`relative inline-flex h-2 w-2 rounded-full ${isOnline ? 'bg-gain' : 'bg-loss'}`} />
+                </span>
+                <span className="text-xs font-medium text-muted-foreground">
+                  {isOnline ? 'Live' : 'Offline'}
                 </span>
               </div>
             </TooltipTrigger>
-            <TooltipContent 
-              side="bottom" 
-              className="max-w-xs p-3 bg-gradient-to-br from-background to-muted border-border shadow-lg"
-            >
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  {isOnline ? (
-                    <Wifi className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <WifiOff className="h-4 w-4 text-red-500" />
-                  )}
-                  <span className="font-medium">
-                    {isOnline ? 'Backend Connected' : 'Backend Disconnected'}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  {isOnline 
-                    ? 'Your Modern Bazaar backend is running smoothly and responding to requests. All features are available.'
-                    : 'Unable to connect to the Modern Bazaar backend. Some features may be limited. Please check your connection or try again later.'
-                  }
-                </p>
-                {!isOnline && (
-                  <div className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
-                    💡 Tip: Check your internet connection or contact support if the issue persists.
-                  </div>
-                )}
-              </div>
+            <TooltipContent side="bottom">
+              {isOnline ? 'Connected. Market data refreshes every minute.' : 'Backend unreachable. Retrying in the background.'}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        
+
         {isLoading && <span className="text-xs text-muted-foreground">...</span>}
         {!isLoading && !isAuthenticated && (
           <Button size="sm" variant="outline" onClick={() => window.location.href = '/login'}> <LogIn className="h-4 w-4 mr-1"/> Login</Button>
@@ -151,14 +127,10 @@ export function Header() {
         {isAuthenticated && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                className="flex items-center gap-2 hover:bg-white/10" 
-                style={{ outline: 'none', boxShadow: 'none' }}
-              >
+              <Button variant="ghost" size="sm" className="gap-2">
                 <User className="h-4 w-4" />
                 <span className="font-medium">{user?.name || user?.email || 'Account'}</span>
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-background border border-border">

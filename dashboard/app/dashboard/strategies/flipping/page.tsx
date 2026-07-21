@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { FeatureCard } from "@/components/feature-card"
-import { GradientSection } from "@/components/gradient-section"
+import { PageHeader } from "@/components/page-shell"
 import type { FlipOpportunity, FlippingQuery, PagedResponse } from "@/types/strategies"
 import { buildQueryParams } from "@/lib/api"
 import { useBackendQuery } from "@/hooks/use-backend-query"
@@ -358,25 +358,17 @@ export default function FlippingPage() {
         }
       >
       <TooltipProvider>
-        <div className="space-y-6">
-          <GradientSection variant="hero" padding="md">
-            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl opacity-60 bg-emerald-500/20" />
-            <div className="relative z-10 flex flex-wrap items-start justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15">
-                  <Shuffle className="h-6 w-6 text-emerald-400" />
-                </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Find your next flip</h1>
-                  <p className="text-sm text-muted-foreground">Buy/sell gaps ranked by profit per hour after tax.</p>
-                </div>
-              </div>
+        <div className="mx-auto max-w-6xl space-y-6">
+          <PageHeader
+            title="Find your next flip"
+            description="Buy/sell gaps ranked by profit per hour after tax."
+            actions={
               <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${isFetching ? 'animate-spin' : ''}`} />
-                {isFetching ? 'Refreshing…' : 'Refresh'}
+                <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+                {isFetching ? 'Refreshing' : 'Refresh'}
               </Button>
-            </div>
-          </GradientSection>
+            }
+          />
 
         {/* Trading Setup */}
           <TradingSetup
