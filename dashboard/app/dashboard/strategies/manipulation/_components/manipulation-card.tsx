@@ -19,9 +19,7 @@ import {
   ChevronUp,
   Info,
   Search,
-  Calculator,
   ArrowUpCircle,
-  Repeat,
   AlertCircle,
   Clock,
 } from "lucide-react"
@@ -42,7 +40,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
   const ratio = o.demandSupplyRatio ?? 0
   const taxPct = (o.taxRate ?? 0.01125) * 100
 
-  const profitColor = o.totalProfit >= 10_000_000 ? "text-emerald-400" : "text-foreground"
+  const profitColor = o.totalProfit >= 10_000_000 ? "text-gain" : "text-foreground"
   const pressureTone = pressureSignalTone(o.buyOrderUnitsPerHour, o.sellPressureUnitsPerHour)
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -62,7 +60,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
   return (
     <Card
       key={o.productId}
-      className={`group overflow-hidden transition-all ease-out bg-background/80 border-border/50 cursor-pointer hover:shadow-lg hover:border-border ${isExpanded ? "shadow-xl" : "hover:border-muted-foreground/30"}`}
+      className={`group overflow-hidden bg-card cursor-pointer transition-[border-color,box-shadow,transform] duration-200 ease-out ${isExpanded ? "border-elite/35 shadow-[0_16px_40px_-20px_hsl(230_60%_3%/0.8)]" : "border-border/60 hover:border-muted-foreground/30 hover:-translate-y-0.5"}`}
       onClick={handleCardClick}
     >
       <CardHeader className="pb-3 pt-6">
@@ -87,8 +85,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
           </div>
           <div className="text-right">
             <div className="text-xs text-muted-foreground">Score</div>
-            <div className="text-sm font-semibold">{format(o.score, 2)}</div>
-            <div className={`text-xs text-muted-foreground/50 transition-all mt-1 ${isExpanded ? "text-muted-foreground/70" : "group-hover:text-muted-foreground"}`}>⋯</div>
+            <div className="font-mono text-sm font-semibold">{format(o.score, 2)}</div>
           </div>
         </div>
       </CardHeader>
@@ -108,11 +105,14 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
               </span>
             </div>
           </div>
-          <div className={`text-2xl font-bold mb-1 ${profitColor}`}>{formatCompact(o.totalProfit)} coins</div>
+          <div className={`font-mono text-2xl font-bold tracking-tight mb-1 ${profitColor}`}>
+            {formatCompact(o.totalProfit)}
+            <span className="ml-1.5 font-sans text-sm font-medium text-muted-foreground">coins</span>
+          </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
             <div className="flex items-center gap-1">
-              <ShoppingCart className="h-3 w-3 text-red-400" />
-              <span>Corner: {formatCompact(o.cornerCost)}</span>
+              <ShoppingCart className="h-3 w-3 text-loss" />
+              <span>Corner: <span className="font-mono">{formatCompact(o.cornerCost)}</span></span>
             </div>
             {o.estimatedSellThroughHours ? (
               <div className="flex items-center gap-1">
@@ -125,19 +125,19 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
 
         {/* Buy / Sell prices */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-red-500/10 border border-red-500/20 rounded p-2">
-            <div className="flex items-center gap-1 text-xs text-red-300 mb-1">
-              <ShoppingCart className="h-3 w-3" />
+          <div className="rounded-md bg-loss/[0.07] p-2.5">
+            <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <ShoppingCart className="h-3 w-3 text-loss" />
               Avg buy cost
             </div>
-            <div className="text-sm font-mono font-semibold text-red-400">{format(o.avgBuyCostPerUnit, 1)}</div>
+            <div className="font-mono text-sm font-semibold text-loss">{format(o.avgBuyCostPerUnit, 1)}</div>
           </div>
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded p-2">
-            <div className="flex items-center gap-1 text-xs text-emerald-300 mb-1">
-              <Tag className="h-3 w-3" />
+          <div className="rounded-md bg-gain/[0.07] p-2.5">
+            <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <Tag className="h-3 w-3 text-gain" />
               Min resell
             </div>
-            <div className="text-sm font-mono font-semibold text-emerald-400">{format(o.minResellPrice, 1)}</div>
+            <div className="font-mono text-sm font-semibold text-gain">{format(o.minResellPrice, 1)}</div>
           </div>
         </div>
 
@@ -198,7 +198,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
               o.riskNote ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Badge variant="outline" className="text-[10px] px-2 py-0.5 cursor-help border-red-500/50 text-red-400">
+                    <Badge variant="outline" className="text-[10px] px-2 py-0.5 cursor-help border-loss/50 text-loss">
                       <ShieldAlert className="h-3 w-3 mr-1" />
                       risky
                     </Badge>
@@ -206,7 +206,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                   <TooltipContent><p className="max-w-xs text-sm">{o.riskNote}</p></TooltipContent>
                 </Tooltip>
               ) : (
-                <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-red-500/50 text-red-400">
+                <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-loss/50 text-loss">
                   <ShieldAlert className="h-3 w-3 mr-1" />
                   risky
                 </Badge>
@@ -224,15 +224,15 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
 
         {/* Expanded plan */}
         {isExpanded && (
-          <div className="overflow-hidden transition-all duration-100 ease-out opacity-100">
+          <div className="animate-rise-in [animation-duration:280ms]">
             <div className="mt-4 pt-4 border-t border-border/50">
               <div className="flex items-center gap-2 mb-3">
-                <Info className="h-4 w-4 text-blue-400" />
-                <span className="text-sm font-medium text-blue-400">Manipulation Plan</span>
+                <Info className="h-4 w-4 text-elite" />
+                <span className="text-sm font-semibold">The play, step by step</span>
               </div>
               <div className="space-y-3 text-sm">
                 <PlanStep
-                  color="blue" icon={Search} title="Step 1: Confirm the setup"
+                  n={1} title="Confirm the setup"
                   rows={[
                     ["Demand / supply", `${format(ratio, 1)}x`],
                     ["Buyers / hour", o.demandPerHour ? format(o.demandPerHour, 0) : "—"],
@@ -252,7 +252,7 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                   note="Best targets have fresh buy-order depth, active top-bid raises, flipper attention, and very little sell pressure."
                 />
                 <PlanStep
-                  color="red" icon={ShoppingCart} title="Step 2: Corner the market"
+                  n={2} title="Corner the market"
                   rows={[
                     ["Units to buy out", `${format(o.cornerSupplyUnits, 0)} units`],
                     ["Total cost", `${format(o.cornerCost, 0)} coins`],
@@ -261,30 +261,30 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                   note="Insta-buy every sell offer until you hold all the supply."
                 />
                 <PlanStep
-                  color="emerald" icon={Calculator} title="Step 3: Break-even resell"
+                  n={3} title="Break-even resell"
                   rows={[
                     [`Min resell (after ${taxPct.toFixed(3)}% tax)`, `${format(o.minResellPrice, 2)} coins`],
                   ]}
                   note="Sell below this and the tax eats your profit."
                 />
                 <PlanStep
-                  color="purple" icon={Tag} title="Step 4: Set the sell wall"
+                  n={4} title="Set the sell wall"
                   rows={[
                     ["Sell order price", `${format(o.suggestedSellOrderPrice, 0)} coins`],
                   ]}
                   note="A very high sell order makes the item look valuable and lures buy orders."
                 />
                 <PlanStep
-                  color="amber" icon={ArrowUpCircle} title="Step 5: Inflate the buy order"
+                  n={5} title="Inflate the buy order"
                   rows={[
                     ["Current top bid", `${format(o.currentHighestBuyOrder, 2)} coins`],
-                    ["Double it", `${o.buyOrderDoublingSteps}x →`],
+                    ["Double the bid", `${o.buyOrderDoublingSteps} times`],
                     ["Your buy order", `${format(o.targetBuyOrderPrice, 0)} coins`],
                   ]}
                   note="Climb the bid until it's attractive; others outbid you by 0.1 and you insta-sell into them."
                 />
                 <PlanStep
-                  color="emerald" icon={Repeat} title="Step 6: Repeat until sold"
+                  n={6} title="Repeat until sold"
                   rows={[
                     ["Net profit / unit", `${format(o.netProfitPerUnit, 2)} coins`],
                     ["Total profit", `${format(o.totalProfit, 0)} coins`],
@@ -293,12 +293,12 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
                   note="Sell-through is based on new buy-order units, not generic insta-buy demand."
                 />
                 {o.risky && (
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <AlertCircle className="h-4 w-4 text-amber-400" />
-                      <span className="font-medium text-amber-300">Risk Warning</span>
+                  <div className="rounded-lg bg-warn/[0.08] p-3">
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-warn" />
+                      <span className="font-medium text-warn">Risky play</span>
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs leading-relaxed text-muted-foreground">
                       {o.riskNote || "Prices already look atypical."} Manipulation ties up large capital and other players can dump supply or undercut you. Estimates assume current demand holds.
                     </div>
                   </div>
@@ -319,27 +319,14 @@ export function ManipulationCard({ o, fav, onToggleFav, expandedCard, setExpande
 
 type SignalTone = "good" | "warn" | "bad" | "muted"
 
-const SIGNAL_TONES: Record<SignalTone, { box: string; icon: string; value: string }> = {
-  good: {
-    box: "border-emerald-500/25 bg-emerald-500/10",
-    icon: "text-emerald-400",
-    value: "text-emerald-300",
-  },
-  warn: {
-    box: "border-amber-500/25 bg-amber-500/10",
-    icon: "text-amber-400",
-    value: "text-amber-300",
-  },
-  bad: {
-    box: "border-red-500/25 bg-red-500/10",
-    icon: "text-red-400",
-    value: "text-red-300",
-  },
-  muted: {
-    box: "border-border/50 bg-border/15",
-    icon: "text-muted-foreground",
-    value: "text-foreground",
-  },
+/* The box stays neutral; the value and icon carry the signal color. Eight tinted
+   boxes in a row read as noise, eight neutral cells with colored values read as
+   an instrument panel. */
+const SIGNAL_TONES: Record<SignalTone, { icon: string; value: string }> = {
+  good: { icon: "text-gain", value: "text-gain" },
+  warn: { icon: "text-warn", value: "text-warn" },
+  bad: { icon: "text-loss", value: "text-loss" },
+  muted: { icon: "text-muted-foreground", value: "text-foreground" },
 }
 
 function SignalCell({ icon: Icon, label, value, sublabel, tone }: {
@@ -351,8 +338,8 @@ function SignalCell({ icon: Icon, label, value, sublabel, tone }: {
 }) {
   const c = SIGNAL_TONES[tone]
   return (
-    <div className={`min-h-[58px] rounded border px-2 py-2 ${c.box}`}>
-      <div className="mb-1 flex items-center gap-1 text-[10px] font-medium uppercase tracking-normal text-muted-foreground">
+    <div className="min-h-[58px] rounded-md bg-muted/40 px-2.5 py-2">
+      <div className="mb-1 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80">
         <Icon className={`h-3 w-3 ${c.icon}`} />
         <span className="truncate">{label}</span>
       </div>
@@ -386,36 +373,30 @@ function pressureSignalTone(exitUnits?: number, pressureUnits?: number): SignalT
   return "bad"
 }
 
-const COLOR_MAP: Record<string, { box: string; title: string; mono: string; border: string }> = {
-  blue:    { box: "bg-blue-500/10 border-blue-500/20",       title: "text-blue-300",    mono: "text-blue-300",    border: "border-blue-500/20" },
-  red:     { box: "bg-red-500/10 border-red-500/20",         title: "text-red-300",     mono: "text-red-300",     border: "border-red-500/20" },
-  emerald: { box: "bg-emerald-500/10 border-emerald-500/20", title: "text-emerald-300", mono: "text-emerald-300", border: "border-emerald-500/20" },
-  purple:  { box: "bg-purple-500/10 border-purple-500/20",   title: "text-purple-300",  mono: "text-purple-300",  border: "border-purple-500/20" },
-  amber:   { box: "bg-amber-500/10 border-amber-500/20",     title: "text-amber-300",   mono: "text-amber-300",   border: "border-amber-500/20" },
-}
-
-function PlanStep({ color, icon: Icon, title, rows, note }: {
-  color: keyof typeof COLOR_MAP | string
-  icon: any
+/* One quiet shape per step: the number chip carries the sequence, values are
+   mono on the foreground. Elite purple marks the sequence chip, nothing else. */
+function PlanStep({ n, title, rows, note }: {
+  n: number
   title: string
   rows: [string, string][]
   note?: string
 }) {
-  const c = COLOR_MAP[color] ?? COLOR_MAP.blue
   return (
-    <div className={`${c.box} border rounded-lg p-3`}>
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className={`h-4 w-4 ${c.title}`} />
-        <span className={`font-medium ${c.title}`}>{title}</span>
+    <div className="rounded-lg bg-muted/40 p-3">
+      <div className="mb-2 flex items-center gap-2.5">
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-elite/[0.12] font-mono text-[11px] font-bold text-elite">
+          {n}
+        </span>
+        <span className="text-sm font-medium">{title}</span>
       </div>
-      <div className="text-xs text-muted-foreground space-y-1">
+      <div className="space-y-1 pl-[30px] text-xs text-muted-foreground">
         {rows.map(([label, value], i) => (
-          <div key={i} className="flex items-center justify-between">
-            <span>{label}:</span>
-            <span className={`font-mono ${c.mono}`}>{value}</span>
+          <div key={i} className="flex items-center justify-between gap-3">
+            <span>{label}</span>
+            <span className="shrink-0 font-mono text-foreground">{value}</span>
           </div>
         ))}
-        {note && <div className={`pt-1 mt-1 border-t ${c.border} text-muted-foreground/80`}>{note}</div>}
+        {note && <div className="mt-1.5 border-t border-border/60 pt-1.5 leading-relaxed text-muted-foreground/80">{note}</div>}
       </div>
     </div>
   )

@@ -1,40 +1,20 @@
-import { Calculator } from "lucide-react"
 import { format } from "../utils"
+import { StepShell, StepRow } from "./step-shell"
 
 export function StepProfit({ o, buy, sell, bazaarTaxRate, query }: any) {
   return (
-    <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <Calculator className="h-4 w-4 text-purple-400" />
-        <span className="font-medium text-purple-300">Step 4: Profit Setup</span>
+    <StepShell n={4} title="What you make">
+      <StepRow label="Gross profit per item" value={<span className="font-mono text-foreground">{format(sell - buy, 2)} coins</span>} />
+      <StepRow label={`Tax (${(bazaarTaxRate * 100).toFixed(2)}%)`} value={<span className="font-mono text-loss">-{format(sell * bazaarTaxRate, 2)} coins</span>} />
+      <div className="border-t border-border/60 pt-1.5">
+        <StepRow label="Net profit per item" value={<span className="font-mono font-semibold text-gain">{format((sell * (1 - bazaarTaxRate)) - buy, 2)} coins</span>} />
       </div>
-      <div className="text-xs text-muted-foreground space-y-1">
-        <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Per Item:</div>
-        <div className="flex items-center justify-between">
-          <span>Gross profit:</span>
-          <span className="font-mono text-purple-300">{format(sell - buy, 2)} coins</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Tax deduction ({(bazaarTaxRate * 100).toFixed(2)}%):</span>
-          <span className="font-mono text-red-300">-{format(sell * bazaarTaxRate, 2)} coins</span>
-        </div>
-        <div className="flex items-center justify-between border-t mb-4 border-purple-500/20 pt-1">
-          <span>Net profit per item:</span>
-          <span className="font-mono text-purple-300">{format((sell * (1 - bazaarTaxRate)) - buy, 2)} coins</span>
-        </div>
-        <div className="h-3"></div>
-        <div className="text-xs text-muted-foreground/70 mb-1 font-medium">Profit Rates:</div>
-        <div className="flex items-center justify-between">
-          <span>Profit per hour:</span>
-          <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * (1 - bazaarTaxRate), 0)} coins/hour</span>
-        </div>
+      <div className="pt-1.5">
+        <StepRow label="Profit per hour" value={<span className="font-mono text-gain">{format((o.reasonableProfitPerHour || 0) * (1 - bazaarTaxRate), 0)} coins</span>} />
         {query.horizonHours && (
-          <div className="flex items-center justify-between border-t border-purple-500/20 pt-1">
-            <span>Total profit ({query.horizonHours}h):</span>
-            <span className="font-mono text-purple-300">{format((o.reasonableProfitPerHour || 0) * query.horizonHours * (1 - bazaarTaxRate), 0)} coins</span>
-          </div>
+          <StepRow label={`Total over ${query.horizonHours}h`} value={<span className="font-mono font-semibold text-gain">{format((o.reasonableProfitPerHour || 0) * query.horizonHours * (1 - bazaarTaxRate), 0)} coins</span>} />
         )}
       </div>
-    </div>
+    </StepShell>
   )
 }

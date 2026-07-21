@@ -46,7 +46,7 @@ function OpportunityCardImpl({ o, query, bazaarTaxRate, fav, onToggleFav, isExpa
   const spreadPctVal = (o.spreadPct ?? 0) * 100
 
   const profitColor = (o.reasonableProfitPerHour ?? 0) * (query.horizonHours || 1) >= PROFIT_HIGHLIGHT
-    ? 'text-emerald-400'
+    ? 'text-gain'
     : 'text-foreground'
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -66,7 +66,7 @@ function OpportunityCardImpl({ o, query, bazaarTaxRate, fav, onToggleFav, isExpa
   return (
     <Card
       key={o.productId}
-      className={`group overflow-hidden transition-all ease-out bg-background/80 border-border/50 cursor-pointer hover:shadow-lg hover:border-border ${isExpanded ? 'shadow-xl' : 'hover:border-muted-foreground/30'}`}
+      className={`group overflow-hidden bg-card cursor-pointer transition-[border-color,box-shadow,transform] duration-200 ease-out ${isExpanded ? 'border-primary/35 shadow-[0_16px_40px_-20px_hsl(230_60%_3%/0.8)]' : 'border-border/60 hover:border-muted-foreground/30 hover:-translate-y-0.5'}`}
       onClick={handleCardClick}
     >
       <CardHeader className="pb-3 pt-6">
@@ -93,8 +93,7 @@ function OpportunityCardImpl({ o, query, bazaarTaxRate, fav, onToggleFav, isExpa
           </div>
           <div className="text-right">
             <div className="text-xs text-muted-foreground">Score</div>
-            <div className="text-sm font-semibold">{format(o.score, 2)}</div>
-            <div className={`text-xs text-muted-foreground/50 transition-all mt-1 ${isExpanded ? 'text-muted-foreground/70' : 'group-hover:text-muted-foreground'}`}>⋯</div>
+            <div className="font-mono text-sm font-semibold">{format(o.score, 2)}</div>
           </div>
         </div>
       </CardHeader>
@@ -120,10 +119,11 @@ function OpportunityCardImpl({ o, query, bazaarTaxRate, fav, onToggleFav, isExpa
               </span>
             </div>
           </div>
-          <div className={`text-2xl font-bold mb-1 ${profitColor}`}>
-            {format((o.reasonableProfitPerHour || 0) * (query.horizonHours || 1) * (1 - bazaarTaxRate), 0)} coins
+          <div className={`font-mono text-2xl font-bold tracking-tight mb-1 ${profitColor}`}>
+            {format((o.reasonableProfitPerHour || 0) * (query.horizonHours || 1) * (1 - bazaarTaxRate), 0)}
+            <span className="ml-1.5 font-sans text-sm font-medium text-muted-foreground">coins</span>
             {query.horizonHours && query.horizonHours !== 1 && (
-              <span className="text-sm text-muted-foreground ml-1">
+              <span className="font-sans text-sm font-medium text-muted-foreground ml-1">
                 ({format(query.horizonHours, 1)}h)
               </span>
             )}
@@ -153,19 +153,19 @@ function OpportunityCardImpl({ o, query, bazaarTaxRate, fav, onToggleFav, isExpa
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <div className="bg-red-500/10 border border-red-500/20 rounded p-2">
-            <div className="flex items-center gap-1 text-xs text-red-300 mb-1">
-              <ArrowDown className="h-3 w-3" />
+          <div className="rounded-md bg-loss/[0.07] p-2.5">
+            <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <ArrowDown className="h-3 w-3 text-loss" />
               Buy at
             </div>
-            <div className="text-sm font-mono font-semibold text-red-400">{format(buy, 2)}</div>
+            <div className="font-mono text-sm font-semibold text-loss">{format(buy, 2)}</div>
           </div>
-          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded p-2">
-            <div className="flex items-center gap-1 text-xs text-emerald-300 mb-1">
-              <ArrowUp className="h-3 w-3" />
+          <div className="rounded-md bg-gain/[0.07] p-2.5">
+            <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
+              <ArrowUp className="h-3 w-3 text-gain" />
               Sell at
             </div>
-            <div className="text-sm font-mono font-semibold text-emerald-400">{format(sell, 2)}</div>
+            <div className="font-mono text-sm font-semibold text-gain">{format(sell, 2)}</div>
           </div>
         </div>
 
@@ -181,11 +181,11 @@ function OpportunityCardImpl({ o, query, bazaarTaxRate, fav, onToggleFav, isExpa
         </div>
 
         {isExpanded && (
-          <div className={`overflow-hidden transition-all duration-100 ease-out ${isExpanded ? 'opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="animate-rise-in [animation-duration:280ms]">
             <div className="mt-4 pt-4 border-t border-border/50">
               <div className="flex items-center gap-2 mb-3">
-                <Info className="h-4 w-4 text-blue-400" />
-                <span className="text-sm font-medium text-blue-400">Trading Tutorial</span>
+                <Info className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold">The play, step by step</span>
               </div>
               <div className="space-y-3 text-sm">
                 <StepPurchase o={o} query={query} buy={buy} />
