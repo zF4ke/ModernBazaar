@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Space_Grotesk, Space_Mono } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { QueryProvider } from "@/components/query-provider"
@@ -8,7 +8,10 @@ import { UserSetupWrapper } from '@/components/user-setup-wrapper'
 import { BackendHealthProvider } from '@/components/backend-health-provider'
 import { OfflineOverlay } from '@/components/offline-overlay'
 
-const inter = Inter({ subsets: ["latin"] })
+// UI face: Space Grotesk (base weight 500 set in globals.css - 400 reads thin on
+// dark). Data face: Space Mono, used only for real tabular numbers.
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], variable: "--font-sans" })
+const spaceMono = Space_Mono({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-mono" })
 
 export const metadata: Metadata = {
   title: "Modern Bazaar",
@@ -21,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
+      <body className="font-sans">
         <AuthProvider>
           <ThemeProvider
             attribute="class" 
