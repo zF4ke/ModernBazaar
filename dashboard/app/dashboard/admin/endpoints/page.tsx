@@ -842,7 +842,7 @@ const ENDPOINTS: EndpointInfo[] = [
   { path: '/api/me/subscription/cancel', method: 'POST', description: 'Cancel subscription (with feedback)', category: 'User', requiresAuth: true },
   { path: '/api/me/permissions', method: 'GET', description: 'Current permissions', category: 'User', requiresAuth: true },
 
-  // Admin — analytics & users
+  // Admin - analytics & users
   { path: '/api/admin/check-access', method: 'GET', description: 'Check admin access', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/analytics/summary', method: 'GET', description: 'Analytics summary', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/users', method: 'GET', description: 'List users', category: 'Admin', requiresAuth: true },
@@ -850,11 +850,11 @@ const ENDPOINTS: EndpointInfo[] = [
   { path: '/api/admin/users/extend', method: 'POST', description: 'Extend a user\'s period', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/maintenance', method: 'GET', description: 'Maintenance-mode state', category: 'Admin', requiresAuth: true },
 
-  // Admin — plans
+  // Admin - plans
   { path: '/api/admin/plans', method: 'GET', description: 'List plans', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/plans', method: 'POST', description: 'Create a plan', category: 'Admin', requiresAuth: true },
 
-  // Admin — referrals
+  // Admin - referrals
   { path: '/api/admin/referrals', method: 'GET', description: 'List referral codes', category: 'Admin', requiresAuth: true },
   { path: '/api/admin/referrals', method: 'POST', description: 'Create a referral code', category: 'Admin', requiresAuth: true },
 

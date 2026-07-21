@@ -100,7 +100,7 @@ export default function LandingPage() {
             <span className="font-semibold text-[17px] tracking-tight">Modern Bazaar</span>
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-3">
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
               <Link href="#pricing" onClick={scrollToPricing}>Pricing</Link>
             </Button>
             <Button variant="ghost" size="sm" asChild>

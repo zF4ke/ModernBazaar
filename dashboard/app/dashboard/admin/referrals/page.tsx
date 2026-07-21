@@ -84,7 +84,7 @@ export default function AdminReferralsPage() {
           <Share2 className="h-7 w-7 text-muted-foreground" />
           <div>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Referrals</h2>
-            <p className="text-sm text-muted-foreground">{data ? `${rows.length} code${rows.length === 1 ? "" : "s"} · ${totalConversions} conversion${totalConversions === 1 ? "" : "s"}` : "Mint referral codes and track conversions"}</p>
+            <p className="text-sm text-muted-foreground">{data ? `${rows.length} code${rows.length === 1 ? "" : "s"}, ${totalConversions} conversion${totalConversions === 1 ? "" : "s"}` : "Mint referral codes and track conversions"}</p>
           </div>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>

@@ -96,7 +96,7 @@ export default function AdminAnalyticsPage() {
                 <div key={p.label} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-medium">{titleCase(p.label)}</span>
-                    <span className="text-muted-foreground">{fmt(p.count)} · {Math.round((p.count / planTotal) * 100)}%</span>
+                    <span className="text-muted-foreground">{fmt(p.count)}, {Math.round((p.count / planTotal) * 100)}%</span>
                   </div>
                   <div className="h-2 rounded-full bg-muted overflow-hidden">
                     <div className={`h-full rounded-full ${PLAN_COLOR[p.label] ?? "bg-primary"}`} style={{ width: `${(p.count / planTotal) * 100}%` }} />

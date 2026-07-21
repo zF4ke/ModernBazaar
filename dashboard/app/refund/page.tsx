@@ -4,7 +4,7 @@ import { LegalPage } from '@/components/legal-page'
 import { LEGAL } from '@/lib/legal'
 
 export const metadata: Metadata = {
-  title: 'Refund & Cancellation Policy — Modern Bazaar',
+  title: 'Refund & Cancellation Policy - Modern Bazaar',
   description: 'How cancellations and refunds work for Modern Bazaar subscriptions.',
 }
 
@@ -39,7 +39,7 @@ export default function RefundPage() {
         <li>you are not charged again.</li>
       </ul>
       <p>
-        Cancelling does not, by itself, trigger a refund of the current period — it stops future renewals.
+        Cancelling does not, by itself, trigger a refund of the current period: it stops future renewals.
         If you change your mind, you can resume before the period ends.
       </p>
 

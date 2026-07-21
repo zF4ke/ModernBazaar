@@ -16,8 +16,8 @@ interface Plan { slug: string; name: string; stripePriceId: string | null; featu
 
 const KNOWN = [
   { slug: "free",    name: "Free",    badge: "border-zinc-500/40 text-zinc-300 bg-zinc-500/10",       paid: false, blurb: "Live prices, full catalog, favorites. The free taste." },
-  { slug: "flipper", name: "Flipper", badge: "border-blue-500/40 text-blue-300 bg-blue-500/10",       paid: true,  blurb: "$9.99/mo · the Bazaar Flipping finder." },
-  { slug: "elite",   name: "Elite",   badge: "border-purple-500/40 text-purple-300 bg-purple-500/10", paid: true,  blurb: "$25.99/mo · everything in Flipper plus Bazaar Manipulation." },
+  { slug: "flipper", name: "Flipper", badge: "border-primary/40 text-primary bg-primary/10",       paid: true,  blurb: "$9.99/mo, the Bazaar Flipping finder." },
+  { slug: "elite",   name: "Elite",   badge: "border-elite/40 text-elite bg-elite/10", paid: true,  blurb: "$25.99/mo, everything in Flipper plus Bazaar Manipulation." },
 ]
 const DEFAULT_FEATURES = '{"limits":{"maxItemsPerPage":50}}'
 

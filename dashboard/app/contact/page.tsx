@@ -5,7 +5,7 @@ import { LegalPage } from '@/components/legal-page'
 import { LEGAL } from '@/lib/legal'
 
 export const metadata: Metadata = {
-  title: 'Contact — Modern Bazaar',
+  title: 'Contact - Modern Bazaar',
   description: 'Get in touch with Modern Bazaar for support, billing, and privacy.',
 }
 
@@ -22,7 +22,7 @@ export default function ContactPage() {
       intro={
         <p>
           {LEGAL.product} is operated by {LEGAL.operator}, based in {LEGAL.jurisdiction}. The best way to
-          reach us for anything — support, billing, or privacy — is by email. We aim to reply within a few
+          reach us for anything (support, billing, or privacy) is by email. We aim to reply within a few
           business days.
         </p>
       }
@@ -63,7 +63,7 @@ export default function ContactPage() {
         {LEGAL.product} is an independent, read-only analytics tool for Hypixel SkyBlock built on Hypixel&apos;s
         official, public Bazaar API. It does not automate or modify the game, deals only with virtual in-game
         currency, and is <strong>not affiliated with Hypixel, Mojang, or Microsoft</strong>. We can&apos;t help
-        with Hypixel or Minecraft account issues — please contact those services directly.
+        with Hypixel or Minecraft account issues; please contact those services directly.
       </p>
     </LegalPage>
   )

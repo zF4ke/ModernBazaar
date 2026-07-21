@@ -84,7 +84,7 @@ export default function AdminSettingsPage() {
   )
   const [maintBusy, setMaintBusy] = useState(false)
   const toggleMaintenance = async (next: boolean) => {
-    if (next && !window.confirm("Turn ON maintenance mode? This makes the API return 503 for ALL non-admin users — the site goes down for everyone but admins.")) return
+    if (next && !window.confirm("Turn ON maintenance mode? This makes the API return 503 for ALL non-admin users: the site goes down for everyone but admins.")) return
     setMaintBusy(true)
     try {
       await fetchWithBackendUrl("/api/admin/maintenance", {
@@ -221,7 +221,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      {/* Maintenance mode — kill switch */}
+      {/* Maintenance mode - kill switch */}
       <Card className={maint?.enabled ? "border-red-500/50 bg-red-500/5" : "border-amber-500/30"}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -230,7 +230,7 @@ export default function AdminSettingsPage() {
             {maint?.enabled && <Badge variant="outline" className="ml-1 border-red-500/40 text-red-400">SITE DOWN</Badge>}
           </CardTitle>
           <CardDescription>
-            Emergency kill switch. When on, the API returns 503 for every non-admin request (admins keep access so you can turn it back off). Takes effect instantly — no redeploy.
+            Emergency kill switch. When on, the API returns 503 for every non-admin request (admins keep access so you can turn it back off). Takes effect instantly, no redeploy.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -395,7 +395,7 @@ export default function AdminSettingsPage() {
                   className={`flex items-center justify-between rounded-lg border p-3 text-left transition-colors ${p.disabled ? "cursor-not-allowed opacity-50" : "hover:border-foreground/30"} ${active ? "border-primary bg-primary/5" : ""}`}
                 >
                   <div className="min-w-0">
-                    <div className="text-sm font-medium">{p.label} <span className="text-xs font-normal text-muted-foreground">· {p.note}</span></div>
+                    <div className="text-sm font-medium">{p.label} <span className="text-xs font-normal text-muted-foreground">{p.note}</span></div>
                     <div className="truncate font-mono text-xs text-muted-foreground">{p.url || "not configured"}</div>
                   </div>
                   {active && <Check className="h-4 w-4 shrink-0 text-primary" />}

@@ -4,7 +4,7 @@ import { LegalPage } from '@/components/legal-page'
 import { LEGAL } from '@/lib/legal'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Modern Bazaar',
+  title: 'Privacy Policy - Modern Bazaar',
   description: 'How Modern Bazaar collects, uses, and protects your data.',
 }
 
@@ -34,8 +34,8 @@ export default function PrivacyPage() {
       <p>
         When you subscribe, our payments Merchant of Record ({LEGAL.merchantOfRecord}) processes your
         payment. <strong>We never receive or store your full card number.</strong> We receive limited
-        records needed to grant access — such as your subscription plan, status, billing period, and a
-        customer/subscription identifier — and the email associated with the purchase.
+        records needed to grant access (your subscription plan, status, billing period, and a
+        customer/subscription identifier) and the email associated with the purchase.
       </p>
       <h3>Usage and preferences</h3>
       <p>
@@ -50,25 +50,25 @@ export default function PrivacyPage() {
       </p>
       <p>
         We do <strong>not</strong> collect your Minecraft account credentials, and we do not connect to
-        or read your private game account — the Service only reads Hypixel&apos;s public Bazaar market
+        or read your private game account: the Service only reads Hypixel&apos;s public Bazaar market
         data.
       </p>
 
       <h2>2. Why we use your data (legal bases)</h2>
       <ul>
-        <li><strong>To provide the Service</strong> (account, subscription access, saved settings) — performance of a contract.</li>
-        <li><strong>To process payments and prevent fraud</strong> — performance of a contract and legitimate interests.</li>
-        <li><strong>To secure, maintain, and improve the Service</strong> — legitimate interests.</li>
-        <li><strong>To comply with legal obligations</strong> (e.g. accounting/tax records kept by us or our Merchant of Record) — legal obligation.</li>
-        <li><strong>For optional communications</strong>, where applicable — consent, which you may withdraw at any time.</li>
+        <li><strong>To provide the Service</strong> (account, subscription access, saved settings): performance of a contract.</li>
+        <li><strong>To process payments and prevent fraud</strong>: performance of a contract and legitimate interests.</li>
+        <li><strong>To secure, maintain, and improve the Service</strong>: legitimate interests.</li>
+        <li><strong>To comply with legal obligations</strong> (e.g. accounting/tax records kept by us or our Merchant of Record): legal obligation.</li>
+        <li><strong>For optional communications</strong>, where applicable: consent, which you may withdraw at any time.</li>
       </ul>
 
       <h2>3. How we share data</h2>
       <p>We share personal data only with service providers (processors) that help us run the Service, including:</p>
       <ul>
-        <li><strong>Payments / Merchant of Record</strong> — {LEGAL.merchantOfRecord}, to process subscriptions and remit taxes;</li>
-        <li><strong>Authentication</strong> — our identity provider, to sign you in;</li>
-        <li><strong>Hosting and infrastructure</strong> — to run and serve the application.</li>
+        <li><strong>Payments / Merchant of Record</strong>: {LEGAL.merchantOfRecord}, to process subscriptions and remit taxes;</li>
+        <li><strong>Authentication</strong>: our identity provider, to sign you in;</li>
+        <li><strong>Hosting and infrastructure</strong>: to run and serve the application.</li>
       </ul>
       <p>
         We do not sell your personal data. We may disclose data if required by law or to protect our
@@ -97,13 +97,13 @@ export default function PrivacyPage() {
         <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>.
       </p>
       <p>
-        You also have the right to lodge a complaint with a supervisory authority — in {LEGAL.jurisdiction},
+        You also have the right to lodge a complaint with a supervisory authority: in {LEGAL.jurisdiction},
         the <em>Comissão Nacional de Proteção de Dados (CNPD)</em>.
       </p>
 
       <h2>7. Cookies and similar technologies</h2>
       <p>
-        We use cookies and local storage that are necessary for the Service to function — for example, to
+        We use cookies and local storage that are necessary for the Service to function: for example, to
         keep you signed in and to remember your theme preference. Our authentication and payment providers
         may set their own necessary cookies. We do not use advertising cookies.
       </p>

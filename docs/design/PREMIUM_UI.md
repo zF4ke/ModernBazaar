@@ -69,20 +69,28 @@ sidebar pill, header dot, home stat tiles), LoginCheck/PermissionCheck gates,
 flipping + manipulation opportunity cards (numbered steps, semantic hues, mono
 data), opportunity feed, hero preview regenerated.
 
-## Next passes (in order)
+## Status after pass 2 (owner feedback + full queue)
 
-1. **Trading setup / filters** (`flipping/_components/trading-setup*.tsx`,
-   `manipulation-setup.tsx`): segmented controls with a sliding pill, stepper
-   for bounded numbers, preset chips, collapse via grid-rows trick. The biggest
-   remaining surface a paying user touches.
-2. **Bazaar items table + item detail**: tnum/mono price columns, quiet row
-   hover, buy/sell order tables, charts recolored to the token palette.
-3. **Profile / billing**: tier theming to elite token, portal buttons press
-   feedback, plan card polish.
-4. **Skeletons pass**: every loading state shaped like its loaded content.
-5. **Mobile + reduced-motion verification**, micro-interaction checklist sweep
-   (hover/press/focus on EVERY control), legal pages em-dash sweep.
-6. **Admin pages** (lower priority, not customer-facing).
+Owner feedback folded in: trophy badge pill and Zap CTA restored, catchy save
+percent in gain color, data pages full-width, pill/stat footer row aligned,
+global cursor-pointer rule. Then the queue: Segmented control (sliding pill)
+for the preset picker, grid-rows collapse for both filter panels, FeatureCard
+flattened, item-detail header + mono stats, market page headers, chart
+neutrals on the ramp, flipping skeleton rebuilt to mirror the real card, admin
+sweep (tier tokens, middots, comments), legal pages em-dash sweep, mobile
+overflow fixed (landing nav at 375px). Mobile + fonts verified in the live
+browser (scrollWidth = viewport, Space Grotesk/Mono loaded).
+
+## Still open (needs a logged-in click-through or a later round)
+
+1. Authenticated-flow feel test: segmented preset switch, filter collapse,
+   card expand, portal/cancel buttons. Code follows verified patterns but eyes
+   beat inference.
+2. Item detail deep sections (order tables, 48h average card, chart legend
+   copy) got a light pass only; a dedicated round could tighten them.
+3. Admin pages are consistent but un-redesigned (Discord-style tables etc.).
+4. Light theme exists at token level; the product ships dark-first and the
+   light ramp has not been visually tuned.
 
 ## Verification loop
 

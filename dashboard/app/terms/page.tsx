@@ -4,7 +4,7 @@ import { LegalPage } from '@/components/legal-page'
 import { LEGAL } from '@/lib/legal'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — Modern Bazaar',
+  title: 'Terms of Service - Modern Bazaar',
   description: 'The terms governing your use of Modern Bazaar.',
 }
 
@@ -26,7 +26,7 @@ export default function TermsPage() {
       <p>
         {LEGAL.product} is an independent, read-only analytics tool for the video game Hypixel
         SkyBlock. It reads market data from Hypixel&apos;s official, public Bazaar API and presents
-        analysis, scores, and suggested trading strategies — including the strategy the SkyBlock
+        analysis, scores, and suggested trading strategies, including the strategy the SkyBlock
         community refers to as &ldquo;Bazaar Manipulation.&rdquo; That is the established in-game name
         for a legitimate supply-and-demand trading strategy involving thinly-traded virtual items.
       </p>
@@ -34,7 +34,7 @@ export default function TermsPage() {
       <ul>
         <li>does <strong>not</strong> automate, bot, or play the game for you;</li>
         <li>does <strong>not</strong> modify, inject into, or interact with the Minecraft or Hypixel game client;</li>
-        <li>deals only with <strong>virtual in-game currency and items</strong> — there is no real-money trading of game assets; and</li>
+        <li>deals only with <strong>virtual in-game currency and items</strong>: there is no real-money trading of game assets; and</li>
         <li>requires you to make every trade yourself, manually, inside the game.</li>
       </ul>
       <p>
@@ -65,7 +65,7 @@ export default function TermsPage() {
       </p>
       <p>
         Payments are processed by our <strong>Merchant of Record, {LEGAL.merchantOfRecord}</strong>.
-        This means the Merchant of Record — not {LEGAL.operator} — is the seller of record for your
+        This means the Merchant of Record (not {LEGAL.operator}) is the seller of record for your
         purchase, charges your payment method, issues receipts, and calculates and remits any applicable
         sales tax, VAT, or GST. Your purchase is also subject to the Merchant of Record&apos;s terms
         presented at checkout.
