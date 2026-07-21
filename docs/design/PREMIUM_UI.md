@@ -62,6 +62,28 @@ not neon, not glassmorphism.
 6. States pass: loading (skeletons that match layout), empty, error, sign-in
 7. Micro-interaction checklist + reduced-motion + mobile pass
 
+## Status after pass 1 (five commits on feat/premium-ui)
+
+Done: foundation (tokens/type/motion), landing page, dashboard chrome (sliding
+sidebar pill, header dot, home stat tiles), LoginCheck/PermissionCheck gates,
+flipping + manipulation opportunity cards (numbered steps, semantic hues, mono
+data), opportunity feed, hero preview regenerated.
+
+## Next passes (in order)
+
+1. **Trading setup / filters** (`flipping/_components/trading-setup*.tsx`,
+   `manipulation-setup.tsx`): segmented controls with a sliding pill, stepper
+   for bounded numbers, preset chips, collapse via grid-rows trick. The biggest
+   remaining surface a paying user touches.
+2. **Bazaar items table + item detail**: tnum/mono price columns, quiet row
+   hover, buy/sell order tables, charts recolored to the token palette.
+3. **Profile / billing**: tier theming to elite token, portal buttons press
+   feedback, plan card polish.
+4. **Skeletons pass**: every loading state shaped like its loaded content.
+5. **Mobile + reduced-motion verification**, micro-interaction checklist sweep
+   (hover/press/focus on EVERY control), legal pages em-dash sweep.
+6. **Admin pages** (lower priority, not customer-facing).
+
 ## Verification loop
 
 Headless Chrome screenshots (the embedded pane cannot capture):
