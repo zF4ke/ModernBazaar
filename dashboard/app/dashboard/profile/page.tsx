@@ -21,7 +21,7 @@ import type { UserPermissions } from '@/types/permissions'
 
 const TOOLS = [
   { name: "Bazaar Flipping", desc: "Flips ranked by our profit-per-hour score.", scope: PERMISSIONS.USE_BAZAAR_FLIPPING, icon: Shuffle, accent: "text-blue-400", tint: "bg-blue-500/15", href: "/dashboard/strategies/flipping" },
-  { name: "Bazaar Manipulation", desc: "Corner thin markets with the full playbook.", scope: PERMISSIONS.USE_BAZAAR_MANIPULATION, icon: Crosshair, accent: "text-purple-400", tint: "bg-purple-500/15", href: "/dashboard/strategies/manipulation" },
+  { name: "Bazaar Manipulation", desc: "Corner thin markets with the full playbook.", scope: PERMISSIONS.USE_BAZAAR_MANIPULATION, icon: Crosshair, accent: "text-elite", tint: "bg-elite/10", href: "/dashboard/strategies/manipulation" },
   { name: "Market data", desc: "Live prices and the full item catalog.", scope: PERMISSIONS.READ_MARKET_DATA, icon: BarChart3, accent: "text-sky-400", tint: "bg-sky-500/15", href: "/dashboard/bazaar-items" },
 ]
 
@@ -29,7 +29,7 @@ const TOOLS = [
 const TIER = {
   free:    { label: "Free",    badge: "border-zinc-500/30 text-zinc-300 bg-zinc-500/10",       ring: "ring-zinc-500/30",   glow: "bg-zinc-500/15",   dot: "bg-zinc-400" },
   flipper: { label: "Flipper", badge: "border-blue-500/30 text-blue-300 bg-blue-500/10",       ring: "ring-blue-500/40",   glow: "bg-blue-500/15",   dot: "bg-blue-400" },
-  elite:   { label: "Elite",   badge: "border-purple-500/30 text-purple-300 bg-purple-500/10", ring: "ring-purple-500/40", glow: "bg-purple-500/15", dot: "bg-purple-400" },
+  elite:   { label: "Elite",   badge: "border-elite/30 text-elite bg-elite/10", ring: "ring-elite/40", glow: "bg-elite/15", dot: "bg-elite" },
 } as const
 
 const CANCEL_REASONS = [
