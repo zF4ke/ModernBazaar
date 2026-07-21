@@ -196,7 +196,7 @@ export default function ManipulationPage() {
         }
       >
         <TooltipProvider>
-          <div className="mx-auto max-w-6xl space-y-6">
+          <div className="space-y-6">
             <PageHeader
               title="Corner the market"
               description="Thin-supply markets you can control, with the full plan and break-even."

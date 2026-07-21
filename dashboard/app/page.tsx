@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { TrendingUp, ArrowRight, Zap, Check, Plus, Shield, Clock, SlidersHorizontal, Shuffle, Hammer, Coins, Crosshair, DollarSign, ArrowRightLeft, Boxes } from "lucide-react"
+import { TrendingUp, ArrowRight, Zap, Check, Plus, Shield, Clock, SlidersHorizontal, Shuffle, Hammer, Coins, Crosshair, DollarSign, ArrowRightLeft, Trophy } from "lucide-react"
 import { BrandMark } from "@/components/brand-mark"
 import { SiteFooter } from "@/components/site-footer"
 import { UpgradeButton, useUpgrade } from "@/components/upgrade-button"
@@ -117,8 +117,9 @@ export default function LandingPage() {
       <header className="mx-auto max-w-6xl px-6 pt-16 pb-20 md:pt-24 md:pb-28">
         <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_1fr]">
           <div className="space-y-7">
-            <p className="animate-rise-in text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              SkyBlock trading toolkit
+            <p className="animate-rise-in inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-[13px] font-medium text-primary">
+              <Trophy className="h-3.5 w-3.5" />
+              SkyBlock's best trading toolkit
             </p>
             <h1 className="animate-rise-in [animation-delay:60ms] text-4xl md:text-[3.4rem] md:leading-[1.06] font-bold tracking-tight text-balance">
               Flip smarter in the{' '}
@@ -131,6 +132,7 @@ export default function LandingPage() {
             <div className="animate-rise-in [animation-delay:180ms] flex flex-wrap items-center gap-3 pt-1">
               <Button asChild size="lg" className="px-7">
                 <Link href="/dashboard">
+                  <Zap className="h-4 w-4" />
                   Launch dashboard
                   <ArrowRight className="h-4 w-4" />
                 </Link>
@@ -292,7 +294,10 @@ export default function LandingPage() {
               <span className="text-4xl font-bold tracking-tight">$9.99</span>
               <span className="text-sm text-muted-foreground">/ month</span>
             </div>
-            <p className="mb-7 text-xs text-muted-foreground/80">Launch price, normally $12.99</p>
+            <p className="mb-7 text-xs">
+              <span className="text-muted-foreground/70 line-through">$12.99</span>
+              <span className="ml-2 font-semibold text-gain">Save 23%</span>
+            </p>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2.5">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
@@ -332,7 +337,10 @@ export default function LandingPage() {
               <span className="text-4xl font-bold tracking-tight">$25.99</span>
               <span className="text-sm text-muted-foreground">/ month</span>
             </div>
-            <p className="mb-7 text-xs text-muted-foreground/80">Launch price, normally $33.99</p>
+            <p className="mb-7 text-xs">
+              <span className="text-muted-foreground/70 line-through">$33.99</span>
+              <span className="ml-2 font-semibold text-gain">Save 24%</span>
+            </p>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2.5">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-elite" />
@@ -417,6 +425,7 @@ export default function LandingPage() {
           </div>
           <Button asChild size="lg" className="px-7 shrink-0">
             <Link href="/dashboard">
+              <Zap className="h-4 w-4" />
               Launch dashboard
               <ArrowRight className="h-4 w-4" />
             </Link>

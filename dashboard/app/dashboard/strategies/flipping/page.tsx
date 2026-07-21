@@ -358,7 +358,7 @@ export default function FlippingPage() {
         }
       >
       <TooltipProvider>
-        <div className="mx-auto max-w-6xl space-y-6">
+        <div className="space-y-6">
           <PageHeader
             title="Find your next flip"
             description="Buy/sell gaps ranked by profit per hour after tax."

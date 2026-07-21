@@ -119,6 +119,21 @@
   ::selection {
     background: hsl(var(--primary) / 0.28);
   }
+  /* Interactive means pointer. Tailwind's preflight leaves buttons on the
+     default arrow; this covers native buttons and every Radix control role. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="menuitem"],
+  [role="option"],
+  [role="tab"],
+  [role="switch"],
+  [role="checkbox"],
+  [role="radio"],
+  [role="combobox"]:not(:disabled),
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
   /* Thin, quiet scrollbars that match the surface they live on. */
   ::-webkit-scrollbar {
     width: 10px;

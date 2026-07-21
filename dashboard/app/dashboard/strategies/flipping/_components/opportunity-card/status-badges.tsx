@@ -8,7 +8,10 @@ import { SPREAD_GREEN, SPREAD_AMBER, RISK_RED, COMP_RED, COMP_AMBER } from "../b
 export function StatusBadges({ o, riskPct, spreadPctVal, d, s, format }: any) {
   const competitionScore = o.competitionPerHour ?? 0
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    // One aligned footer row above a hairline: signal pills left, flow numbers
+    // right. The two groups share a baseline instead of colliding mid-air.
+    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-border/60 pt-3">
+      <div className="flex flex-wrap items-center gap-1.5">
       <Badge variant="outline" className={`text-[10px] px-2 py-0.5 ${spreadPctVal >= SPREAD_GREEN ? 'border-gain/50 text-gain' : spreadPctVal >= SPREAD_AMBER ? 'border-warn/50 text-warn' : 'border-border text-muted-foreground'}`}>
         <TrendingUp className="h-3 w-3 mr-1" />
         <span className="font-mono">{format(spreadPctVal, 0)}%</span>&nbsp;spread
@@ -37,10 +40,11 @@ export function StatusBadges({ o, riskPct, spreadPctVal, d, s, format }: any) {
         <Users className="h-3 w-3 mr-1" />
         <span className="font-mono">{format(competitionScore, 0)}</span>&nbsp;comp
       </Badge>
-      <div className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
+      </div>
+      <div className="flex shrink-0 items-center gap-2.5 text-[11px] text-muted-foreground/90">
         <BarChart3 className="h-3 w-3" />
-        <span>Demand <span className="font-mono">{format(d, 0)}</span></span>
-        <span className="ml-1">Supply <span className="font-mono">{format(s, 0)}</span></span>
+        <span>Demand <span className="font-mono font-medium text-muted-foreground">{format(d, 0)}</span></span>
+        <span>Supply <span className="font-mono font-medium text-muted-foreground">{format(s, 0)}</span></span>
       </div>
     </div>
   )
