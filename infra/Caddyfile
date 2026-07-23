@@ -1,14 +1,14 @@
-api.modernbazaar.zf4ke.me {
+api.modernbazaar.dev, api.modernbazaar.zf4ke.me {
     encode zstd gzip
     reverse_proxy core:8080
 }
 
-grafana.modernbazaar.zf4ke.me {
+grafana.modernbazaar.dev, grafana.modernbazaar.zf4ke.me {
     encode zstd gzip
     reverse_proxy grafana:3000
 }
 
-prom.modernbazaar.zf4ke.me {
+prom.modernbazaar.dev, prom.modernbazaar.zf4ke.me {
     encode zstd gzip
     basic_auth {
         {$PROMETHEUS_BASIC_AUTH}

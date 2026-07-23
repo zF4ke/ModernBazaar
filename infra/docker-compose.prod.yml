@@ -85,7 +85,7 @@ services:
     restart: unless-stopped
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?required}
-      GF_SERVER_ROOT_URL: https://grafana.modernbazaar.zf4ke.me
+      GF_SERVER_ROOT_URL: https://grafana.modernbazaar.dev
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro

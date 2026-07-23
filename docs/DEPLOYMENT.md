@@ -111,9 +111,9 @@ In the Auth0 dashboard for your tenant:
    with live keys makes every webhook 400 and entitlements never apply.
 4. Set the return URLs to the real domain:
    ```
-   STRIPE_SUCCESS_URL=https://modernbazaar.com/dashboard/profile?checkout=success
-   STRIPE_CANCEL_URL=https://modernbazaar.com/dashboard/profile?checkout=cancelled
-   STRIPE_PORTAL_RETURN_URL=https://modernbazaar.com/dashboard/profile
+   STRIPE_SUCCESS_URL=https://modernbazaar.dev/dashboard/profile?checkout=success
+   STRIPE_CANCEL_URL=https://modernbazaar.dev/dashboard/profile?checkout=cancelled
+   STRIPE_PORTAL_RETURN_URL=https://modernbazaar.dev/dashboard/profile
    ```
 5. Enable **Stripe Tax / Managed Payments tax collection** and **Radar** in the dashboard.
 6. Flip `BILLING_ENABLED=true` **and** the live `STRIPE_SECRET_KEY` **together** (half-configured is
@@ -160,7 +160,7 @@ The non-negotiables:
 | `AUTH_AUDIENCE` | `https://modern-bazaar.api` |
 | `AUTH_MANAGEMENT_CLIENT_ID` / `_SECRET` | from the M2M app |
 | `ADMIN_USER_SUBS` | your Auth0 `sub` (admin bootstrap) |
-| `CORS_ALLOWED_ORIGINS` | `https://modernbazaar.com` |
+| `CORS_ALLOWED_ORIGINS` | `https://modernbazaar.dev` |
 | `AUTH_MOCK_ENABLED` | unset/false in prod |
 | `BILLING_ENABLED` | `true` at go-live (with keys) |
 | `STRIPE_SECRET_KEY` | `sk_live_…` |
