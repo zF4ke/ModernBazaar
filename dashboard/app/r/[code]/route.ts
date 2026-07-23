@@ -1,7 +1,7 @@
 import { after, type NextRequest, NextResponse } from "next/server"
 
 /**
- * Creator referral link: modernbazaar.com/r/CODE
+ * Creator referral link: www.modernbazaar.dev/r/CODE
  *
  * Records the click (fire-and-forget, anonymous), drops the 60-day `mb_ref`
  * attribution cookie, and redirects to the landing page. The cookie rides
