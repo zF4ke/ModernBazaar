@@ -80,8 +80,8 @@ public class StripeWebhookController {
             JsonNode dataObject = objectMapper.readTree(payload).path("data").path("object");
             switch (event.getType()) {
                 case "checkout.session.completed" -> handleCheckoutCompleted(dataObject);
-                case "customer.subscription.updated", "customer.subscription.deleted" ->
-                        applyFromSubscriptionJson(dataObject, null);
+                case "customer.subscription.updated" -> applyFromSubscriptionJson(dataObject, null, false);
+                case "customer.subscription.deleted" -> applyFromSubscriptionJson(dataObject, null, true);
                 case "invoice.paid" -> handleInvoicePaid(dataObject);
                 case "charge.refunded" -> referralEarningService.recordRefund(dataObject);
                 default -> log.debug("Ignoring Stripe event type {}", event.getType());
@@ -136,8 +136,24 @@ public class StripeWebhookController {
         }
     }
 
-    /** Map a Stripe subscription JSON object onto our subscription model via SubscriptionService. */
+    /** Back-compat overload for callers that are never a deletion (checkout, invoice). */
     private void applyFromSubscriptionJson(JsonNode sub, String userIdFallback) {
+        applyFromSubscriptionJson(sub, userIdFallback, false);
+    }
+
+    /**
+     * Map a Stripe subscription JSON object onto our subscription model via SubscriptionService.
+     *
+     * @param ended true for customer.subscription.deleted: the subscription no longer
+     *              exists at Stripe (immediate cancel, refund teardown, payment-failure
+     *              teardown), so whatever paid period the row still records is void —
+     *              access must end NOW, not at the recorded period end. A period-end
+     *              cancel arrives as `updated` (cancel_at_period_end) and correctly
+     *              keeps access; without this flag the deleted event reused that path
+     *              and an immediately-cancelled user kept entitlements for the rest
+     *              of the billing period (found in the first live cancellation test).
+     */
+    private void applyFromSubscriptionJson(JsonNode sub, String userIdFallback, boolean ended) {
         String userId = textOrNull(sub.path("metadata").path("user_id"));
         if (userId == null) userId = userIdFallback;
         if (userId == null) {
@@ -155,6 +171,12 @@ public class StripeWebhookController {
         // current_period_end is at subscription level (older API) or item level (newer API).
         Long periodEnd = longOrNull(sub.path("current_period_end"));
         if (periodEnd == null) periodEnd = longOrNull(firstItem.path("current_period_end"));
+
+        if (ended) {
+            status = "canceled";
+            Long endedAt = longOrNull(sub.path("ended_at"));
+            periodEnd = endedAt != null ? endedAt : java.time.Instant.now().getEpochSecond();
+        }
 
         subscriptionService.applyProviderWebhook(priceId, customerId, subscriptionId, periodEnd, status, userId);
         log.info("Stripe subscription applied: user={} price={} status={} sub={}", userId, priceId, status, subscriptionId);
