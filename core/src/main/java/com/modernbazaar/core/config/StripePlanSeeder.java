@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
+
 /**
  * Seeds the Stripe recurring price id onto each paid plan at startup, so checkout and
  * the webhook can map price ↔ plan via {@code plan.stripe_price_id}. Idempotent and
@@ -27,6 +29,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class StripePlanSeeder implements ApplicationRunner {
 
     private static final String DEFAULT_FEATURES = "{\"limits\":{\"maxItemsPerPage\":50}}";
+    private static final Set<String> OBSOLETE_TEST_PRICE_IDS = Set.of(
+            "price_1TjULbCf0etY1rScAcWgdmPd",
+            "price_1TjULcCf0etY1rSc1img5IrV"
+    );
 
     private final PlanRepository planRepository;
 
@@ -58,7 +64,8 @@ public class StripePlanSeeder implements ApplicationRunner {
         }
         String current = existing.getStripePriceId();
         boolean unsetOrLegacy = current == null || current.isBlank()
-                || current.chars().allMatch(Character::isDigit); // legacy Lemon Squeezy numeric variant id
+                || current.chars().allMatch(Character::isDigit) // legacy Lemon Squeezy numeric variant id
+                || OBSOLETE_TEST_PRICE_IDS.contains(current);
         if (unsetOrLegacy && !priceId.equals(current)) {
             existing.setStripePriceId(priceId);
             planRepository.save(existing);

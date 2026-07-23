@@ -38,6 +38,7 @@ class EliteCapacityServiceTest {
         when(reservations.countByExpiresAtAfter(any(OffsetDateTime.class))).thenReturn(1L);
 
         assertThrows(EliteCapacityService.CapacityFullException.class, () -> service.reserve("user"));
+        verify(jdbcTemplate).execute("select pg_advisory_xact_lock(hashtext('modern-bazaar-elite-capacity'))");
         verify(reservations, never()).save(any());
     }
 }

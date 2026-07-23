@@ -26,7 +26,8 @@ public class EliteCapacityService {
 
     @Transactional
     public void reserve(String userId) {
-        jdbcTemplate.queryForObject("select pg_advisory_xact_lock(hashtext('modern-bazaar-elite-capacity'))", Long.class);
+        // pg_advisory_xact_lock returns void; execute it for its locking side effect.
+        jdbcTemplate.execute("select pg_advisory_xact_lock(hashtext('modern-bazaar-elite-capacity'))");
         OffsetDateTime now = OffsetDateTime.now();
         reservations.deleteExpired(now);
 

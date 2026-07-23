@@ -93,7 +93,7 @@ auth:
 
 # Auth0 Management API - for automatic role assignment
 auth0:
-  domain: ${AUTH_ISSUER_URI:}
+  domain: ${AUTH_MANAGEMENT_DOMAIN:${AUTH_ISSUER_URI:}}
   management:
     client-id: ${AUTH_MANAGEMENT_CLIENT_ID:}
     client-secret: ${AUTH_MANAGEMENT_CLIENT_SECRET:}
