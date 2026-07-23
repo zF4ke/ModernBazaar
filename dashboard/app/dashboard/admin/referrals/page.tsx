@@ -46,9 +46,12 @@ interface Payout {
   paidAt: string | null
 }
 
-const money = (cents: number) => `$${(cents / 100).toFixed(2)}`
+// Defensive on purpose: during a deploy the Vercel frontend and droplet
+// backend can briefly disagree on the response shape (a missing field here
+// crashed the whole page as undefined.toLocaleString).
+const money = (cents: number | undefined | null) => `$${((cents ?? 0) / 100).toFixed(2)}`
 const fmtDate = (s: string | null) => (s ? new Date(s).toLocaleDateString() : "—")
-const fmtNum = (n: number) => n.toLocaleString("en-US")
+const fmtNum = (n: number | undefined | null) => (Number.isFinite(n) ? (n as number).toLocaleString("en-US") : "0")
 const PLAN_DOT: Record<string, string> = { flipper: "bg-emerald-500", elite: "bg-blue-500" }
 
 const relTime = (s: string | null) => {
