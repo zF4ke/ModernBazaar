@@ -39,7 +39,7 @@ export default function OpenGraphImage() {
         </div>
 
         <div style={{ display: "flex", fontSize: "38px", color: "#aeb6c8", marginTop: "20px", maxWidth: "900px" }}>
-          Bazaar prices, handcrafted flip scores, and a clear play for every trade.
+          SkyBlock&apos;s best trading toolkit — live prices, flip scores, and a clear play for every trade.
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "56px" }}>
