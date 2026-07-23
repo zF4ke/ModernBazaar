@@ -5,8 +5,8 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Header } from "@/components/header"
 
 export const metadata: Metadata = {
-  title: "Modern Bazaar Dashboard",
-  description: "Trading dashboard for Modern Bazaar platform",
+  title: "Dashboard",
+  description: "Live Hypixel SkyBlock market data and trading tools.",
 }
 
 export default function DashboardLayout({

@@ -20,7 +20,6 @@ import { FeatureCard } from "@/components/feature-card"
 import type { SkyblockItem, SkyblockItemQuery, SkyblockItemsResponse } from "@/types/skyblock"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
-import { LoginCheck } from "@/components/login-check"
 
 // Fetch handled by useBackendQuery (auth by default)
 
@@ -85,6 +84,7 @@ export default function SkyblockItemsPage() {
     isFetching,
     refetch,
   } = useBackendQuery<SkyblockItemsResponse>(endpoint, {
+    requireAuth: false,
     placeholderData: (prev) => prev as any,
     staleTime: 30000,
   })
@@ -148,12 +148,8 @@ export default function SkyblockItemsPage() {
     </div>
   )
 
+  // Public page: the catalog is part of the open funnel (SEO + link shares).
   return (
-    <LoginCheck
-      featureName="Skyblock Items"
-      featureDescription="Browse and search Hypixel SkyBlock item catalog"
-      icon={<Layers className="h-8 w-8 text-muted-foreground" />}
-    >
       <div className="w-full max-w-full space-y-6 overflow-hidden">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-1.5">
@@ -452,7 +448,6 @@ export default function SkyblockItemsPage() {
           )}
         </div>
       </FeatureCard>
-        </div>
-      </LoginCheck>
+      </div>
   )
-} 
+}

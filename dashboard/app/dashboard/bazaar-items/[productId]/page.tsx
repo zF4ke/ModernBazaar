@@ -48,6 +48,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
     isFetching,
     refetch,
   } = useBackendQuery<BazaarItemLiveView>(itemEndpoint, {
+    requireAuth: false,
     placeholderData: (previousData) => previousData as any,
     staleTime: 30000,
     retry: (failureCount, error: any) => {
@@ -103,6 +104,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
     isLoading: historyLoading,
     error: historyError,
   } = useBackendQuery<BazaarItemHourSummary[]>(historyEndpoint, {
+    requireAuth: false,
     enabled: !!item,
     staleTime: 60000,
     retry: (failureCount, error: any) => {
@@ -121,6 +123,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
     isLoading: averageLoading,
     error: averageError,
   } = useBackendQuery<BazaarItemHourAverage>(averageEndpoint, {
+    requireAuth: false,
     enabled: !!item,
     staleTime: 300000,
     retry: (failureCount, error: any) => {
@@ -139,6 +142,7 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
     isLoading: snapshotsLoading,
     error: snapshotsError,
   } = useBackendQuery<BazaarItemHourSummary[]>(snapshotsEndpoint, {
+    requireAuth: false,
     enabled: !!item,
     staleTime: 30000,
     retry: (failureCount, error: any) => {

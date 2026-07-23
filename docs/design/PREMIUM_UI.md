@@ -1,8 +1,8 @@
 # Premium UI - direction and working notes
 
-Branch: `feat/premium-ui`. Source ruleset: `AMAZING UI Designs/DESIGN_PRINCIPLES.md`
-(portable copy of the rules lives in the owner's design folder; this file records
-the decisions made for THIS product).
+Branch: `feat/premium-ui`. Source ruleset: `Repertoire/design/DESIGN_PRINCIPLES.md`
+(the owner's portable knowledge library; this file records the decisions made
+for THIS product).
 
 ## Identity
 

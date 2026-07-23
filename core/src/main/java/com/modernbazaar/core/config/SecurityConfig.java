@@ -219,6 +219,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(reg -> reg
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // libera preflight
                         .requestMatchers(getPublicEndpoints()).permitAll()
+                        // Public funnel: market data READS are public (SEO item pages, link
+                        // shares, logged-out browsing). Mutations stay authenticated below.
+                        .requestMatchers(HttpMethod.GET, "/api/bazaar/**", "/api/skyblock/**").permitAll()
                         // Strategy-specific permissions: require feature scopes
                         // Feature access is enforced by DB plan in StrategiesController
                         // (the source of truth), so here we only require authentication.

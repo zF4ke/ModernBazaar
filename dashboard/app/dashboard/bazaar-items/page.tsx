@@ -20,7 +20,6 @@ import { buildQueryParams } from "@/lib/api"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import { FeatureCard } from "@/components/feature-card"
-import { LoginCheck } from "@/components/login-check"
 
 // Fetch handled by useBackendQuery (auth by default)
 
@@ -68,6 +67,7 @@ export default function BazaarItemsPage() {
     isFetching,
     refetch,
   } = useBackendQuery<BazaarItemsResponse>(endpoint, {
+    requireAuth: false,
     staleTime: 30000,
     refetchOnWindowFocus: false,
   })
@@ -146,12 +146,8 @@ export default function BazaarItemsPage() {
     </div>
   )
 
+  // Public page: market data is part of the open funnel (SEO + link shares).
   return (
-    <LoginCheck
-      featureName="Bazaar Items"
-      featureDescription="Browse and analyze Hypixel SkyBlock bazaar items"
-      icon={<Package className="h-8 w-8 text-muted-foreground" />}
-    >
       <div className="space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-1.5">
@@ -429,7 +425,6 @@ export default function BazaarItemsPage() {
           )}
         </div>
       </FeatureCard>
-        </div>
-      </LoginCheck>
+      </div>
   )
-} 
+}

@@ -98,6 +98,28 @@ In the Auth0 dashboard for your tenant:
 6. Flip `BILLING_ENABLED=true` **and** the live `STRIPE_SECRET_KEY` **together** (half-configured is
    fail-closed — checkout 503s, webhook 500s — but don't ship it).
 
+## 5b. Database migration warning (read before EVERY deploy)
+
+The schema is managed by Hibernate `ddl-auto: update` with Flyway disabled.
+That mode **silently fails to add NOT NULL columns to tables that already have
+rows** - the app then crashes at boot when a query touches the missing column
+(this happened in dev with `bazaar_hour_summary.bid_up_moves`). Never assume a
+new entity field will materialize in prod on its own.
+
+Before deploying code that adds entity fields, run the matching ALTER with a
+default, e.g.:
+
+```sql
+ALTER TABLE bazaar_hour_summary ADD COLUMN IF NOT EXISTS bid_up_moves bigint NOT NULL DEFAULT 0;
+ALTER TABLE bazaar_hour_summary ADD COLUMN IF NOT EXISTS bid_up_price_delta double precision NOT NULL DEFAULT 0;
+```
+
+(The two above are REQUIRED for the current code if prod predates the
+manipulation metrics.) Longer-term: re-enable Flyway for real migrations.
+The Postgres data lives in the named volume `dbdata`; compose
+recreates/rebuilds do not delete it, but `docker compose down -v` DOES. Never
+pass `-v` against prod.
+
 ## 6. Go-live checklist
 
 - [ ] Backend reachable at `https://api.…/actuator/health` → UP.
