@@ -104,11 +104,14 @@ stripe:
   success-url: ${STRIPE_SUCCESS_URL:http://localhost:3001/dashboard/profile?checkout=success}
   cancel-url:  ${STRIPE_CANCEL_URL:http://localhost:3001/dashboard/profile?checkout=cancelled}
   portal-return-url: ${STRIPE_PORTAL_RETURN_URL:http://localhost:3001/dashboard/profile}
-  # Stripe recurring price ids per paid plan (NOT secrets — exposed at checkout). Seeded onto
-  # plan.stripe_price_id at startup (StripePlanSeeder) if unset/legacy; admin Plans edits win.
+  # Stripe recurring price ids per paid plan (NOT secrets — exposed at checkout). Monthly ids are
+  # seeded onto plan.stripe_price_id at startup (StripePlanSeeder) if unset/legacy; admin Plans
+  # edits win. Annual ids live in config only (checkout resolves them; webhook maps them back).
   price:
     flipper: ${STRIPE_PRICE_FLIPPER:price_1TjTUmCf0etY1rScKWehA6gs}
     elite:   ${STRIPE_PRICE_ELITE:price_1TjTUqCf0etY1rScV7UbFWVr}
+    flipper-annual: ${STRIPE_PRICE_FLIPPER_ANNUAL:}
+    elite-annual:   ${STRIPE_PRICE_ELITE_ANNUAL:}
 
 
 skyblock:

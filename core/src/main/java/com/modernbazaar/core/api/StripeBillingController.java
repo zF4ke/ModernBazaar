@@ -35,10 +35,16 @@ public class StripeBillingController {
     @Value("${billing.enabled:false}")
     private boolean billingEnabled;
 
-    public record CheckoutRequest(String plan, String ref) {}
+    @Value("${stripe.price.flipper-annual:}")
+    private String flipperAnnualPriceId;
+
+    @Value("${stripe.price.elite-annual:}")
+    private String eliteAnnualPriceId;
+
+    public record CheckoutRequest(String plan, String ref, String interval) {}
     public record UrlResponse(String url) {}
 
-    /** Create a Checkout Session for a paid plan and return its hosted URL. */
+    /** Create a Checkout Session for a paid plan (monthly by default, annual on request). */
     @PostMapping(path = "/checkout-session", consumes = MediaType.APPLICATION_JSON_VALUE)
     @RateLimiter(name = "subscriptionEndpoint")
     public ResponseEntity<?> createCheckoutSession(@AuthenticationPrincipal Jwt jwt,
@@ -57,6 +63,22 @@ public class StripeBillingController {
             return ResponseEntity.badRequest().body(error("Plan has no Stripe price configured: " + planSlug));
         }
 
+        // The client only ever picks a plan slug and an interval; every price id is
+        // resolved server-side (no client-controlled amounts).
+        boolean annual = body.interval() != null && body.interval().equalsIgnoreCase("annual");
+        String priceId = plan.getStripePriceId();
+        if (annual) {
+            String annualId = switch (plan.getSlug()) {
+                case "flipper" -> flipperAnnualPriceId;
+                case "elite" -> eliteAnnualPriceId;
+                default -> null;
+            };
+            if (annualId == null || annualId.isBlank()) {
+                return ResponseEntity.badRequest().body(error("Annual billing is not configured for: " + planSlug));
+            }
+            priceId = annualId;
+        }
+
         String userId = jwt.getSubject();
         String email = jwt.getClaimAsString("email");
         var existing = subscriptionService.findCurrentForUser(userId).orElse(null);
@@ -65,7 +87,7 @@ public class StripeBillingController {
 
         try {
             String url = stripeBillingService.createCheckoutSession(
-                    plan.getStripePriceId(), userId, email, customerId, body.ref());
+                    priceId, userId, email, customerId, body.ref());
             return ResponseEntity.ok(new UrlResponse(url));
         } catch (Exception e) {
             log.error("Failed to create Stripe checkout session for user {}: {}", userId, e.getMessage());

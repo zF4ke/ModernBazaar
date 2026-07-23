@@ -25,6 +25,7 @@ import type { ComponentProps, ReactNode } from "react"
  *   cancels the old lower sub.
  */
 export type UpgradePlan = "flipper" | "elite"
+export type BillingInterval = "monthly" | "annual"
 
 // Tier ordering for the "already have this / a higher plan" guard.
 const PLAN_RANK: Record<string, number> = { free: 0, flipper: 1, elite: 2 }
@@ -60,11 +61,11 @@ function useCurrentPlan() {
 export function useUpgrade() {
   const { user, isLoading } = useUser()
 
-  const start = useCallback(async (plan: UpgradePlan) => {
+  const start = useCallback(async (plan: UpgradePlan, interval: BillingInterval = "monthly") => {
     // Not logged in: a checkout with no user_id can't be attributed by the webhook,
     // so log in first and come back to the pricing section to resume this exact plan.
     if (!user) {
-      const returnTo = `/?upgrade=${plan}#pricing`
+      const returnTo = `/?upgrade=${plan}&interval=${interval}#pricing`
       window.location.href = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`
       return
     }
@@ -73,7 +74,7 @@ export function useUpgrade() {
       const res = await fetchWithBackendUrl("/api/me/billing/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, ref: readRefCookie() }),
+        body: JSON.stringify({ plan, interval, ref: readRefCookie() }),
       })
       if (res.ok) {
         const data = (await res.json()) as { url?: string }
@@ -91,18 +92,20 @@ export function useUpgrade() {
 
   /**
    * If the URL carries ?upgrade=<plan> (set before a login bounce) and the user is
-   * now authenticated, strip the param and continue to checkout. No-op otherwise.
+   * now authenticated, strip the params and continue to checkout. No-op otherwise.
    */
   const resumeFromQuery = useCallback(() => {
     if (isLoading || !user || typeof window === "undefined") return
     const params = new URLSearchParams(window.location.search)
     const plan = params.get("upgrade")
+    const interval = params.get("interval") === "annual" ? "annual" : "monthly"
     if (plan !== "flipper" && plan !== "elite") return
-    // Remove the param so a refresh / back-nav doesn't re-trigger the redirect.
+    // Remove the params so a refresh / back-nav doesn't re-trigger the redirect.
     params.delete("upgrade")
+    params.delete("interval")
     const qs = params.toString()
     window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}#pricing`)
-    start(plan)
+    start(plan, interval)
   }, [isLoading, user, start])
 
   return { start, resumeFromQuery, isLoading, isAuthenticated: !!user }
@@ -110,9 +113,10 @@ export function useUpgrade() {
 
 export function UpgradeButton({
   plan,
+  interval = "monthly",
   children,
   ...props
-}: { plan: UpgradePlan; children: ReactNode } & ComponentProps<typeof Button>) {
+}: { plan: UpgradePlan; interval?: BillingInterval; children: ReactNode } & ComponentProps<typeof Button>) {
   const { start, isLoading } = useUpgrade()
   const { slug, rank, loading, isAuthenticated } = useCurrentPlan()
   const targetRank = PLAN_RANK[plan]
@@ -129,7 +133,7 @@ export function UpgradeButton({
   // Disable while a logged-in user's plan is still loading, so they can't start a
   // checkout a beat before the guard would have stopped them.
   return (
-    <Button {...props} onClick={() => start(plan)} disabled={isLoading || (isAuthenticated && loading) || props.disabled}>
+    <Button {...props} onClick={() => start(plan, interval)} disabled={isLoading || (isAuthenticated && loading) || props.disabled}>
       {children}
     </Button>
   )

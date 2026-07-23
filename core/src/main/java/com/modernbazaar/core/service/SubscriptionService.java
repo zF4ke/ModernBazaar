@@ -34,6 +34,14 @@ public class SubscriptionService {
     private final SubscriptionCancellationRepository cancellationRepository;
     private final StripeBillingService stripeBillingService;
 
+    /* Annual price ids live in config, not on the plan row; the webhook maps
+       them back to a plan slug here. */
+    @org.springframework.beans.factory.annotation.Value("${stripe.price.flipper-annual:}")
+    private String flipperAnnualPriceId;
+
+    @org.springframework.beans.factory.annotation.Value("${stripe.price.elite-annual:}")
+    private String eliteAnnualPriceId;
+
     public Optional<UserSubscription> findCurrentForUser(String userId) {
         return userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId);
     }
@@ -162,6 +170,13 @@ public class SubscriptionService {
             return;
         }
         var planOpt = planRepository.findByStripePriceId(priceId);
+        if (planOpt.isEmpty()) {
+            // Annual prices are not stored on the plan row; map them via config.
+            String annualSlug = priceId.equals(flipperAnnualPriceId) && !flipperAnnualPriceId.isBlank() ? "flipper"
+                    : priceId.equals(eliteAnnualPriceId) && !eliteAnnualPriceId.isBlank() ? "elite"
+                    : null;
+            if (annualSlug != null) planOpt = planRepository.findBySlug(annualSlug);
+        }
         if (planOpt.isEmpty()) {
             log.warn("PriceId {} não mapeado para nenhum plano (user={})", priceId, userId);
             return;
