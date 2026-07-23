@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useUser } from '@auth0/nextjs-auth0'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -70,6 +71,35 @@ export default function ProfilePage() {
   const periodEnd = subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd) : null
   const daysLeft = periodEnd ? Math.max(0, Math.ceil((periodEnd.getTime() - Date.now()) / 86_400_000)) : null
   const provider = PROVIDERS[(user?.sub || '').split('|')[0]] ?? 'Single sign-on'
+
+  // After Stripe redirects back with ?checkout=success, the webhook that grants
+  // the plan can land a few seconds LATER than the redirect — the first fetch
+  // races it, caches "free", and the card sticks there (real incident: webhook
+  // wrote flipper 1s after the page loaded). Poll until the paid plan appears.
+  const queryClient = useQueryClient()
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false)
+  const [paymentToasted, setPaymentToasted] = useState(false)
+  useEffect(() => {
+    // window.location instead of useSearchParams: no Suspense boundary needed.
+    setCheckoutSuccess(new URLSearchParams(window.location.search).get('checkout') === 'success')
+  }, [])
+  useEffect(() => {
+    if (!checkoutSuccess || isPaid) return
+    let tries = 0
+    const id = setInterval(() => {
+      tries += 1
+      queryClient.invalidateQueries({ queryKey: ['subscription'] })
+      queryClient.invalidateQueries({ queryKey: ['permissions'] })
+      if (tries >= 15) clearInterval(id) // give up after ~30s; a refresh still works
+    }, 2000)
+    return () => clearInterval(id)
+  }, [checkoutSuccess, isPaid, queryClient])
+  useEffect(() => {
+    if (checkoutSuccess && isPaid && !paymentToasted) {
+      setPaymentToasted(true)
+      toast({ title: 'Payment confirmed', description: `${planName} is now active. Happy trading!` })
+    }
+  }, [checkoutSuccess, isPaid, paymentToasted, planName, toast])
 
   // Cancel flow
   const [showCancel, setShowCancel] = useState(false)
