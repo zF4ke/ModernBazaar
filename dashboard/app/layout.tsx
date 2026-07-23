@@ -27,20 +27,28 @@ export const metadata: Metadata = {
   },
   description:
     "Live Hypixel SkyBlock bazaar prices, handcrafted flip scores, and a clear play for every trade, sized to your coins.",
+  // Per-page canonical (resolved against metadataBase) — one canonical URL per
+  // page so legacy hosts and query-param variants don't split ranking signals.
+  alternates: { canonical: "./" },
+  keywords: [
+    "hypixel bazaar", "bazaar flipping", "skyblock bazaar tracker",
+    "skyblock bazaar profit calculator", "bazaar flip finder", "modern bazaar hypixel",
+  ],
+  // og:image / twitter:image come from app/opengraph-image.tsx (file
+  // convention) — a code-generated card that can't rot like a screenshot.
   openGraph: {
     type: "website",
     siteName: "Modern Bazaar",
+    url: SITE,
     title: "Modern Bazaar - Hypixel SkyBlock trading, done properly",
     description:
       "Live bazaar prices, handcrafted flip scores, and a clear play for every trade, sized to your coins.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Modern Bazaar trading dashboard" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Modern Bazaar - Hypixel SkyBlock trading, done properly",
     description:
       "Live bazaar prices, handcrafted flip scores, and a clear play for every trade, sized to your coins.",
-    images: ["/og.png"],
   },
 }
 
@@ -52,6 +60,24 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
       <body className="font-sans">
+        {/* Structured data: tells Google this is a web app, not the grocery
+            chain that shares the name (brand disambiguation for search). */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebApplication",
+              name: "Modern Bazaar",
+              applicationCategory: "GameApplication",
+              operatingSystem: "All",
+              url: SITE,
+              description:
+                "Live Hypixel SkyBlock bazaar prices, flip scores and market analytics. Track margins, find flips, and trade smarter.",
+              offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+            }),
+          }}
+        />
         <Analytics />
         <AuthProvider>
           <ThemeProvider

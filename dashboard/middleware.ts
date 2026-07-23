@@ -1,11 +1,28 @@
-import type { NextRequest } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { auth0 } from "@/lib/auth0"
+
+/**
+ * Legacy hostnames that used to serve the site. Everything consolidates onto
+ * www.modernbazaar.dev with a permanent redirect so Google sees ONE domain
+ * (duplicate content splits ranking authority between hosts).
+ */
+const LEGACY_HOSTS = new Set(["modern-bazaar.vercel.app", "modernbazaar.zf4ke.me"])
+const CANONICAL_HOST = "www.modernbazaar.dev"
 
 /**
  * Mounts the Auth0 v4 auth routes and keeps the session rolling:
  *   /auth/login, /auth/logout, /auth/callback, /auth/profile, /auth/access-token
  */
 export async function middleware(request: NextRequest) {
+  const host = request.headers.get("host")?.toLowerCase() ?? ""
+  if (LEGACY_HOSTS.has(host)) {
+    const url = request.nextUrl.clone()
+    url.protocol = "https:"
+    url.host = CANONICAL_HOST
+    url.port = ""
+    return NextResponse.redirect(url, 308)
+  }
+
   const response = await auth0.middleware(request)
 
   // Persist refreshed access tokens while we still have a mutable response.

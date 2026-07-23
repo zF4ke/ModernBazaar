@@ -20,17 +20,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   try {
-    const res = await fetch(`${BACKEND}/api/bazaar/items?limit=2000`, { next: { revalidate: 3600 } })
-    if (res.ok) {
+    // The backend caps every request at 200 items (DoS guard), so page through
+    // it: ~1,900 item pages is the whole SEO engine — a single capped request
+    // would silently drop 90% of them from the sitemap.
+    const ids: string[] = []
+    const PAGE_SIZE = 200
+    const MAX_PAGES = 20 // safety: 4,000 items ≫ the ~1,900 that exist
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const res = await fetch(`${BACKEND}/api/bazaar/items?page=${page}&limit=${PAGE_SIZE}`, {
+        next: { revalidate: 3600 },
+      })
+      if (!res.ok) break
       const data = await res.json()
-      const items: MetadataRoute.Sitemap = (data?.items ?? [])
+      const batch = (data?.items ?? [])
         .map((it: any) => it?.snapshot?.productId || it?.productId)
         .filter(Boolean)
-        .map((id: string) => ({
-          url: `${SITE}/dashboard/bazaar-items/${encodeURIComponent(id)}`,
-          changeFrequency: 'hourly' as const,
-          priority: 0.7,
-        }))
+      ids.push(...batch)
+      if (batch.length < PAGE_SIZE) break
+    }
+    if (ids.length > 0) {
+      const items: MetadataRoute.Sitemap = ids.map((id: string) => ({
+        url: `${SITE}/dashboard/bazaar-items/${encodeURIComponent(id)}`,
+        changeFrequency: 'hourly' as const,
+        priority: 0.7,
+      }))
       return [...staticPages, ...items]
     }
   } catch {
