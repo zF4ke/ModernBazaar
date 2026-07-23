@@ -21,6 +21,15 @@ export async function middleware(request: NextRequest) {
     // by the normal auth flow. Never block public pages from middleware.
   }
 
+  // Legacy referral links (?ref=CODE) — persist attribution like /r/CODE does.
+  const ref = request.nextUrl.searchParams.get("ref")
+  if (ref) {
+    const clean = ref.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 40)
+    if (clean) {
+      response.cookies.set("mb_ref", clean, { maxAge: 60 * 24 * 60 * 60, path: "/", sameSite: "lax" })
+    }
+  }
+
   return response
 }
 

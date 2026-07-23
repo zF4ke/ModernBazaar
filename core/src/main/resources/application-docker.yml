@@ -108,10 +108,18 @@ stripe:
   # seeded onto plan.stripe_price_id at startup (StripePlanSeeder) if unset/legacy; admin Plans
   # edits win. Annual ids live in config only (checkout resolves them; webhook maps them back).
   price:
-    flipper: ${STRIPE_PRICE_FLIPPER:price_1TjTUmCf0etY1rScKWehA6gs}
-    elite:   ${STRIPE_PRICE_ELITE:price_1TjTUqCf0etY1rScV7UbFWVr}
-    flipper-annual: ${STRIPE_PRICE_FLIPPER_ANNUAL:}
-    elite-annual:   ${STRIPE_PRICE_ELITE_ANNUAL:}
+    flipper: ${STRIPE_PRICE_FLIPPER:price_1TwGnICf0etY1rSc0qfHeF8r}
+    elite:   ${STRIPE_PRICE_ELITE:price_1TwGnGCf0etY1rScpU7GE1qG}
+    flipper-annual: ${STRIPE_PRICE_FLIPPER_ANNUAL:price_1TwGvrCf0etY1rScrRHTVmMJ}
+    elite-annual:   ${STRIPE_PRICE_ELITE_ANNUAL:price_1TwGnGCf0etY1rSc9Vd02xKF}
+
+# Creator/affiliate program economics (see docs/CREATORS.md). Revenue and "owed"
+# figures in the admin cockpit are estimates from these monthly plan prices.
+referral:
+  rev-share-pct: ${REFERRAL_REV_SHARE_PCT:30}
+  plan-monthly-cents:
+    flipper: ${REFERRAL_FLIPPER_MONTHLY_CENTS:599}
+    elite: ${REFERRAL_ELITE_MONTHLY_CENTS:2599}
 
 
 skyblock:

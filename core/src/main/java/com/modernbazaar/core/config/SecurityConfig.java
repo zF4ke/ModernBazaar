@@ -315,6 +315,7 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/api/v1/billing/webhook/stripe",
+            "/api/v1/referral/click",
             "/api/plans",
             "/api/status",
             "/api/metrics/**",

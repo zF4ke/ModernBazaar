@@ -35,13 +35,18 @@ is the Modern Bazaar execution state.
 
 ## Owner tasks before the next deploy
 
-1. **Stripe LIVE prices** (test mode already wired): create in live mode, then
-   set: Flipper monthly $5.99 (update via admin Plans page), Flipper annual
-   $59.90 (`STRIPE_PRICE_FLIPPER_ANNUAL`), Elite annual $259.90
-   (`STRIPE_PRICE_ELITE_ANNUAL`). Elite monthly $25.99 stays.
-2. **Creator outreach** (the referral system is live: admin -> Referrals):
-   shortlist 3-5 SkyBlock YouTubers/TikTokers, offer 20-30% recurring via
-   referral code + free Elite. The `mb_ref` cookie attributes checkouts.
+1. **Stripe LIVE prices: DONE** (July 2026). Live ids are the config defaults
+   in application.yml: Flipper $5.99 `price_1TwGnICf0etY1rSc0qfHeF8r`, Flipper
+   annual $59.90 `price_1TwGvrCf0etY1rScrRHTVmMJ`, Elite $25.99
+   `price_1TwGnGCf0etY1rScpU7GE1qG`, Elite annual $259.90
+   `price_1TwGnGCf0etY1rSc9Vd02xKF`. Dev overrides with test ids via
+   infra/.env. Optional cleanup: archive the old $9.99 live price in the
+   Stripe dashboard so it can't be picked by accident.
+2. **Creator outreach** (full affiliate stack is live, July 2026): `/r/CODE`
+   links with click tracking, admin cockpit (clicks/CTR/signups/plan mix/
+   7-day usage/revenue/30% owed) and a payout ledger with NET-15 due dates —
+   see docs/CREATORS.md "Mechanics" for the monthly payout cycle. Owner task:
+   shortlist 3-5 SkyBlock YouTubers/TikTokers and send the pitch email.
 3. Set `APP_BASE_URL` in prod so sitemap/OG URLs are absolute.
 4. After deploy: submit `sitemap.xml` in Google Search Console; paste the site
    link in Discord to verify the embed card.

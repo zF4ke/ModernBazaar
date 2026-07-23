@@ -2,8 +2,9 @@
 
 The channel: SkyBlock economy YouTubers/TikTokers. Their "how I made 100M
 coins" audience IS our market. One good mid-size video outperforms months of
-SEO. The referral system is already live (admin -> Referrals, `mb_ref` cookie
-attributes checkouts to a code).
+SEO. The full affiliate stack is live: `/r/CODE` links with click tracking,
+the admin cockpit (admin -> Referrals) with per-creator clicks/CTR/signups/
+plan-mix/usage/revenue/owed, and a payout ledger with due dates.
 
 ## The offer (keep it this simple)
 
@@ -75,14 +76,43 @@ Subject: rev share for your bazaar videos (Modern Bazaar)
 Follow-up (one only, 5-7 days later): "Bumping this once in case it got
 buried. The offer stands, happy to demo it over a call or Discord."
 
-## Mechanics
+## Mechanics — how the money flows
 
-- Mint the code in admin -> Referrals BEFORE sending the email, so the link is
-  live in the first message: `https://modernbazaar.<domain>/?ref=CODE` (the
-  `mb_ref` cookie carries it into checkout).
-- Payouts: monthly, manual. Conversions per code are in admin -> Referrals;
-  compute 30% of net revenue from those subs, pay via PayPal, log it in a
-  simple sheet (date, creator, subs, amount, txn id).
+**The link.** Mint the code in admin -> Referrals BEFORE sending the email, so
+the link is live in the first message: `https://<dashboard-host>/r/CODE`.
+Visiting it records a click (drives the CTR column), drops a 60-day `mb_ref`
+attribution cookie, and lands on the homepage. Legacy `?ref=CODE` links still
+work (middleware sets the same cookie) but `/r/CODE` is the one to hand out —
+it's the only form that counts clicks.
+
+**Attribution.** The cookie rides into Stripe checkout as subscription
+metadata; the billing webhook credits the code on the referred user's FIRST
+successful payment. Idempotent: replayed webhooks can't double-count, a user
+can't be claimed by two codes, self-referrals are ignored.
+
+**The cockpit** (admin -> Referrals) shows, per creator: clicks, signups,
+CTR, active subs (with plan mix), how many were seen in the last 7 days
+("uses the site regularly" — last-seen updates when they load the dashboard),
+estimated monthly revenue from their subs, the 30% owed, what's pending, and
+what's been paid to date. Creators are sorted by owed, most valuable first.
+
+**Payout cycle (monthly, NET-15).**
+1. In the first days of each month, open the cockpit. The "Owed / mo" column
+   is 30% of each creator's active referred MRR (config: `referral.rev-share-pct`
+   and `referral.plan-monthly-cents.*` in application.yml).
+2. Click **Pay** on a creator row — the form prefills the owed amount and last
+   calendar month as the period. Recording it creates a *pending* ledger entry.
+3. Pending payouts show a **due date = period end + 15 days** and turn red when
+   overdue. $20 minimum: below that, skip recording and let it roll over
+   (note the carry in the next month's entry).
+4. Send the money via PayPal, then hit **Paid** on the entry (stamps the date).
+   Put the PayPal txn id in the note field — the ledger IS the audit trail.
+
+**Numbers are estimates.** Revenue/owed are computed from list prices of
+currently-active referred subs, not from Stripe settlement (refunds, VAT and
+annual proration aren't netted). For the sums involved this is fine; if a
+creator ever disputes, reconcile against the Stripe dashboard.
+
 - Track outreach in the table above (contacted date, channel, response).
 
 ## Rules

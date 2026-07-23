@@ -44,6 +44,10 @@ public class UserSubscription {
     @Column(name = "current_period_end")
     private OffsetDateTime currentPeriodEnd;
 
+    /** Last time we saw this user active (touched on subscription/permission reads). */
+    @Column(name = "last_seen_at")
+    private OffsetDateTime lastSeenAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 

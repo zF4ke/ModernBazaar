@@ -64,7 +64,8 @@ public class SubscriptionController {
             
             var subscription = subscriptionService.ensureFreePlan(userId);
             var plan = planRepository.findBySlug(subscription.getPlanSlug()).orElse(null);
-            
+            subscriptionService.touchLastSeen(userId);
+
             log.debug("Successfully retrieved subscription for user: {}", userId);
             return SubscriptionResponseDTO.from(subscription, plan);
         } catch (Exception e) {
@@ -153,6 +154,7 @@ public class SubscriptionController {
             var subscription = subscriptionService.ensureFreePlan(userId);
             var plan = planRepository.findBySlug(subscription.getPlanSlug()).orElse(null);
             String subscriptionTier = plan != null ? plan.getSlug() : "free";
+            subscriptionService.touchLastSeen(userId);
 
             // Permissions reflect the user's actual DB plan (the source of truth), not
             // the possibly-stale token. Admin (manage:plans) still comes from the token.

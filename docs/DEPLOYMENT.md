@@ -53,6 +53,27 @@ business, not a preview URL). Typical layout:
 
 ## 4. Auth0 (production)
 
+**"Is Auth0 in test mode?"** Auth0 has no test/live switch like Stripe; the
+`dev-5dw1c9bd` prefix is just the tenant's name. What actually makes an Auth0
+setup non-production is this checklist:
+
+1. **Social connections MUST use your own OAuth apps.** By default Auth0 signs
+   Google/GitHub/Discord logins with its shared developer keys (the dashboard
+   shows an orange warning on each connection using them). Dev keys break
+   silently at scale and show "Auth0" on consent screens. Fix per provider in
+   Authentication -> Social -> (provider): create your own app (Google Cloud
+   Console, GitHub Developer Settings, Discord Developer Portal), paste its
+   client id/secret. This is the single most important "out of test mode" step.
+2. **Environment Tag**: Settings -> General -> Environment Tag -> Production
+   (informational, but it is what the dashboard means by dev/prod).
+3. Friendly Name + logo (Settings -> General) so login says "Modern Bazaar",
+   not the tenant id.
+4. Production URLs on the application (callback/logout/web origins, section
+   below) and delete any localhost URLs from the PROD application (use a
+   separate application for dev instead of sharing one).
+5. The consent screen ("Authorize App") disappears on non-localhost domains;
+   also enable "Allow Skipping User Consent" on the API.
+
 In the Auth0 dashboard for your tenant:
 
 1. **Application → Settings → URLs** (use your real domain):
@@ -146,6 +167,8 @@ The non-negotiables:
 | `STRIPE_WEBHOOK_SECRET` | live endpoint `whsec_…` |
 | `STRIPE_PRICE_FLIPPER` / `_ELITE` | live `price_…` (optional; or via admin Plans) |
 | `STRIPE_SUCCESS_URL` / `_CANCEL_URL` / `_PORTAL_RETURN_URL` | real domain URLs |
+| `REFERRAL_REV_SHARE_PCT` | optional; creator rev-share % (default 30) |
+| `REFERRAL_FLIPPER_MONTHLY_CENTS` / `REFERRAL_ELITE_MONTHLY_CENTS` | optional; only if plan prices change (defaults 599/2599) |
 
 ### Dashboard — Vercel env
 | Var | Value |

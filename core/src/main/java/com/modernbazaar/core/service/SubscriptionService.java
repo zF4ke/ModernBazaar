@@ -86,6 +86,28 @@ public class SubscriptionService {
         return entitledScopes(userId).contains(scope);
     }
 
+    /**
+     * Stamps the user's latest subscription with "seen now". Called from the
+     * dashboard's session-bootstrap endpoints, so it fires roughly once per
+     * visit; throttled to one write per 10 minutes to keep it cheap. Drives
+     * the affiliate cockpit's "uses the site regularly" signal.
+     */
+    @Transactional
+    public void touchLastSeen(String userId) {
+        try {
+            userSubscriptionRepository.findFirstByUserIdOrderByIdDesc(userId).ifPresent(sub -> {
+                OffsetDateTime now = OffsetDateTime.now();
+                if (sub.getLastSeenAt() == null || sub.getLastSeenAt().isBefore(now.minusMinutes(10))) {
+                    sub.setLastSeenAt(now);
+                    userSubscriptionRepository.save(sub);
+                }
+            });
+        } catch (Exception e) {
+            // Usage tracking must never break the request that carried it.
+            log.debug("touchLastSeen failed for user {}: {}", userId, e.getMessage());
+        }
+    }
+
     @Transactional
     public UserSubscription ensureFreePlan(String userId) {
         try {
