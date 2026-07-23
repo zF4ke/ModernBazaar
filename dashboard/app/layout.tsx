@@ -7,6 +7,7 @@ import { AuthProvider } from '@/components/auth-provider'
 import { UserSetupWrapper } from '@/components/user-setup-wrapper'
 import { BackendHealthProvider } from '@/components/backend-health-provider'
 import { OfflineOverlay } from '@/components/offline-overlay'
+import { Analytics } from "@vercel/analytics/next"
 
 // UI face: Space Grotesk (base weight 500 set in globals.css - 400 reads thin on
 // dark). Data face: Space Mono, used only for real tabular numbers.
@@ -51,11 +52,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
       <body className="font-sans">
-        {/* Vercel Web Analytics (script form, no package dependency). Resolves
-            only when deployed on Vercel; skipped in dev to avoid 404 noise. */}
-        {process.env.NODE_ENV === "production" && (
-          <script defer src="/_vercel/insights/script.js" />
-        )}
+        <Analytics />
         <AuthProvider>
           <ThemeProvider
             attribute="class" 
