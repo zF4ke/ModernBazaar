@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { FeatureCard } from "@/components/feature-card"
 import { PageHeader } from "@/components/page-shell"
+import { FlippingPreview } from "./_components/flipping-preview"
 import type { FlipOpportunity, FlippingQuery, PagedResponse } from "@/types/strategies"
 import { buildQueryParams } from "@/lib/api"
 import { useBackendQuery } from "@/hooks/use-backend-query"
@@ -337,12 +338,14 @@ export default function FlippingPage() {
       featureName="Bazaar Flipping"
       featureDescription="Find profitable buy/sell opportunities with intelligent scoring"
       icon={<Shuffle className="h-8 w-8 text-muted-foreground" />}
+      preview={(cta) => <FlippingPreview cta={cta} />}
     >
       <PermissionCheck
         requiredPermission={PERMISSIONS.USE_BAZAAR_FLIPPING}
         featureName="Bazaar Flipping"
         featureDescription="Find profitable buy/sell opportunities with intelligent scoring"
         icon={<Shuffle className="h-8 w-8 text-muted-foreground" />}
+        preview={(cta) => <FlippingPreview cta={cta} />}
         // hasAdminAccess={hasAdminAccess}
         hasPermission={hasPermission}
         loading={permissionLoading}

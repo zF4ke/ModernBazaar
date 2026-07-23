@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Lock, ArrowRight, RefreshCw, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { PageHeader, StateCard, StateSkeleton } from "@/components/page-shell"
+import { LockedCta } from "@/components/locked-preview"
 
 interface PermissionCheckProps {
   requiredPermission: string
@@ -20,12 +21,17 @@ interface PermissionCheckProps {
   onRetry?: () => void
   upgradeMessage?: string
   adminErrorDetails?: ReactNode
+  /**
+   * Teaser paywall: given the upgrade CTA, render a blurred mock of the real
+   * page behind it (see LockedPreview). Falls back to the plain StateCard.
+   */
+  preview?: (cta: ReactNode) => ReactNode
   children: ReactNode
 }
 
 /* Which plan unlocks a permission, so the locked state can sell concretely. */
 const PLAN_FOR_PERMISSION: Record<string, { plan: string; price: string }> = {
-  "use:bazaar-flipping": { plan: "Flipper", price: "$9.99/month" },
+  "use:bazaar-flipping": { plan: "Flipper", price: "$5.99/month" },
   "use:bazaar-manipulation": { plan: "Elite", price: "$25.99/month" },
 }
 
@@ -39,6 +45,7 @@ export function PermissionCheck({
   error = null,
   onRetry,
   adminErrorDetails,
+  preview,
   children
 }: PermissionCheckProps) {
   if (loading) {
@@ -72,6 +79,46 @@ export function PermissionCheck({
   // Locked for this plan: one concrete sentence about what unlocks it.
   if (!hasPermission && !hasAdminAccess) {
     const tier = PLAN_FOR_PERMISSION[requiredPermission]
+    const isElite = requiredPermission === "use:bazaar-manipulation"
+    const message = tier
+      ? `It's part of the ${tier.plan} plan, ${tier.price}. Upgrade and it unlocks instantly.`
+      : `Upgrade your plan and it unlocks instantly.`
+    const actions = (
+      <>
+        <Button asChild className={isElite ? "bg-elite text-white hover:bg-elite/90" : undefined}>
+          <Link href="/dashboard/profile">
+            Upgrade
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+        <Button variant="ghost" asChild>
+          <Link href="/dashboard">Back to dashboard</Link>
+        </Button>
+      </>
+    )
+
+    if (preview) {
+      return (
+        <div className="space-y-8">
+          <PageHeader title={featureName} description={featureDescription} />
+          {preview(
+            <LockedCta
+              tone={isElite ? "elite" : "accent"}
+              icon={<Lock />}
+              title={`${featureName} is a paid tool`}
+              message={`You're looking at example data. ${message}`}
+              actions={actions}
+              footnote={
+                isElite
+                  ? "Elite has limited slots so the edge stays real. Cancel anytime."
+                  : "Cancel anytime. You keep access until the end of the billing period."
+              }
+            />
+          )}
+        </div>
+      )
+    }
+
     return (
       <div className="mx-auto max-w-6xl space-y-8">
         <PageHeader title={featureName} description={featureDescription} />
@@ -79,24 +126,8 @@ export function PermissionCheck({
           tone="accent"
           icon={<Lock />}
           title={`${featureName} is a paid tool`}
-          message={
-            tier
-              ? `It's part of the ${tier.plan} plan, ${tier.price}. Upgrade and it unlocks instantly.`
-              : `Upgrade your plan and it unlocks instantly.`
-          }
-          actions={
-            <>
-              <Button asChild>
-                <Link href="/dashboard/profile">
-                  Upgrade
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="ghost" asChild>
-                <Link href="/dashboard">Back to dashboard</Link>
-              </Button>
-            </>
-          }
+          message={message}
+          actions={actions}
           footnote="Cancel anytime. You keep access until the end of the billing period."
         />
       </div>

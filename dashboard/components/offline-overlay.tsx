@@ -2,114 +2,67 @@
 
 import { useBackendHealthContext } from '@/components/backend-health-provider'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, RefreshCw, Wifi, WifiOff, X } from 'lucide-react'
+import { RefreshCw, WifiOff, X } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { useEffect } from 'react'
 
 /**
- * Offline overlay that locks down the entire dashboard when backend is offline
- * This component should be placed at the top level of the dashboard layout
+ * Full-screen takeover when the backend is unreachable. Dashboard routes only:
+ * the landing and legal pages are static marketing surfaces and must never be
+ * blocked by backend status (the footer dot already tells that story there).
  */
 export function OfflineOverlay() {
   const { isOnline, isLoading, error, lastCheck, isIgnored, refreshHealth, ignoreOffline } = useBackendHealthContext()
+  const pathname = usePathname()
+  const isDashboard = pathname?.startsWith('/dashboard') ?? false
 
-  // Disable page scrolling when backend is offline
+  const active = isDashboard && !isOnline && !isIgnored
+
+  // Freeze scrolling while the takeover is up.
   useEffect(() => {
-    if (!isOnline && !isIgnored) {
-      // Disable scrolling
+    if (active) {
       document.body.style.overflow = 'hidden'
       document.documentElement.style.overflow = 'hidden'
     } else {
-      // Re-enable scrolling
       document.body.style.overflow = 'unset'
       document.documentElement.style.overflow = 'unset'
     }
-
-    // Cleanup: re-enable scrolling when component unmounts
     return () => {
       document.body.style.overflow = 'unset'
       document.documentElement.style.overflow = 'unset'
     }
-  }, [isOnline, isIgnored])
+  }, [active])
 
-  // Don't show anything if backend is online or if offline state is ignored
-  if (isOnline || isIgnored) {
-    return null
-  }
+  if (!active) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/40 backdrop-blur-sm overflow-hidden">
-      <div className="flex min-h-screen flex-col items-center justify-center p-4">
-        <div className="mx-auto max-w-md text-center p-8 rounded-2xl bg-background backdrop-blur-sm border border-border/70 shadow-xl animate-in fade-in-0 zoom-in-95 duration-300">
-          {/* Offline Icon */}
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10">
-            <WifiOff className="h-10 w-10 text-red-700" />
+    <div className="fixed inset-0 z-50 overflow-hidden bg-background/60 backdrop-blur-sm">
+      <div className="flex min-h-screen items-center justify-center p-6">
+        <div className="animate-rise-in mx-auto flex w-full max-w-sm flex-col items-center gap-3 rounded-xl border bg-card px-7 py-8 text-center shadow-[0_24px_60px_-24px_hsl(230_60%_3%/0.9)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-loss/10">
+            <WifiOff className="h-5 w-5 text-loss" />
           </div>
-
-          {/* Title */}
-          <h1 className="mb-4 text-2xl font-bold text-red-700">
-            Backend Offline
-          </h1>
-
-          {/* Error Details */}
-          <div className="mb-6 space-y-2 text-muted-foreground">
-            <p>
-              The Modern Bazaar backend service is currently unavailable.
-            </p>
-            {error && (
-              <div className="rounded-md bg-muted p-3 text-sm">
-                <code className="text-xs">{error}</code>
-              </div>
-            )}
-            {lastCheck && (
-              <p className="text-xs">
-                Last check: {lastCheck.toLocaleTimeString()}
-              </p>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button 
-              onClick={refreshHealth} 
-              disabled={isLoading}
-              className="flex items-center gap-2 shadow-sm"
-            >
-              {isLoading ? (
-                <RefreshCw className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              {isLoading ? 'Checking...' : 'Refresh Status'}
+          <h2 className="text-xl font-semibold tracking-tight">Connection lost</h2>
+          <p className="text-sm leading-relaxed text-muted-foreground">
+            We can't reach the market data service. It usually comes back within
+            a minute; we keep retrying in the background.
+          </p>
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+            <Button onClick={refreshHealth} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Checking' : 'Retry now'}
             </Button>
-            
-            <Button 
-              onClick={ignoreOffline}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
+            <Button onClick={ignoreOffline} variant="ghost">
               <X className="h-4 w-4" />
-              Ignore for Now
+              Dismiss
             </Button>
           </div>
-
-          {/* Additional Info */}
-          <div className="mt-8 rounded-lg border border-border/20 bg-muted/20 p-4 text-sm text-muted-foreground">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <div className="text-left">
-                <p className="font-medium">What this means:</p>
-                <ul className="mt-2 space-y-1 text-xs">
-                  <li>• All dashboard features are temporarily disabled</li>
-                  <li>• Data cannot be loaded or saved</li>
-                  <li>• Authentication may not work properly</li>
-                  <li>• Please wait for the service to come back online</li>
-                </ul>
-                <p className="mt-2 text-xs text-amber-600">
-                  <strong>Note:</strong> You can ignore this warning temporarily, but features will remain unavailable until the backend is restored.
-                </p>
-              </div>
-            </div>
-          </div>
+          {lastCheck && (
+            <p className="mt-2 text-xs text-muted-foreground/70">
+              Last check <span className="font-mono">{lastCheck.toLocaleTimeString()}</span>
+              {error ? '. Features stay limited until the connection returns.' : ''}
+            </p>
+          )}
         </div>
       </div>
     </div>

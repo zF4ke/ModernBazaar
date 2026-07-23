@@ -13,6 +13,7 @@ import { useHasPermission } from "@/hooks/use-has-permission"
 import { PermissionCheck } from "@/components/permission-check"
 import { LoginCheck } from "@/components/login-check"
 import { PageHeader } from "@/components/page-shell"
+import { ManipulationPreview } from "./_components/manipulation-preview"
 import { PERMISSIONS } from "@/constants/permissions"
 import { ManipulationSetup } from "./_components/manipulation-setup"
 import { ManipulationGrid } from "./_components/manipulation-grid"
@@ -176,12 +177,14 @@ export default function ManipulationPage() {
       featureName="Bazaar Manipulation"
       featureDescription="Corner thin markets and set the price"
       icon={<Crosshair className="h-8 w-8 text-muted-foreground" />}
+      preview={(cta) => <ManipulationPreview cta={cta} />}
     >
       <PermissionCheck
         requiredPermission={PERMISSIONS.USE_BAZAAR_MANIPULATION}
         featureName="Bazaar Manipulation"
         featureDescription="Corner thin markets and set the price"
         icon={<Crosshair className="h-8 w-8 text-muted-foreground" />}
+        preview={(cta) => <ManipulationPreview cta={cta} />}
         hasPermission={hasPermission}
         loading={permissionLoading}
         error={permissionError}

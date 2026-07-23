@@ -9,7 +9,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { TrendingUp, ArrowRight, Zap, Check, Plus, Shield, Clock, SlidersHorizontal, Shuffle, Hammer, Coins, Crosshair, DollarSign, ArrowRightLeft, Trophy } from "lucide-react"
 import { BrandMark } from "@/components/brand-mark"
 import { SiteFooter } from "@/components/site-footer"
-import { UpgradeButton, useUpgrade } from "@/components/upgrade-button"
+import { Segmented } from "@/components/ui/segmented"
+import { UpgradeButton, useUpgrade, type BillingInterval } from "@/components/upgrade-button"
 
 const LIVE_STRATEGIES = [
   {
@@ -44,6 +45,7 @@ const SOON_STRATEGIES = [
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
+  const [billing, setBilling] = useState<BillingInterval>("monthly")
   const tiltRef = useRef<HTMLDivElement | null>(null)
   const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({})
   const { resumeFromQuery, isLoading: authLoading } = useUpgrade()
@@ -100,6 +102,9 @@ export default function LandingPage() {
             <span className="font-semibold text-[17px] tracking-tight">Modern Bazaar</span>
           </Link>
           <div className="flex items-center gap-1.5 sm:gap-3">
+            <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
+              <Link href="/pulse">Market pulse</Link>
+            </Button>
             <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
               <Link href="#pricing" onClick={scrollToPricing}>Pricing</Link>
             </Button>
@@ -245,12 +250,27 @@ export default function LandingPage() {
 
       {/* Pricing */}
       <section id="pricing" className="mx-auto max-w-6xl px-6 py-20 scroll-mt-16">
-        <div className="max-w-2xl space-y-3 mb-12">
-          <h2 className="text-2xl md:text-[1.9rem] font-bold tracking-tight">Fair, simple pricing</h2>
-          <p className="text-muted-foreground leading-relaxed">
-            Start free, upgrade when you're ready. Each tier pays for itself the
-            first flip it finds that you'd have walked past.
-          </p>
+        <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
+          <div className="max-w-2xl space-y-3">
+            <h2 className="text-2xl md:text-[1.9rem] font-bold tracking-tight">Fair, simple pricing</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Start free, upgrade when you're ready. Each tier pays for itself the
+              first flip it finds that you'd have walked past.
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            <Segmented
+              value={billing}
+              onChange={setBilling}
+              options={[
+                { value: "monthly", label: "Monthly" },
+                { value: "annual", label: "Annual" },
+              ]}
+            />
+            <span className={`text-xs font-medium transition-colors ${billing === "annual" ? "text-gain" : "text-muted-foreground/60"}`}>
+              2 months free on annual
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3 lg:items-stretch">
@@ -291,12 +311,21 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="mb-1 flex items-baseline gap-2">
-              <span className="text-4xl font-bold tracking-tight">$9.99</span>
+              <span className="text-4xl font-bold tracking-tight">{billing === "annual" ? "$4.99" : "$5.99"}</span>
               <span className="text-sm text-muted-foreground">/ month</span>
             </div>
             <p className="mb-7 text-xs">
-              <span className="text-muted-foreground/70 line-through">$12.99</span>
-              <span className="ml-2 font-semibold text-gain">Save 23%</span>
+              {billing === "annual" ? (
+                <>
+                  <span className="text-muted-foreground/80">Billed $59.90 a year</span>
+                  <span className="ml-2 font-semibold text-gain">2 months free</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-muted-foreground/70 line-through">$9.99</span>
+                  <span className="ml-2 font-semibold text-gain">Save 40%</span>
+                </>
+              )}
             </p>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2.5">
@@ -319,11 +348,16 @@ export default function LandingPage() {
             <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
               <Plus className="h-4 w-4 shrink-0" />Everything in Free
             </div>
-            <UpgradeButton plan="flipper" className="mt-7 w-full">Choose Flipper</UpgradeButton>
+            <UpgradeButton plan="flipper" interval={billing} className="mt-7 w-full">Choose Flipper</UpgradeButton>
           </div>
 
-          {/* Elite: dark-luxe, muted purple as the tier mark */}
-          <div className="flex flex-col rounded-xl border border-elite/30 bg-card p-7 transition-colors hover:border-elite/50">
+          {/* Elite: dark-luxe, muted purple as the tier mark. Genuinely limited:
+              too many people cornering the same thin markets kills the edge. */}
+          <div className="relative flex flex-col rounded-xl border border-elite/30 bg-card p-7 transition-colors hover:border-elite/50">
+            <span className="absolute -top-3 left-7 inline-flex items-center gap-1.5 rounded-full border border-elite/40 bg-background px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-elite">
+              <span className="h-1.5 w-1.5 rounded-full bg-elite" />
+              Limited slots
+            </span>
             <div className="mb-6 flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold">Elite</h3>
@@ -334,12 +368,24 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="mb-1 flex items-baseline gap-2">
-              <span className="text-4xl font-bold tracking-tight">$25.99</span>
+              <span className="text-4xl font-bold tracking-tight">{billing === "annual" ? "$21.66" : "$25.99"}</span>
               <span className="text-sm text-muted-foreground">/ month</span>
             </div>
-            <p className="mb-7 text-xs">
-              <span className="text-muted-foreground/70 line-through">$33.99</span>
-              <span className="ml-2 font-semibold text-gain">Save 24%</span>
+            <p className="text-xs">
+              {billing === "annual" ? (
+                <>
+                  <span className="text-muted-foreground/80">Billed $259.90 a year</span>
+                  <span className="ml-2 font-semibold text-gain">2 months free</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-muted-foreground/70 line-through">$33.99</span>
+                  <span className="ml-2 font-semibold text-gain">Save 24%</span>
+                </>
+              )}
+            </p>
+            <p className="mb-7 mt-3 border-l-2 border-elite/40 pl-3 text-xs leading-relaxed text-muted-foreground/80">
+              Kept deliberately small: too many traders cornering the same markets would kill the edge.
             </p>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2.5">
@@ -355,7 +401,7 @@ export default function LandingPage() {
               <div className="mt-5 flex items-center gap-2 border-t pt-4 text-sm text-muted-foreground">
                 <Plus className="h-4 w-4 shrink-0" />Everything in Flipper
               </div>
-              <UpgradeButton plan="elite" variant="outline" className="mt-7 w-full border-elite/40 text-elite hover:bg-elite/10 hover:text-elite">
+              <UpgradeButton plan="elite" interval={billing} variant="outline" className="mt-7 w-full border-elite/40 text-elite hover:bg-elite/10 hover:text-elite">
                 Choose Elite
               </UpgradeButton>
             </div>
