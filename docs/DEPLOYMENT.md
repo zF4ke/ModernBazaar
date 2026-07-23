@@ -98,27 +98,20 @@ In the Auth0 dashboard for your tenant:
 6. Flip `BILLING_ENABLED=true` **and** the live `STRIPE_SECRET_KEY` **together** (half-configured is
    fail-closed — checkout 503s, webhook 500s — but don't ship it).
 
-## 5b. Database migration warning (read before EVERY deploy)
+## 5b. Database safety (read before EVERY deploy)
 
-The schema is managed by Hibernate `ddl-auto: update` with Flyway disabled.
-That mode **silently fails to add NOT NULL columns to tables that already have
-rows** - the app then crashes at boot when a query touches the missing column
-(this happened in dev with `bazaar_hour_summary.bid_up_moves`). Never assume a
-new entity field will materialize in prod on its own.
+**Flyway is re-enabled** (July 2026); schema changes ship as migrations in
+`core/src/main/resources/db/migration` and run automatically at boot (V5
+already covers the manipulation-metrics columns). Full rules, the backup
+script, and the incident that motivated all this: `docs/DB_PRACTICES.md`.
 
-Before deploying code that adds entity fields, run the matching ALTER with a
-default, e.g.:
-
-```sql
-ALTER TABLE bazaar_hour_summary ADD COLUMN IF NOT EXISTS bid_up_moves bigint NOT NULL DEFAULT 0;
-ALTER TABLE bazaar_hour_summary ADD COLUMN IF NOT EXISTS bid_up_price_delta double precision NOT NULL DEFAULT 0;
-```
-
-(The two above are REQUIRED for the current code if prod predates the
-manipulation metrics.) Longer-term: re-enable Flyway for real migrations.
-The Postgres data lives in the named volume `dbdata`; compose
-recreates/rebuilds do not delete it, but `docker compose down -v` DOES. Never
-pass `-v` against prod.
+The non-negotiables:
+- Every schema change is a Flyway migration; new NOT NULL columns always get a
+  DEFAULT (Hibernate ddl-auto silently skips them on populated tables).
+- Nightly `infra/backup-db.sh` via cron on the prod host, plus one restore
+  drill so the backup is proven.
+- Postgres data lives in the named volume `dbdata`; rebuilds never touch it,
+  but `docker compose down -v` DELETES it. Never pass `-v` against prod.
 
 ## 6. Go-live checklist
 

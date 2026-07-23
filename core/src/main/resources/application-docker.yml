@@ -34,7 +34,7 @@ spring:
       #        show-sql: true
       show-sql: false
   flyway:
-    enabled: false
+    enabled: true
     baseline-on-migrate: true
     baseline-version: 1
   task:
