@@ -8,7 +8,6 @@ import com.modernbazaar.core.repository.*;
 import com.modernbazaar.core.repository.projection.ReferralUserStatRow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,34 +31,20 @@ public class ReferralAnalyticsService {
     private final ReferralClickRepository clickRepo;
     private final ReferralPayoutRepository payoutRepo;
 
-    @Value("${referral.rev-share-pct:30}")
-    private int revSharePct;
-
-    @Value("${referral.plan-monthly-cents.flipper:599}")
-    private long flipperMonthlyCents;
-
-    @Value("${referral.plan-monthly-cents.elite:2599}")
-    private long eliteMonthlyCents;
-
-    private long monthlyCents(String slug) {
-        if (slug == null) return 0;
-        return switch (slug.toLowerCase()) {
-            case "flipper" -> flipperMonthlyCents;
-            case "elite" -> eliteMonthlyCents;
-            default -> 0;
-        };
-    }
+    private final ReferralEarningRepository earningRepo;
 
     /** Records a referral-link click. Best-effort; unknown codes are ignored (no error to the visitor). */
     @Transactional
-    public void recordClick(String code) {
-        if (code == null || code.isBlank()) return;
+    public void recordClick(String code, String visitorKey) {
+        if (code == null || code.isBlank() || visitorKey == null || visitorKey.isBlank()) return;
         String norm = code.trim().toUpperCase();
+        String visitor = visitorKey.trim();
+        if (!visitor.matches("[A-Za-z0-9_-]{16,64}")) return;
         if (!codeRepo.existsByCodeIgnoreCase(norm)) {
             log.debug("Referral click for unknown code {} - ignoring", norm);
             return;
         }
-        clickRepo.save(ReferralClick.builder().code(norm).build());
+        clickRepo.insertDeduplicated(norm, visitor);
     }
 
     @Transactional(readOnly = true)
@@ -87,6 +72,17 @@ public class ReferralAnalyticsService {
             }
         }
 
+        Map<String, Long> collectedByCode = new HashMap<>();
+        Map<String, Long> eligibleCommissionByCode = new HashMap<>();
+        OffsetDateTime nowOffset = OffsetDateTime.now();
+        for (var earning : earningRepo.findAll()) {
+            long collected = Math.max(0, earning.getNetRevenueCents() - earning.getRefundedCents());
+            collectedByCode.merge(earning.getCode(), collected, Long::sum);
+            if (!earning.getEligibleAt().isAfter(nowOffset)) {
+                eligibleCommissionByCode.merge(earning.getCode(), earning.getCommissionCents(), Long::sum);
+            }
+        }
+
         Instant now = Instant.now();
         Instant sevenDaysAgo = now.minusSeconds(7 * 24 * 3600);
 
@@ -95,7 +91,6 @@ public class ReferralAnalyticsService {
             List<ReferralUserStatRow> rows = byCode.getOrDefault(c.getCode(), List.of());
             int subscribers = rows.size();
             int active = 0, activeRecent = 0;
-            long revenueCents = 0;
             Map<String, Integer> activeByPlan = new TreeMap<>();
             Instant lastActivity = null;
 
@@ -103,7 +98,6 @@ public class ReferralAnalyticsService {
                 boolean entitled = isEntitled(r.getStatus(), r.getPeriodEnd(), now);
                 if (entitled) {
                     active++;
-                    revenueCents += monthlyCents(r.getPlan());
                     if (r.getPlan() != null) activeByPlan.merge(r.getPlan(), 1, Integer::sum);
                     if (r.getLastSeen() != null && r.getLastSeen().isAfter(sevenDaysAgo)) activeRecent++;
                 }
@@ -114,12 +108,14 @@ public class ReferralAnalyticsService {
 
             long codeClicks = clicks.getOrDefault(c.getCode(), 0L);
             Double convRate = codeClicks > 0 ? (subscribers * 100.0 / codeClicks) : null;
-            long owed = Math.round(revenueCents * (revSharePct / 100.0));
+            long alreadyRecorded = pendingByCode.getOrDefault(c.getCode(), 0L)
+                    + paidByCode.getOrDefault(c.getCode(), 0L);
+            long owed = Math.max(0, eligibleCommissionByCode.getOrDefault(c.getCode(), 0L) - alreadyRecorded);
 
             out.add(new AdminReferralOverviewDTO(
                     c.getId(), c.getCode(), c.getUserId(), c.getCreatedAt(),
                     codeClicks, subscribers, active, activeRecent, activeByPlan,
-                    convRate, revenueCents, owed,
+                    convRate, collectedByCode.getOrDefault(c.getCode(), 0L), owed,
                     pendingByCode.getOrDefault(c.getCode(), 0L),
                     paidByCode.getOrDefault(c.getCode(), 0L),
                     lastActivity));
@@ -127,7 +123,7 @@ public class ReferralAnalyticsService {
 
         // Most valuable creators first (by owed, then subscribers, then clicks).
         out.sort(Comparator
-                .comparingLong(AdminReferralOverviewDTO::estMonthlyOwedCents).reversed()
+                .comparingLong(AdminReferralOverviewDTO::eligibleOwedCents).reversed()
                 .thenComparing(Comparator.comparingInt(AdminReferralOverviewDTO::subscribers).reversed())
                 .thenComparing(Comparator.comparingLong(AdminReferralOverviewDTO::clicks).reversed()));
         return out;
@@ -151,8 +147,20 @@ public class ReferralAnalyticsService {
     public ReferralPayoutDTO createPayout(String code, long amountCents, LocalDate periodStart, LocalDate periodEnd, String note) {
         if (code == null || code.isBlank()) throw new IllegalArgumentException("code is required");
         if (amountCents <= 0) throw new IllegalArgumentException("amount must be positive");
+        String normalizedCode = code.trim().toUpperCase();
+        if (!codeRepo.existsByCodeIgnoreCase(normalizedCode)) throw new IllegalArgumentException("referral code not found");
+        if (periodStart == null || periodEnd == null || periodStart.isAfter(periodEnd)) {
+            throw new IllegalArgumentException("a valid payout period is required");
+        }
+        if (payoutRepo.existsByCodeAndPeriodStartAndPeriodEnd(normalizedCode, periodStart, periodEnd)) {
+            throw new IllegalArgumentException("a payout already exists for this code and period");
+        }
+        long eligible = eligibleOutstanding(normalizedCode);
+        if (amountCents > eligible) {
+            throw new IllegalArgumentException("amount exceeds eligible unpaid commission");
+        }
         ReferralPayout p = ReferralPayout.builder()
-                .code(code.trim().toUpperCase())
+                .code(normalizedCode)
                 .amountCents(amountCents)
                 .periodStart(periodStart)
                 .periodEnd(periodEnd)
@@ -165,6 +173,7 @@ public class ReferralAnalyticsService {
     @Transactional
     public ReferralPayoutDTO markPaid(Long id) {
         ReferralPayout p = payoutRepo.findById(id).orElseThrow(() -> new IllegalArgumentException("payout not found: " + id));
+        if ("paid".equalsIgnoreCase(p.getStatus())) return ReferralPayoutDTO.of(p);
         p.setStatus("paid");
         p.setPaidAt(OffsetDateTime.now());
         return ReferralPayoutDTO.of(payoutRepo.save(p));
@@ -172,6 +181,23 @@ public class ReferralAnalyticsService {
 
     @Transactional
     public void deletePayout(Long id) {
-        payoutRepo.deleteById(id);
+        ReferralPayout payout = payoutRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("payout not found: " + id));
+        if ("paid".equalsIgnoreCase(payout.getStatus())) {
+            throw new IllegalStateException("paid payouts are immutable");
+        }
+        payoutRepo.delete(payout);
+    }
+
+    private long eligibleOutstanding(String code) {
+        OffsetDateTime now = OffsetDateTime.now();
+        long eligible = earningRepo.findAllByCode(code).stream()
+                .filter(e -> !e.getEligibleAt().isAfter(now))
+                .mapToLong(com.modernbazaar.core.domain.ReferralEarning::getCommissionCents)
+                .sum();
+        long recorded = payoutRepo.findByCodeOrderByCreatedAtDesc(code).stream()
+                .mapToLong(ReferralPayout::getAmountCents)
+                .sum();
+        return Math.max(0, eligible - recorded);
     }
 }

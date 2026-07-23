@@ -3,7 +3,7 @@
 
 CREATE TABLE public.bazaar_item (
                                     product_id         VARCHAR(255)    NOT NULL,
-                                    `PRIMAR`Y KEY (product_id)
+                                    PRIMARY KEY (product_id)
 );
 
 CREATE TABLE public.skyblock_item (
@@ -18,6 +18,22 @@ CREATE TABLE public.skyblock_item (
                                       tier               VARCHAR(32),
                                       PRIMARY KEY (id)
 );
+
+CREATE TABLE public.user_subscription (
+                                          id                     BIGSERIAL PRIMARY KEY,
+                                          user_id                VARCHAR(100) NOT NULL,
+                                          email                  VARCHAR(200),
+                                          display_name           VARCHAR(200),
+                                          stripe_customer_id     VARCHAR(100),
+                                          stripe_subscription_id VARCHAR(100),
+                                          plan_slug              VARCHAR(50) NOT NULL,
+                                          status                 VARCHAR(50) NOT NULL,
+                                          current_period_end     TIMESTAMP WITH TIME ZONE,
+                                          created_at             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                                          updated_at             TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_user_subscription_user ON public.user_subscription(user_id);
+CREATE INDEX idx_user_subscription_plan_slug ON public.user_subscription(plan_slug);
 
 CREATE TABLE public.bazaar_product_snapshot (
                                                 id                         BIGINT    NOT NULL PRIMARY KEY,
@@ -35,19 +51,6 @@ CREATE TABLE public.bazaar_product_snapshot (
                                                 instant_buy_price          DOUBLE PRECISION,
                                                 instant_sell_price         DOUBLE PRECISION,
                                                 CONSTRAINT fk_snapshot_item FOREIGN KEY (product_id) REFERENCES public.bazaar_item(product_id)
-);
-
-CREATE TABLE public.bazaar_order_entry (
-                                           id             BIGINT    NOT NULL PRIMARY KEY,
-                                           side           VARCHAR(31)    NOT NULL,
-                                           snapshot_id    BIGINT,
-                                           hour_point_id  BIGINT,
-                                           order_index    INTEGER    NOT NULL,
-                                           price_per_unit DOUBLE PRECISION NOT NULL,
-                                           amount         BIGINT    NOT NULL,
-                                           orders         INTEGER    NOT NULL,
-                                           CONSTRAINT fk_order_snapshot   FOREIGN KEY (snapshot_id)   REFERENCES public.bazaar_product_snapshot(id),
-                                           CONSTRAINT fk_order_hour_point FOREIGN KEY (hour_point_id)   REFERENCES public.bazaar_hour_point(id)
 );
 
 CREATE TABLE public.bazaar_hour_summary (
@@ -92,6 +95,19 @@ CREATE TABLE public.bazaar_hour_point (
                                           volatility_spike           BOOLEAN   NOT NULL,
                                           CONSTRAINT fk_hour_point_summary FOREIGN KEY (bazaar_hour_summary) REFERENCES public.bazaar_hour_summary(id),
                                           CONSTRAINT fk_hour_point_item    FOREIGN KEY (product_id)           REFERENCES public.bazaar_item(product_id)
+);
+
+CREATE TABLE public.bazaar_order_entry (
+                                           id             BIGINT    NOT NULL PRIMARY KEY,
+                                           side           VARCHAR(31)    NOT NULL,
+                                           snapshot_id    BIGINT,
+                                           hour_point_id  BIGINT,
+                                           order_index    INTEGER    NOT NULL,
+                                           price_per_unit DOUBLE PRECISION NOT NULL,
+                                           amount         BIGINT    NOT NULL,
+                                           orders         INTEGER    NOT NULL,
+                                           CONSTRAINT fk_order_snapshot   FOREIGN KEY (snapshot_id)   REFERENCES public.bazaar_product_snapshot(id),
+                                           CONSTRAINT fk_order_hour_point FOREIGN KEY (hour_point_id) REFERENCES public.bazaar_hour_point(id)
 );
 
 -- Indexes

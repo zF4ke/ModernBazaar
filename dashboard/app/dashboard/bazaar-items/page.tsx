@@ -65,6 +65,7 @@ export default function BazaarItemsPage() {
     data: response,
     isLoading,
     isFetching,
+    isError,
     refetch,
   } = useBackendQuery<BazaarItemsResponse>(endpoint, {
     requireAuth: false,
@@ -359,6 +360,21 @@ export default function BazaarItemsPage() {
                     <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                   </TableRow>
                 ))
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-12">
+                    <div role="alert" className="flex flex-col items-center gap-3 text-center text-muted-foreground">
+                      <Package className="h-8 w-8 opacity-40" />
+                      <div>
+                        <p className="font-medium text-foreground">Market data is temporarily unavailable</p>
+                        <p className="mt-1 text-sm">The API request failed. This is not an empty market.</p>
+                      </div>
+                      <Button onClick={() => refetch()} variant="outline" size="sm" disabled={isFetching}>
+                        Retry
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ) : itemsArray.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="py-12">

@@ -6,8 +6,8 @@ import java.util.Map;
 
 /**
  * One creator's referral code, fully instrumented: reach (clicks), conversion
- * (subscribers), retention (active + recently-seen), value (estimated monthly
- * revenue and the 30% owed), and payout state.
+ * (subscribers), retention (active + recently-seen), collected referral
+ * revenue, eligible unpaid commission, and payout state.
  */
 public record AdminReferralOverviewDTO(
         Long id,
@@ -20,8 +20,8 @@ public record AdminReferralOverviewDTO(
         int activeLast7Days,       // active subscribers seen in the last 7 days
         Map<String, Integer> activeByPlan,
         Double conversionRatePct,  // subscribers / clicks * 100, null if no clicks yet
-        long estMonthlyRevenueCents,
-        long estMonthlyOwedCents,  // revenue * rev-share %
+        long collectedRevenueCents,
+        long eligibleOwedCents,
         long pendingPayoutCents,   // sum of recorded payouts still marked pending
         long paidToDateCents,      // sum of recorded payouts marked paid
         Instant lastReferredActivity

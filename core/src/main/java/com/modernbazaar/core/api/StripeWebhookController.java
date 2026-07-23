@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.modernbazaar.core.service.StripeBillingService;
 import com.modernbazaar.core.service.SubscriptionService;
 import com.modernbazaar.core.service.ReferralService;
+import com.modernbazaar.core.service.ReferralEarningService;
+import com.modernbazaar.core.service.StripeWebhookEventService;
+import com.modernbazaar.core.service.EliteCapacityService;
 import com.stripe.model.Event;
 import com.stripe.model.Subscription;
 import com.stripe.net.Webhook;
@@ -38,6 +41,9 @@ public class StripeWebhookController {
     private final SubscriptionService subscriptionService;
     private final StripeBillingService stripeBillingService;
     private final ReferralService referralService;
+    private final ReferralEarningService referralEarningService;
+    private final StripeWebhookEventService webhookEventService;
+    private final EliteCapacityService eliteCapacityService;
     private final ObjectMapper objectMapper;
 
     @Value("${stripe.webhook-secret:}")
@@ -66,6 +72,10 @@ public class StripeWebhookController {
             return ResponseEntity.status(400).build();
         }
 
+        if (!webhookEventService.begin(event.getId(), event.getType())) {
+            return ResponseEntity.ok().build();
+        }
+
         try {
             JsonNode dataObject = objectMapper.readTree(payload).path("data").path("object");
             switch (event.getType()) {
@@ -73,10 +83,12 @@ public class StripeWebhookController {
                 case "customer.subscription.updated", "customer.subscription.deleted" ->
                         applyFromSubscriptionJson(dataObject, null);
                 case "invoice.paid" -> handleInvoicePaid(dataObject);
+                case "charge.refunded" -> referralEarningService.recordRefund(dataObject);
                 default -> log.debug("Ignoring Stripe event type {}", event.getType());
             }
+            webhookEventService.markProcessed(event.getId());
         } catch (Exception e) {
-            // A processing error returns 200 only if already applied; otherwise 400 so Stripe retries.
+            webhookEventService.markFailed(event.getId(), e);
             log.error("Error processing Stripe webhook (type={})", event.getType(), e);
             return ResponseEntity.badRequest().build();
         }
@@ -99,6 +111,7 @@ public class StripeWebhookController {
         } catch (Exception refErr) {
             log.warn("Referral conversion failed for user {} (continuing): {}", userId, refErr.getMessage());
         }
+        eliteCapacityService.release(userId);
     }
 
     /** Renewal: push out the period end by re-applying the (now-updated) subscription. */
@@ -113,7 +126,14 @@ public class StripeWebhookController {
             return;
         }
         JsonNode subObj = retrieveSubscriptionJson(subscriptionId);
-        if (subObj != null) applyFromSubscriptionJson(subObj, null);
+        if (subObj != null) {
+            applyFromSubscriptionJson(subObj, null);
+            String userId = textOrNull(subObj.path("metadata").path("user_id"));
+            String ref = textOrNull(subObj.path("metadata").path("ref"));
+            referralService.recordConversion(ref, userId);
+            referralEarningService.recordPaidInvoice(invoice, subObj);
+            eliteCapacityService.release(userId);
+        }
     }
 
     /** Map a Stripe subscription JSON object onto our subscription model via SubscriptionService. */

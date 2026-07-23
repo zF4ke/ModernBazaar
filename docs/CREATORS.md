@@ -3,7 +3,7 @@
 The channel: SkyBlock economy YouTubers/TikTokers. Their "how I made 100M
 coins" audience IS our market. One good mid-size video outperforms months of
 SEO. The full affiliate stack is live: `/r/CODE` links with click tracking,
-the admin cockpit (admin -> Referrals) with per-creator clicks/CTR/signups/
+the admin cockpit (admin -> Referrals) with per-creator visitors/conversion/signups/
 plan-mix/usage/revenue/owed, and a payout ledger with due dates.
 
 ## The offer (keep it this simple)
@@ -28,13 +28,9 @@ channels. Signals of a good fit: consistent "money making method" uploads,
 a Patreon/membership (they already monetize economy knowledge, so they get
 rev-share instantly), engaged comments asking "what mod/site is that".
 
-Seed leads from research (verify size and activity before contacting):
-
-| Creator | Why | Status |
-|---|---|---|
-| Kuvdra | Active SkyBlock economy channel, tutorials + flips, has a Patreon (monetization-minded) | not contacted |
-| Xentyl | Cited for a 2026 bazaar flipping guide | not contacted |
-| (add more) | Search: "bazaar flipping guide", "skyblock money making method", filter by upload date, 10k-200k subs | |
+Keep named prospects, contact details, negotiation notes, and outreach status in
+`docs/private/` or a private operations repository. That directory is intentionally
+ignored; this public document contains only the reusable program policy.
 
 To find more: YouTube search "hypixel skyblock bazaar flipping" and "skyblock
 money making 2026", sort by upload date; check who NotEnoughCoins/Coflnet
@@ -48,39 +44,15 @@ communities reference; browse r/HypixelSkyblock guide posts.
    their #business channel.
 3. **Twitter/X DM** as a fallback nudge.
 
-## Email template (first touch)
-
-Subject: rev share for your bazaar videos (Modern Bazaar)
-
-> Hi [name],
->
-> I'm Pedro, a solo dev from Portugal. I built Modern Bazaar, a live bazaar
-> analytics site for SkyBlock (flip scores, budget sizing, corner-the-market
-> plays): [link]
->
-> I watched your [specific video] and figured your viewers ask you constantly
-> how to actually find flips. I'd like to offer you:
->
-> - 30% recurring revenue share on anyone who subscribes through your link
->   (paid monthly, for as long as they stay subscribed)
-> - free Elite access for you, forever
-> - a custom code with your name
->
-> No script, no obligations. Use it in a video if you honestly like it; if you
-> don't, tell me why and I'll build what's missing.
->
-> Want me to set up your code?
->
-> Pedro
-
-Follow-up (one only, 5-7 days later): "Bumping this once in case it got
-buried. The offer stands, happy to demo it over a call or Discord."
+Personalize each message around a specific recent video. State the recurring
+percentage, payout hold and threshold, free creator access, disclosure requirement,
+and that there is no exclusivity. Keep actual messages in private operations notes.
 
 ## Mechanics — how the money flows
 
 **The link.** Mint the code in admin -> Referrals BEFORE sending the email, so
 the link is live in the first message: `https://<dashboard-host>/r/CODE`.
-Visiting it records a click (drives the CTR column), drops a 60-day `mb_ref`
+Visiting it records one visit per visitor (drives conversion rate), drops a 60-day `mb_ref`
 attribution cookie, and lands on the homepage. Legacy `?ref=CODE` links still
 work (middleware sets the same cookie) but `/r/CODE` is the one to hand out —
 it's the only form that counts clicks.
@@ -91,27 +63,26 @@ successful payment. Idempotent: replayed webhooks can't double-count, a user
 can't be claimed by two codes, self-referrals are ignored.
 
 **The cockpit** (admin -> Referrals) shows, per creator: clicks, signups,
-CTR, active subs (with plan mix), how many were seen in the last 7 days
+conversion rate, active subs (with plan mix), how many were seen in the last 7 days
 ("uses the site regularly" — last-seen updates when they load the dashboard),
-estimated monthly revenue from their subs, the 30% owed, what's pending, and
+collected referred revenue, eligible unpaid commission, what's pending, and
 what's been paid to date. Creators are sorted by owed, most valuable first.
 
-**Payout cycle (monthly, NET-15).**
-1. In the first days of each month, open the cockpit. The "Owed / mo" column
-   is 30% of each creator's active referred MRR (config: `referral.rev-share-pct`
-   and `referral.plan-monthly-cents.*` in application.yml).
+**Payout cycle (monthly, after a 30-day refund hold).**
+1. In the first days of each month, open the cockpit. "Eligible unpaid" is
+   commission from signed `invoice.paid` events whose 30-day refund hold has passed.
 2. Click **Pay** on a creator row — the form prefills the owed amount and last
    calendar month as the period. Recording it creates a *pending* ledger entry.
-3. Pending payouts show a **due date = period end + 15 days** and turn red when
-   overdue. $20 minimum: below that, skip recording and let it roll over
+3. Pending payouts are due within seven days after being recorded and turn red
+   when overdue. $20 minimum: below that, skip recording and let it roll over
    (note the carry in the next month's entry).
 4. Send the money via PayPal, then hit **Paid** on the entry (stamps the date).
    Put the PayPal txn id in the note field — the ledger IS the audit trail.
 
-**Numbers are estimates.** Revenue/owed are computed from list prices of
-currently-active referred subs, not from Stripe settlement (refunds, VAT and
-annual proration aren't netted). For the sums involved this is fine; if a
-creator ever disputes, reconcile against the Stripe dashboard.
+**Revenue basis.** Commission is calculated from Stripe invoice subtotal excluding
+tax. Full and partial refunds reduce the corresponding earning. Stripe processing
+fees are currently absorbed by Modern Bazaar rather than deducted from creators.
+Reconcile payouts against Stripe before sending money.
 
 - Track outreach in the table above (contacted date, channel, response).
 

@@ -117,9 +117,11 @@ stripe:
 # figures in the admin cockpit are estimates from these monthly plan prices.
 referral:
   rev-share-pct: ${REFERRAL_REV_SHARE_PCT:30}
-  plan-monthly-cents:
-    flipper: ${REFERRAL_FLIPPER_MONTHLY_CENTS:599}
-    elite: ${REFERRAL_ELITE_MONTHLY_CENTS:2599}
+  hold-days: ${REFERRAL_HOLD_DAYS:30}
+
+elite:
+  max-active-subscribers: ${ELITE_MAX_ACTIVE_SUBSCRIBERS:100}
+  checkout-reservation-hours: ${ELITE_CHECKOUT_RESERVATION_HOURS:24}
 
 
 skyblock:
@@ -146,6 +148,10 @@ skyblock:
 
 resilience4j.ratelimiter:
   instances:
+    referralClick:
+      limitForPeriod: 120
+      limitRefreshPeriod: 1m
+      timeoutDuration: 0
     bazaarEndpoint:
       limitForPeriod: 200     # calls
       limitRefreshPeriod: 1m  # per minute

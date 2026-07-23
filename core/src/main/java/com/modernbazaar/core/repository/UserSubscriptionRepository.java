@@ -38,6 +38,30 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
     long countActive();
 
     @Query(value = """
+        with latest as (
+          select distinct on (user_id) user_id, plan_slug, status, current_period_end
+          from user_subscription
+          order by user_id, id desc
+        )
+        select count(*) from latest
+        where plan_slug = 'elite'
+          and (status = 'active' or (status = 'canceled' and current_period_end > now()))
+        """, nativeQuery = true)
+    long countLatestActiveElite();
+
+    @Query(value = """
+        select coalesce((
+          select plan_slug = 'elite'
+             and (status = 'active' or (status = 'canceled' and current_period_end > now()))
+          from user_subscription
+          where user_id = :userId
+          order by id desc
+          limit 1
+        ), false)
+        """, nativeQuery = true)
+    boolean isLatestActiveElite(@Param("userId") String userId);
+
+    @Query(value = """
         select count(*) from user_subscription
         where status = 'canceled' and updated_at >= now() - (:days * interval '1 day')
         """, nativeQuery = true)

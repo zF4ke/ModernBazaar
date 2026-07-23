@@ -43,8 +43,8 @@ is the Modern Bazaar execution state.
    infra/.env. Optional cleanup: archive the old $9.99 live price in the
    Stripe dashboard so it can't be picked by accident.
 2. **Creator outreach** (full affiliate stack is live, July 2026): `/r/CODE`
-   links with click tracking, admin cockpit (clicks/CTR/signups/plan mix/
-   7-day usage/revenue/30% owed) and a payout ledger with NET-15 due dates —
+   links with deduplicated visitor tracking, admin cockpit (conversion/signups/plan mix/
+   7-day usage/collected revenue/eligible commission) and a constrained payout ledger —
    see docs/CREATORS.md "Mechanics" for the monthly payout cycle. Owner task:
    shortlist 3-5 SkyBlock YouTubers/TikTokers and send the pitch email.
 3. Set `APP_BASE_URL` in prod so sitemap/OG URLs are absolute.

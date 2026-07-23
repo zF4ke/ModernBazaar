@@ -3,6 +3,7 @@ package com.modernbazaar.core.api;
 import com.modernbazaar.core.repository.PlanRepository;
 import com.modernbazaar.core.service.StripeBillingService;
 import com.modernbazaar.core.service.SubscriptionService;
+import com.modernbazaar.core.service.EliteCapacityService;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,7 @@ public class StripeBillingController {
     private final StripeBillingService stripeBillingService;
     private final SubscriptionService subscriptionService;
     private final PlanRepository planRepository;
+    private final EliteCapacityService eliteCapacityService;
 
     @Value("${billing.enabled:false}")
     private boolean billingEnabled;
@@ -85,11 +87,16 @@ public class StripeBillingController {
         String customerId = existing == null ? null : existing.getStripeCustomerId();
         if (email == null && existing != null) email = existing.getEmail();
 
+        boolean eliteReservation = "elite".equals(plan.getSlug());
         try {
+            if (eliteReservation) eliteCapacityService.reserve(userId);
             String url = stripeBillingService.createCheckoutSession(
                     priceId, userId, email, customerId, body.ref());
             return ResponseEntity.ok(new UrlResponse(url));
+        } catch (EliteCapacityService.CapacityFullException e) {
+            return ResponseEntity.status(409).body(error(e.getMessage()));
         } catch (Exception e) {
+            if (eliteReservation) eliteCapacityService.release(userId);
             log.error("Failed to create Stripe checkout session for user {}: {}", userId, e.getMessage());
             return ResponseEntity.status(502).body(error("Could not start checkout"));
         }

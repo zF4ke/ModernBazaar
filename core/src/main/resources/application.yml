@@ -113,13 +113,15 @@ stripe:
     flipper-annual: ${STRIPE_PRICE_FLIPPER_ANNUAL:price_1TwGvrCf0etY1rScrRHTVmMJ}
     elite-annual:   ${STRIPE_PRICE_ELITE_ANNUAL:price_1TwGnGCf0etY1rSc9Vd02xKF}
 
-# Creator/affiliate program economics (see docs/CREATORS.md). Revenue and "owed"
-# figures in the admin cockpit are estimates from these monthly plan prices.
+# Creator/affiliate program economics. Commission is recorded from paid Stripe
+# invoices excluding tax and becomes payout-eligible after the refund hold.
 referral:
   rev-share-pct: ${REFERRAL_REV_SHARE_PCT:30}
-  plan-monthly-cents:
-    flipper: ${REFERRAL_FLIPPER_MONTHLY_CENTS:599}
-    elite: ${REFERRAL_ELITE_MONTHLY_CENTS:2599}
+  hold-days: ${REFERRAL_HOLD_DAYS:30}
+
+elite:
+  max-active-subscribers: ${ELITE_MAX_ACTIVE_SUBSCRIBERS:100}
+  checkout-reservation-hours: ${ELITE_CHECKOUT_RESERVATION_HOURS:24}
 
 
 skyblock:
@@ -158,6 +160,10 @@ resilience4j.ratelimiter:
       limitForPeriod: 10      # calls
       limitRefreshPeriod: 1m  # per minute
       timeoutDuration: 0      # reject immediately when full
+    referralClick:
+      limitForPeriod: 120
+      limitRefreshPeriod: 1m
+      timeoutDuration: 0
 
 springdoc:
   api-docs:

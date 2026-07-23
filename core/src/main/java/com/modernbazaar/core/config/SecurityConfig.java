@@ -73,6 +73,9 @@ public class SecurityConfig {
      * Admin permission to manage subscription plans.
      */
     public static final String SCOPE_MANAGE_PLANS = "SCOPE_manage:plans";
+
+    /** Permission for affiliate earnings and payout operations. */
+    public static final String SCOPE_MANAGE_BILLING = "SCOPE_manage:billing";
     
     /**
      * Permission to use starter tier features.
@@ -121,6 +124,7 @@ public class SecurityConfig {
             SCOPE_READ_SUBSCRIPTION,
             SCOPE_READ_MARKET_DATA,
             SCOPE_MANAGE_PLANS,
+            SCOPE_MANAGE_BILLING,
             SCOPE_USE_BAZAAR_FLIPPING,
             SCOPE_USE_BAZAAR_MANIPULATION,
             SCOPE_USE_STARTER,
@@ -227,6 +231,9 @@ public class SecurityConfig {
                         // (the source of truth), so here we only require authentication.
                         .requestMatchers("/api/strategies/flipping", "/api/strategies/flipping/**").authenticated()
                         .requestMatchers("/api/strategies/manipulation", "/api/strategies/manipulation/**").authenticated()
+                        .requestMatchers("/api/admin/referrals/overview", "/api/admin/referrals/payouts",
+                                "/api/admin/referrals/payouts/**")
+                        .hasAuthority(SCOPE_MANAGE_BILLING)
                         .requestMatchers(getAdminEndpoints()).hasAuthority(SCOPE_MANAGE_PLANS)
                         // Fallback for other strategy endpoints (legacy tier-based gating)
                         .requestMatchers(getStrategyEndpoints()).hasAnyAuthority(TIER_PERMISSIONS)
@@ -541,7 +548,8 @@ public class SecurityConfig {
                 // Owner bootstrap: grant manage:plans to allowlisted subs (ADMIN_USER_SUBS).
                 if (isAllowlistedAdmin(jwt.getSubject())) {
                     scopes.add("manage:plans");
-                    log.info("Granting manage:plans to allowlisted admin sub: {}", jwt.getSubject());
+                    scopes.add("manage:billing");
+                    log.info("Granting owner admin scopes to allowlisted sub: {}", jwt.getSubject());
                 }
 
                 if (scopes.isEmpty()) {
@@ -588,6 +596,11 @@ public class SecurityConfig {
      */
     public List<String> getRequiredPermissionForEndpoint(String endpoint) {
         // Admin endpoints: require manage:plans
+        if (matchesEndpoint(endpoint, "/api/admin/referrals/overview")
+                || matchesEndpoint(endpoint, "/api/admin/referrals/payouts")
+                || matchesEndpoint(endpoint, "/api/admin/referrals/payouts/**")) {
+            return List.of(SCOPE_MANAGE_BILLING);
+        }
         for (String adminEndpoint : getAdminEndpoints()) {
             if (matchesEndpoint(endpoint, adminEndpoint)) {
                 return List.of(SCOPE_MANAGE_PLANS);

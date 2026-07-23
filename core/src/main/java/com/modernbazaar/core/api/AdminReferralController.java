@@ -15,8 +15,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Admin referral codes. Gated by {@code manage:plans}. Conversions are counted
- * by the billing webhook on the referred user's first successful payment.
+ * Referral-code administration is gated by {@code manage:plans}; financial
+ * overview and payout routes additionally require {@code manage:billing}.
  */
 @RestController
 @RequestMapping(path = "/api/admin/referrals", produces = MediaType.APPLICATION_JSON_VALUE)

@@ -43,6 +43,13 @@ export default function PrivacyPage() {
         collect basic technical and usage information (such as pages viewed and approximate, IP-derived
         region) to operate, secure, and improve the Service.
       </p>
+      <h3>Referral and creator attribution</h3>
+      <p>
+        If you arrive through a creator referral link, we store the referral code and a random
+        visitor identifier in first-party cookies. We use them to count one referred visit,
+        attribute a later paid subscription, prevent duplicate attribution, and calculate creator
+        commission. We do not use this identifier for advertising or cross-site tracking.
+      </p>
       <h3>Optional feedback</h3>
       <p>
         If you cancel a subscription, we may store the cancellation reason you optionally provide so we
@@ -69,6 +76,7 @@ export default function PrivacyPage() {
         <li><strong>Payments / Merchant of Record</strong>: {LEGAL.merchantOfRecord}, to process subscriptions and remit taxes;</li>
         <li><strong>Authentication</strong>: our identity provider, to sign you in;</li>
         <li><strong>Hosting and infrastructure</strong>: to run and serve the application.</li>
+        <li><strong>Product analytics</strong>: Vercel Web Analytics, to understand aggregate page usage without advertising profiles.</li>
       </ul>
       <p>
         We do not sell your personal data. We may disclose data if required by law or to protect our
@@ -88,6 +96,11 @@ export default function PrivacyPage() {
         then delete or anonymize it, except where we must retain certain records (for example, billing and
         tax records) for the period required by law.
       </p>
+      <p>
+        Referral attribution cookies last up to 60 days. The random visitor identifier used to
+        deduplicate referral visits lasts up to one year. Creator conversion and payout records are
+        retained as needed for accounting, fraud prevention, and contractual records.
+      </p>
 
       <h2>6. Your rights</h2>
       <p>
@@ -103,9 +116,10 @@ export default function PrivacyPage() {
 
       <h2>7. Cookies and similar technologies</h2>
       <p>
-        We use cookies and local storage that are necessary for the Service to function: for example, to
-        keep you signed in and to remember your theme preference. Our authentication and payment providers
-        may set their own necessary cookies. We do not use advertising cookies.
+        We use first-party cookies and local storage to keep you signed in, remember your theme, and
+        attribute creator referrals as described above. Vercel Web Analytics provides aggregate usage
+        measurement. Our authentication and payment providers may set their own necessary cookies. We do
+        not use advertising cookies or sell behavioral profiles.
       </p>
 
       <h2>8. Children</h2>

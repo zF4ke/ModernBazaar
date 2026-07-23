@@ -6,9 +6,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ReferralConversionRepository extends JpaRepository<ReferralConversion, Long> {
     boolean existsByReferredUserId(String referredUserId);
+    Optional<ReferralConversion> findByReferredUserId(String referredUserId);
 
     /**
      * Each converted (first-paid) referred user with their LATEST subscription

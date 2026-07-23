@@ -106,7 +106,7 @@ In the Auth0 dashboard for your tenant:
 3. **Webhook:** Developers → Webhooks → Add endpoint →
    `https://api.modernbazaar.com/api/v1/billing/webhook/stripe`, events:
    `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`,
-   `invoice.paid`. Copy that endpoint's **live** signing secret (`whsec_…`) → `STRIPE_WEBHOOK_SECRET`.
+   `invoice.paid`, `charge.refunded`. Copy that endpoint's **live** signing secret (`whsec_…`) → `STRIPE_WEBHOOK_SECRET`.
    ⚠️ The live webhook secret differs from the `stripe listen` / test secret — using a test secret
    with live keys makes every webhook 400 and entitlements never apply.
 4. Set the return URLs to the real domain:
@@ -168,7 +168,8 @@ The non-negotiables:
 | `STRIPE_PRICE_FLIPPER` / `_ELITE` | live `price_…` (optional; or via admin Plans) |
 | `STRIPE_SUCCESS_URL` / `_CANCEL_URL` / `_PORTAL_RETURN_URL` | real domain URLs |
 | `REFERRAL_REV_SHARE_PCT` | optional; creator rev-share % (default 30) |
-| `REFERRAL_FLIPPER_MONTHLY_CENTS` / `REFERRAL_ELITE_MONTHLY_CENTS` | optional; only if plan prices change (defaults 599/2599) |
+| `REFERRAL_HOLD_DAYS` | refund hold before creator commission is payout-eligible (default 30) |
+| `ELITE_MAX_ACTIVE_SUBSCRIBERS` | enforced active Elite capacity (default 100) |
 
 ### Dashboard — Vercel env
 | Var | Value |

@@ -26,7 +26,13 @@ export async function middleware(request: NextRequest) {
   if (ref) {
     const clean = ref.trim().toUpperCase().replace(/[^A-Z0-9_-]/g, "").slice(0, 40)
     if (clean) {
-      response.cookies.set("mb_ref", clean, { maxAge: 60 * 24 * 60 * 60, path: "/", sameSite: "lax" })
+      response.cookies.set("mb_ref", clean, {
+        maxAge: 60 * 24 * 60 * 60,
+        path: "/",
+        sameSite: "lax",
+        httpOnly: true,
+        secure: request.nextUrl.protocol === "https:",
+      })
     }
   }
 

@@ -1,5 +1,20 @@
 .idea
 infra/.env
+infra/backups/
+*.sql
+!core/src/main/resources/db/migration/*.sql
+*.sql.gz
+*.dump
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+.env
+.env.*
+!.env.example
+!**/.env.example
+docs/private/
 images/*.tar
 scripts/upload_images.ps1
 scripts/connect_vm.ps1
@@ -59,3 +74,4 @@ out/
 # Claude Code session/workflow artifacts
 .claude/
 .tools/
+.pnpm-store/

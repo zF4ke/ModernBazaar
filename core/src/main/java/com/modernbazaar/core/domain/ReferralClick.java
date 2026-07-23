@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.OffsetDateTime;
 
-/** One visit to a referral link (/r/{code}). Rows drive click count and CTR. */
+/** One deduplicated visitor to a referral link (/r/{code}). */
 @Entity
 @Table(name = "referral_click", indexes = {
         @Index(name = "idx_referral_click_code", columnList = "code"),
@@ -22,6 +22,9 @@ public class ReferralClick {
 
     @Column(name = "code", nullable = false, length = 40)
     private String code;
+
+    @Column(name = "visitor_key", length = 64)
+    private String visitorKey;
 
     @Column(name = "clicked_at", nullable = false, updatable = false)
     private OffsetDateTime clickedAt;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo } from 'react'
-import { ArrowRight, TrendingUp, Activity, Users } from 'lucide-react'
+import { ArrowRight, TrendingUp, Activity, Users, AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { BrandMark } from '@/components/brand-mark'
@@ -30,7 +30,7 @@ const prettyName = (i: { displayName?: string; productId: string }) =>
  * movers into ranked, sized plays.
  */
 export default function PulsePage() {
-  const { data, isLoading } = useBackendQuery<BazaarItemsResponse>(
+  const { data, isLoading, isError, refetch, isFetching } = useBackendQuery<BazaarItemsResponse>(
     '/api/bazaar/items?limit=200',
     { requireAuth: false, refetchInterval: 60_000, queryKey: ['pulse'] }
   )
@@ -96,12 +96,31 @@ export default function PulsePage() {
           </p>
         </header>
 
+        {isError ? (
+          <div role="alert" className="mb-8 flex flex-col gap-4 border border-loss/30 bg-loss/5 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-loss" />
+              <div>
+                <p className="font-semibold">Live market data is temporarily unavailable</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  The market API did not respond successfully. No empty or stale ranking is being shown.
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+              Retry
+            </Button>
+          </div>
+        ) : null}
+
         <div className="grid gap-5 lg:grid-cols-3">
           <PulseCard
             icon={<TrendingUp className="h-4 w-4 text-primary" />}
             title="Widest spreads"
             hint="Buy low, sell high gaps"
             loading={isLoading}
+            unavailable={isError}
             rows={spreads.map((i) => ({
               id: i.snapshot!.productId,
               name: prettyName(i.snapshot!),
@@ -113,6 +132,7 @@ export default function PulsePage() {
             title="Most traded"
             hint="Weekly volume, both sides"
             loading={isLoading}
+            unavailable={isError}
             rows={traded.map((i) => ({
               id: i.snapshot!.productId,
               name: prettyName(i.snapshot!),
@@ -124,6 +144,7 @@ export default function PulsePage() {
             title="Busiest order books"
             hint="Active buy + sell orders"
             loading={isLoading}
+            unavailable={isError}
             rows={contested.map((i) => ({
               id: i.snapshot!.productId,
               name: prettyName(i.snapshot!),
@@ -154,12 +175,13 @@ export default function PulsePage() {
   )
 }
 
-function PulseCard({ icon, title, hint, rows, loading }: {
+function PulseCard({ icon, title, hint, rows, loading, unavailable }: {
   icon: React.ReactNode
   title: string
   hint: string
   rows: { id: string; name: string; value: string }[]
   loading: boolean
+  unavailable: boolean
 }) {
   return (
     <section className="rounded-xl border bg-card p-5">
@@ -179,6 +201,10 @@ function PulseCard({ icon, title, hint, rows, loading }: {
             </div>
           ))}
         </div>
+      ) : unavailable ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Unavailable</p>
+      ) : rows.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">No live market rows</p>
       ) : (
         <ol className="divide-y divide-border/50">
           {rows.map((r, i) => (

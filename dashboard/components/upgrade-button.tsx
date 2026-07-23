@@ -5,6 +5,7 @@ import { useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { useBackendQuery } from "@/hooks/use-backend-query"
 import { fetchWithBackendUrl } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 import type { ComponentProps, ReactNode } from "react"
 
 /**
@@ -31,13 +32,6 @@ export type BillingInterval = "monthly" | "annual"
 const PLAN_RANK: Record<string, number> = { free: 0, flipper: 1, elite: 2 }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-/** Best-effort referral/affiliate code from the `mb_ref` cookie (set when arriving via a referral link). */
-function readRefCookie(): string | undefined {
-  if (typeof document === "undefined") return undefined
-  const m = document.cookie.match(/(?:^|;\s*)mb_ref=([^;]+)/)
-  return m ? decodeURIComponent(m[1]) : undefined
-}
-
 /**
  * The signed-in user's current plan, from their DB subscription (the source of truth).
  * Shares the React Query cache key with the profile page so it isn't re-fetched.
@@ -60,6 +54,7 @@ function useCurrentPlan() {
  */
 export function useUpgrade() {
   const { user, isLoading } = useUser()
+  const { toast } = useToast()
 
   const start = useCallback(async (plan: UpgradePlan, interval: BillingInterval = "monthly") => {
     // Not logged in: a checkout with no user_id can't be attributed by the webhook,
@@ -74,7 +69,7 @@ export function useUpgrade() {
       const res = await fetchWithBackendUrl("/api/me/billing/checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, interval, ref: readRefCookie() }),
+        body: JSON.stringify({ plan, interval }),
       })
       if (res.ok) {
         const data = (await res.json()) as { url?: string }
@@ -83,12 +78,21 @@ export function useUpgrade() {
           return
         }
       }
+      const problem = await res.json().catch(() => null) as { error?: string } | null
+      toast({
+        title: res.status === 409 ? "Elite is currently full" : "Could not start checkout",
+        description: problem?.error || "Please try again in a moment.",
+        variant: "destructive",
+      })
+      return
     } catch {
-      // fall through to the dashboard fallback below
+      toast({
+        title: "Could not start checkout",
+        description: "Please check your connection and try again.",
+        variant: "destructive",
+      })
     }
-    // Stripe not configured / no price / error → send them into the app, not a dead checkout.
-    window.location.href = "/dashboard"
-  }, [user])
+  }, [user, toast])
 
   /**
    * If the URL carries ?upgrade=<plan> (set before a login bounce) and the user is

@@ -26,8 +26,8 @@ interface CreatorOverview {
   activeLast7Days: number
   activeByPlan: Record<string, number>
   conversionRatePct: number | null
-  estMonthlyRevenueCents: number
-  estMonthlyOwedCents: number
+  collectedRevenueCents: number
+  eligibleOwedCents: number
   pendingPayoutCents: number
   paidToDateCents: number
   lastReferredActivity: string | null
@@ -61,12 +61,12 @@ const relTime = (s: string | null) => {
   return days < 30 ? `${days}d ago` : fmtDate(s)
 }
 
-/** Payouts are due NET-15 after the period ends (see docs/CREATORS.md). */
+/** Once recorded after the refund hold, send a pending payout within seven days. */
 const dueDate = (p: Payout): Date | null => {
-  const base = p.periodEnd ?? p.createdAt
+  const base = p.createdAt
   if (!base) return null
   const d = new Date(base)
-  d.setDate(d.getDate() + 15)
+  d.setDate(d.getDate() + 7)
   return d
 }
 
@@ -108,8 +108,8 @@ export default function AdminReferralsPage() {
   const totals = useMemo(() => ({
     clicks: creators.reduce((s, c) => s + c.clicks, 0),
     active: creators.reduce((s, c) => s + c.activeSubscribers, 0),
-    revenue: creators.reduce((s, c) => s + c.estMonthlyRevenueCents, 0),
-    owed: creators.reduce((s, c) => s + c.estMonthlyOwedCents, 0),
+    revenue: creators.reduce((s, c) => s + c.collectedRevenueCents, 0),
+    owed: creators.reduce((s, c) => s + c.eligibleOwedCents, 0),
     pending: creators.reduce((s, c) => s + c.pendingPayoutCents, 0),
   }), [creators])
 
@@ -162,7 +162,7 @@ export default function AdminReferralsPage() {
 
   const openPayoutForm = (c: CreatorOverview) => {
     setPayoutFor(c)
-    setPayoutAmount((c.estMonthlyOwedCents / 100).toFixed(2))
+    setPayoutAmount((c.eligibleOwedCents / 100).toFixed(2))
     setPayoutNote("")
   }
 
@@ -186,7 +186,7 @@ export default function AdminReferralsPage() {
       })
       setPayoutFor(null)
       refetchAll()
-      toast({ title: `Payout recorded for ${payoutFor.code}`, description: "It's now pending in the ledger, due in 15 days." })
+      toast({ title: `Payout recorded for ${payoutFor.code}`, description: "It's now pending in the ledger, due within 7 days." })
     } catch (e) {
       toast({ title: "Couldn't record payout", description: (e as Error).message, variant: "destructive" })
     } finally {
@@ -258,7 +258,7 @@ export default function AdminReferralsPage() {
             <StatusCard title="Link clicks" icon={MousePointerClick} value={fmtNum(totals.clicks)} iconColorClass="text-blue-400" bgColorClass="bg-blue-500/15" />
             <StatusCard title="Referred active subs" icon={Users} value={fmtNum(totals.active)} iconColorClass="text-emerald-400" bgColorClass="bg-emerald-500/15" />
             <StatusCard title="Est. monthly revenue" icon={BadgeDollarSign} value={money(totals.revenue)} iconColorClass="text-violet-400" bgColorClass="bg-violet-500/15" />
-            <StatusCard title="Owed to creators / mo" icon={Wallet} value={money(totals.owed)} iconColorClass="text-amber-400" bgColorClass="bg-amber-500/15" />
+            <StatusCard title="Eligible unpaid" icon={Wallet} value={money(totals.owed)} iconColorClass="text-amber-400" bgColorClass="bg-amber-500/15" />
           </>
         )}
       </div>
@@ -298,11 +298,11 @@ export default function AdminReferralsPage() {
                 <TableHead>Link</TableHead>
                 <TableHead className="text-right">Clicks</TableHead>
                 <TableHead className="text-right">Signups</TableHead>
-                <TableHead className="text-right">CTR</TableHead>
+                <TableHead className="text-right">Conversion</TableHead>
                 <TableHead>Active subs</TableHead>
                 <TableHead className="text-right">Active 7d</TableHead>
-                <TableHead className="text-right">Revenue / mo</TableHead>
-                <TableHead className="text-right">Owed / mo</TableHead>
+                <TableHead className="text-right">Collected</TableHead>
+                <TableHead className="text-right">Eligible unpaid</TableHead>
                 <TableHead className="text-right">Paid to date</TableHead>
                 <TableHead>Last activity</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -345,12 +345,12 @@ export default function AdminReferralsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">{fmtNum(c.activeLast7Days)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm">{money(c.estMonthlyRevenueCents)}</TableCell>
-                    <TableCell className="text-right font-mono text-sm font-semibold text-amber-400">{money(c.estMonthlyOwedCents)}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{money(c.collectedRevenueCents)}</TableCell>
+                    <TableCell className="text-right font-mono text-sm font-semibold text-amber-400">{money(c.eligibleOwedCents)}</TableCell>
                     <TableCell className="text-right font-mono text-sm text-muted-foreground">{money(c.paidToDateCents)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground whitespace-nowrap">{relTime(c.lastReferredActivity)}</TableCell>
                     <TableCell className="text-right whitespace-nowrap">
-                      <Button variant="ghost" size="sm" className="h-8 cursor-pointer text-xs" disabled={busy || c.estMonthlyOwedCents === 0} title="Record a payout for this creator" onClick={() => openPayoutForm(c)}>
+                      <Button variant="ghost" size="sm" className="h-8 cursor-pointer text-xs" disabled={busy || c.eligibleOwedCents === 0} title="Record a payout for this creator" onClick={() => openPayoutForm(c)}>
                         <Wallet className="h-3.5 w-3.5 mr-1" />Pay
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 cursor-pointer text-muted-foreground hover:text-red-400" disabled={busy} title="Delete referral code" onClick={() => remove(c)}>
@@ -370,7 +370,7 @@ export default function AdminReferralsPage() {
         <div className="rounded-xl border border-amber-500/30 bg-card p-5">
           <h3 className="mb-1 text-sm font-medium">Record payout for <span className="font-mono text-amber-400">{payoutFor.code}</span></h3>
           <p className="mb-3 text-xs text-muted-foreground">
-            Prefilled with this month&apos;s estimated 30% share ({money(payoutFor.estMonthlyOwedCents)}). Period defaults to last calendar month; due 15 days after it ends.
+            Prefilled with eligible unpaid commission after the refund hold ({money(payoutFor.eligibleOwedCents)}). A code can have only one payout per period.
           </p>
           <div className="flex flex-wrap items-end gap-3">
             <div className="flex flex-col gap-1.5">

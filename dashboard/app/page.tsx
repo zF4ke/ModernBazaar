@@ -351,8 +351,7 @@ export default function LandingPage() {
             <UpgradeButton plan="flipper" interval={billing} className="mt-7 w-full">Choose Flipper</UpgradeButton>
           </div>
 
-          {/* Elite: dark-luxe, muted purple as the tier mark. Genuinely limited:
-              too many people cornering the same thin markets kills the edge. */}
+          {/* Elite capacity is enforced by a transactional reservation before Checkout. */}
           <div className="relative flex flex-col rounded-xl border border-elite/30 bg-card p-7 transition-colors hover:border-elite/50">
             <span className="absolute -top-3 left-7 inline-flex items-center gap-1.5 rounded-full border border-elite/40 bg-background px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-elite">
               <span className="h-1.5 w-1.5 rounded-full bg-elite" />
@@ -385,7 +384,7 @@ export default function LandingPage() {
               )}
             </p>
             <p className="mb-7 mt-3 border-l-2 border-elite/40 pl-3 text-xs leading-relaxed text-muted-foreground/80">
-              Kept deliberately small: too many traders cornering the same markets would kill the edge.
+              Limited to 100 active members. Checkout closes automatically when capacity is reached.
             </p>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2.5">
