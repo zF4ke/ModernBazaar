@@ -21,6 +21,7 @@ interface CreatorOverview {
   ownerUserId: string
   createdAt: string | null
   clicks: number
+  signups: number
   subscribers: number
   activeSubscribers: number
   activeLast7Days: number
@@ -298,6 +299,7 @@ export default function AdminReferralsPage() {
                 <TableHead>Link</TableHead>
                 <TableHead className="text-right">Clicks</TableHead>
                 <TableHead className="text-right">Signups</TableHead>
+                <TableHead className="text-right">Paid</TableHead>
                 <TableHead className="text-right">Conversion</TableHead>
                 <TableHead>Active subs</TableHead>
                 <TableHead className="text-right">Active 7d</TableHead>
@@ -311,10 +313,10 @@ export default function AdminReferralsPage() {
             <TableBody>
               {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
-                  <TableRow key={i}>{Array.from({ length: 12 }).map((__, c) => <TableCell key={c}><Skeleton className="h-4 w-full max-w-[100px]" /></TableCell>)}</TableRow>
+                  <TableRow key={i}>{Array.from({ length: 13 }).map((__, c) => <TableCell key={c}><Skeleton className="h-4 w-full max-w-[100px]" /></TableCell>)}</TableRow>
                 ))
               ) : creators.length === 0 ? (
-                <TableRow><TableCell colSpan={12} className="py-10 text-center text-sm text-muted-foreground">No creators yet. Add the first one above.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={13} className="py-10 text-center text-sm text-muted-foreground">No creators yet. Add the first one above.</TableCell></TableRow>
               ) : (
                 creators.map((c) => (
                   <TableRow key={c.id}>
@@ -330,6 +332,7 @@ export default function AdminReferralsPage() {
                       </button>
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">{fmtNum(c.clicks)}</TableCell>
+                    <TableCell className="text-right font-mono text-sm">{fmtNum(c.signups)}</TableCell>
                     <TableCell className="text-right font-mono text-sm">{fmtNum(c.subscribers)}</TableCell>
                     <TableCell className="text-right font-mono text-sm text-muted-foreground">
                       {c.conversionRatePct != null ? `${c.conversionRatePct.toFixed(1)}%` : "—"}

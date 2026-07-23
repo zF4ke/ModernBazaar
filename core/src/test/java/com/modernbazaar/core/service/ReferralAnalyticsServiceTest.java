@@ -20,6 +20,7 @@ class ReferralAnalyticsServiceTest {
     @Mock ReferralConversionRepository conversionRepo;
     @Mock ReferralClickRepository clickRepo;
     @Mock ReferralPayoutRepository payoutRepo;
+    @Mock ReferralSignupRepository signupRepo;
     @Mock ReferralEarningRepository earningRepo;
     @InjectMocks ReferralAnalyticsService service;
 

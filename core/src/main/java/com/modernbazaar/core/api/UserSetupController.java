@@ -23,6 +23,7 @@ public class UserSetupController {
 
     private final UserManagementService userManagementService;
     private final PlanRepository planRepository;
+    private final com.modernbazaar.core.service.ReferralAnalyticsService referralAnalytics;
 
     @PostMapping("/me/setup")
     @RateLimiter(name = "userSetupEndpoint")
@@ -47,6 +48,16 @@ public class UserSetupController {
 
             var subscription = userManagementService.ensureNewUserSetup(userId, email, name);
             var plan = planRepository.findBySlug(subscription.getPlanSlug()).orElse(null);
+
+            // Attribute the signup to a referral code if the dashboard forwarded one
+            // (mb_ref cookie). Idempotent and best-effort — never fails the setup.
+            if (body != null && body.ref() != null) {
+                try {
+                    referralAnalytics.recordSignup(body.ref(), userId);
+                } catch (Exception e) {
+                    log.debug("Referral signup attribution failed for {}: {}", userId, e.getMessage());
+                }
+            }
             
             log.info("User setup completed successfully for: {}", userId);
             return ResponseEntity.ok(SubscriptionResponseDTO.from(subscription, plan));
@@ -58,5 +69,5 @@ public class UserSetupController {
         }
     }
 
-    public record SetupRequest(String email, String name) {}
+    public record SetupRequest(String email, String name, String ref) {}
 }

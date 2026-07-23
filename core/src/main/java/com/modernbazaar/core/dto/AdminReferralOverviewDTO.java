@@ -15,6 +15,7 @@ public record AdminReferralOverviewDTO(
         String ownerUserId,
         OffsetDateTime createdAt,
         long clicks,
+        long signups,              // attributed free-account signups (funnel middle step)
         int subscribers,           // referred users who ever converted (first paid)
         int activeSubscribers,     // of those, currently entitled (active, or canceled within period)
         int activeLast7Days,       // active subscribers seen in the last 7 days

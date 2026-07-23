@@ -2,6 +2,7 @@ package com.modernbazaar.core.service;
 
 import com.modernbazaar.core.domain.ReferralClick;
 import com.modernbazaar.core.domain.ReferralPayout;
+import com.modernbazaar.core.domain.ReferralSignup;
 import com.modernbazaar.core.dto.AdminReferralOverviewDTO;
 import com.modernbazaar.core.dto.ReferralPayoutDTO;
 import com.modernbazaar.core.repository.*;
@@ -30,6 +31,7 @@ public class ReferralAnalyticsService {
     private final ReferralConversionRepository conversionRepo;
     private final ReferralClickRepository clickRepo;
     private final ReferralPayoutRepository payoutRepo;
+    private final ReferralSignupRepository signupRepo;
 
     private final ReferralEarningRepository earningRepo;
 
@@ -47,6 +49,27 @@ public class ReferralAnalyticsService {
         clickRepo.insertDeduplicated(norm, visitor);
     }
 
+    /**
+     * Attributes a free-account signup to a referral code (the mb_ref cookie was
+     * present at first provisioning). Idempotent per user — the first code keeps
+     * the attribution; self-signups on the creator's own code are ignored.
+     * Best-effort: must never fail the setup call that carried it.
+     */
+    @Transactional
+    public void recordSignup(String code, String userId) {
+        if (code == null || code.isBlank() || userId == null || userId.isBlank()) return;
+        String norm = code.trim().toUpperCase();
+        var codeRow = codeRepo.findByCodeIgnoreCase(norm).orElse(null);
+        if (codeRow == null) {
+            log.debug("Referral signup for unknown code {} - ignoring", norm);
+            return;
+        }
+        if (userId.equals(codeRow.getUserId())) return; // creator's own account
+        if (signupRepo.existsByUserId(userId)) return;
+        signupRepo.save(ReferralSignup.builder().code(codeRow.getCode()).userId(userId).build());
+        log.info("Referral signup recorded for code={}", codeRow.getCode());
+    }
+
     @Transactional(readOnly = true)
     public List<AdminReferralOverviewDTO> overview() {
         var codes = codeRepo.findAll();
@@ -54,6 +77,10 @@ public class ReferralAnalyticsService {
         // clicks per code
         Map<String, Long> clicks = new HashMap<>();
         clickRepo.clickCountsByCode().forEach(r -> clicks.put(r.getLabel(), r.getCnt()));
+
+        // attributed free-account signups per code (the funnel's middle step)
+        Map<String, Long> signups = new HashMap<>();
+        signupRepo.signupCountsByCode().forEach(r -> signups.put(r.getLabel(), r.getCnt()));
 
         // referred users' latest subscription state, grouped by code
         Map<String, List<ReferralUserStatRow>> byCode = new HashMap<>();
@@ -114,7 +141,8 @@ public class ReferralAnalyticsService {
 
             out.add(new AdminReferralOverviewDTO(
                     c.getId(), c.getCode(), c.getUserId(), c.getCreatedAt(),
-                    codeClicks, subscribers, active, activeRecent, activeByPlan,
+                    codeClicks, signups.getOrDefault(c.getCode(), 0L),
+                    subscribers, active, activeRecent, activeByPlan,
                     convRate, collectedByCode.getOrDefault(c.getCode(), 0L), owed,
                     pendingByCode.getOrDefault(c.getCode(), 0L),
                     paidByCode.getOrDefault(c.getCode(), 0L),

@@ -11,8 +11,14 @@ import { postFetchFromBackend } from '@/lib/api'
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.text().catch(() => '')
-    return await postFetchFromBackend(request, '/api/me/setup', body ? { body } : {})
+    const raw = await request.text().catch(() => '')
+    let payload: Record<string, unknown> = {}
+    try { payload = raw ? JSON.parse(raw) : {} } catch { /* malformed body: send only ref */ }
+    // Attribute the signup: the mb_ref cookie is HttpOnly, so it's read here
+    // server-side and forwarded to the backend with the setup call.
+    const ref = request.cookies.get('mb_ref')?.value
+    if (ref) payload.ref = ref
+    return await postFetchFromBackend(request, '/api/me/setup', { body: JSON.stringify(payload) })
   } catch {
     return NextResponse.json({ error: 'User setup failed' }, { status: 500 })
   }
