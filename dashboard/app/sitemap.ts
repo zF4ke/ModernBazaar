@@ -11,6 +11,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE, changeFrequency: 'weekly', priority: 1 },
     { url: `${SITE}/pulse`, changeFrequency: 'hourly', priority: 0.9 },
+    // The two money keywords ("bazaar flipping", "bazaar manipulation") land here.
+    { url: `${SITE}/dashboard/strategies/flipping`, changeFrequency: 'daily', priority: 0.9 },
+    { url: `${SITE}/dashboard/strategies/manipulation`, changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE}/dashboard/bazaar-items`, changeFrequency: 'hourly', priority: 0.8 },
     { url: `${SITE}/dashboard/skyblock-items`, changeFrequency: 'daily', priority: 0.6 },
     { url: `${SITE}/terms`, changeFrequency: 'monthly', priority: 0.2 },
