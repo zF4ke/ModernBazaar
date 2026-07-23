@@ -37,7 +37,9 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
-    baseline-version: 1
+    # Legacy databases already include V2's one-time data swap from the
+    # pre-Flyway deployment. Baseline them at V2 so it can never replay.
+    baseline-version: 2
   # -------- Add Spring Security --------
 #  security:
 #    user:
