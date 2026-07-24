@@ -81,7 +81,7 @@ I'll try to keep this updated as I make progress, but it will not be exhaustive 
   - [x] Free plan ($0)
   - [x] Flipper plan — Bazaar Flipping finder
   - [x] Elite plan — adds Bazaar Manipulation
-  - Webhook + checkout scaffold in place; activate by adding the Lemon Squeezy keys (see [docs/COSTS.md](docs/COSTS.md) and [docs/ADMIN_SUITE_PLAN.md](docs/ADMIN_SUITE_PLAN.md))
+  - Stripe Managed Payments (Merchant of Record) live: checkout, webhooks, entitlements, refunds
 - [x] Modern gradient-based UI design system
 - [x] **Admin suite**: analytics, user management, discount codes, referrals, plans, endpoints
 - [x] Profile page with user management
@@ -141,7 +141,7 @@ and assign it to your user. The allowlist is meant for bootstrapping the first a
 ## 💸 Running costs
 
 Auth0 and Lemon Squeezy both have costs that scale with usage. See
-[docs/COSTS.md](docs/COSTS.md) for fee math and break-even calculations as the app grows.
+Cost/fee planning lives in a private spreadsheet (docs/private/, gitignored).
 
 ## License
 

@@ -1,6 +1,6 @@
 # Plans & feature tiers — what we offer and what's actually enforced
 
-Three plans: **Free ($0) / Flipper ($9.99/mo) / Elite ($25.99/mo)**. This is the
+Three plans: **Free ($0) / Flipper ($5.99/mo or $59.90/yr) / Elite ($25.99/mo or $259.90/yr)**. This is the
 realistic feature split (only things we can actually deliver) plus an honest
 **enforcement** column — i.e. whether the code really stops a lower tier from using it.
 
@@ -22,7 +22,7 @@ realistic feature split (only things we can actually deliver) plus an honest
   `/api/strategies/**` without the scope returns 403. The frontend gating matches.
 - ✅ **Paying now grants the scope, canceling revokes it.** `applyProviderWebhook`
   calls `Auth0ManagementService.syncPlanRoles` to set the user's Auth0 role to match
-  their entitled plan (see [MONEY_LOSS_AUDIT.md](MONEY_LOSS_AUDIT.md) §A). The one
+  their entitled plan (per the June 2026 money-loss audit, resolved). The one
   remaining step is **owner config in Auth0**: create the `Flipper`/`Elite` roles with
   the matching RBAC permissions, or the role grants no scopes. Steps in
   [LEMON_SQUEEZY_SETUP.md](LEMON_SQUEEZY_SETUP.md).
@@ -44,5 +44,5 @@ once the per-tier limit is actually implemented — never advertise an unenforce
 ## To make the tiers real (checklist)
 1. Create Auth0 roles **Flipper** / **Elite** with the matching RBAC permissions.
 2. Implement `syncPlanRoles` and call it from the webhook on upgrade/downgrade
-   ([MONEY_LOSS_AUDIT.md](MONEY_LOSS_AUDIT.md) §A).
+   (per the June 2026 money-loss audit, resolved).
 3. Either build the per-tier history window or remove that line from pricing.

@@ -34,9 +34,9 @@ public class AdminUsersController {
     }
 
     @PostMapping(path = "/plan", consumes = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Admin override of a user's plan")
+    @Operation(summary = "Admin override of a user's plan (optional days = time-limited comp that auto-expires)")
     public AdminUserDTO setPlan(@RequestBody SetPlanRequest body) {
-        return users.setPlan(body.userId(), body.planSlug());
+        return users.setPlan(body.userId(), body.planSlug(), body.days());
     }
 
     @PostMapping(path = "/extend", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -52,7 +52,7 @@ public class AdminUsersController {
         return java.util.Map.of("deleted", true);
     }
 
-    public record SetPlanRequest(String userId, String planSlug) {}
+    public record SetPlanRequest(String userId, String planSlug, Integer days) {}
     public record ExtendRequest(String userId, int days) {}
     public record DeleteRequest(String userId) {}
 }

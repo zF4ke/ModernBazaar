@@ -43,12 +43,32 @@ public class AdminUserService {
     /** Admin override of a user's plan (no payment). */
     @Transactional
     public AdminUserDTO setPlan(String userId, String planSlug) {
+        return setPlan(userId, planSlug, null);
+    }
+
+    /**
+     * Admin plan override. With {@code days} set (a comp — e.g. a creator's free
+     * month of Elite), the grant is written as status "canceled" with a period end
+     * {@code days} from now: the entitlement rule (canceled + future period end =
+     * entitled) honors it until then and it EXPIRES BY ITSELF — no forever-comps,
+     * no cleanup job. Without {@code days}, the grant is permanent (status active),
+     * as before.
+     */
+    public AdminUserDTO setPlan(String userId, String planSlug, Integer days) {
         var plan = plans.findBySlug(planSlug)
                 .orElseThrow(() -> new NoSuchElementException("Unknown plan: " + planSlug));
+        if (days != null && (days < 1 || days > MAX_EXTEND_DAYS)) {
+            throw new IllegalArgumentException("days must be between 1 and " + MAX_EXTEND_DAYS);
+        }
         var sub = subs.findFirstByUserIdOrderByIdDesc(userId)
                 .orElse(UserSubscription.builder().userId(userId).status("active").build());
         sub.setPlanSlug(plan.getSlug());
-        if (sub.getStatus() == null) sub.setStatus("active");
+        if (days != null && !"free".equalsIgnoreCase(plan.getSlug())) {
+            sub.setStatus("canceled"); // comp: entitled until period end, then auto-expires
+            sub.setCurrentPeriodEnd(OffsetDateTime.now().plusDays(days));
+        } else if (sub.getStatus() == null) {
+            sub.setStatus("active");
+        }
         var saved = subs.save(sub);
         // Sync Auth0 roles so access actually changes (grant on upgrade, revoke on
         // downgrade to free). Takes effect on the user's next token refresh / login.

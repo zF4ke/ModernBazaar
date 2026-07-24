@@ -96,7 +96,7 @@ In the Auth0 dashboard for your tenant:
 ## 5. Stripe (production / live)
 
 > Do this only after confirming **Managed Payments / MoR** is active for your account and that Stripe
-> handles EU VAT as seller of record (see `STRIPE_MANAGED_PAYMENTS_MIGRATION.md`). Until then, stay in
+> handles EU VAT as seller of record (migration completed July 2026). Until then, stay in
 > test mode.
 
 1. Toggle **off** Test mode. Get the **live** secret key (`sk_live_…`) → `STRIPE_SECRET_KEY`.

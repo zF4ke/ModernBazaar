@@ -184,6 +184,19 @@ export default function AdminUsersPage() {
                                 ))}
                               </DropdownMenuSubContent>
                             </DropdownMenuSub>
+                            {/* Time-limited comp (e.g. a creator's free month): written as
+                                canceled + period end, so it expires by itself. */}
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger><Layers className="h-4 w-4 mr-2" />Grant 30-day comp</DropdownMenuSubTrigger>
+                              <DropdownMenuSubContent>
+                                {PLAN_OPTIONS.filter((p) => p !== "free").map((p) => (
+                                  <DropdownMenuItem key={p}
+                                    onClick={() => mutate("/api/admin/users/plan", { userId: u.userId, planSlug: p, days: 30 }, `${u.name || u.email || "User"}: ${titleCase(p)} for 30 days`, u.userId + "-comp")}>
+                                    {titleCase(p)} — 30 days
+                                  </DropdownMenuItem>
+                                ))}
+                              </DropdownMenuSubContent>
+                            </DropdownMenuSub>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => copyVal(u.userId, "User ID")}><Copy className="h-4 w-4 mr-2" />Copy user ID</DropdownMenuItem>
                             {u.email && <DropdownMenuItem onClick={() => copyVal(u.email!, "Email")}><Mail className="h-4 w-4 mr-2" />Copy email</DropdownMenuItem>}
