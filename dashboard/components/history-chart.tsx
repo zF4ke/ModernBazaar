@@ -57,7 +57,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
         timestamp: new Date(item.hourStart).getTime(),
         buyPrice: item.closeInstantBuyPrice,
         sellPrice: item.closeInstantSellPrice,
-        spread: item.closeInstantSellPrice - item.closeInstantBuyPrice,
+        spread: item.closeInstantBuyPrice - item.closeInstantSellPrice,
         createdSellOrders: item.createdSellOrders,
         createdBuyOrders: item.createdBuyOrders,
         deltaSellOrders: item.deltaSellOrders,
@@ -83,7 +83,7 @@ export default function HistoryChart({ data }: HistoryChartProps) {
             timestamp: new Date(point.snapshotTime).getTime(),
             buyPrice: point.instantBuyPrice,
             sellPrice: point.instantSellPrice,
-            spread: point.instantSellPrice - point.instantBuyPrice,
+            spread: point.instantBuyPrice - point.instantSellPrice,
             createdSellOrders: 0, // Individual points don't have these metrics
             createdBuyOrders: 0,
             deltaSellOrders: 0,

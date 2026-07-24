@@ -416,8 +416,9 @@ export default function BazaarItemsPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        <span className={snapshot.spread > 0.5 ? "text-emerald-400 font-semibold" : ""}>
-                          {fmtCoins(snapshot.spread)}
+                        {/* buy − sell so the gap reads positive (backend field is inverted) */}
+                        <span className={(snapshot.instantBuyPrice - snapshot.instantSellPrice) > 0.5 ? "text-emerald-400 font-semibold" : ""}>
+                          {fmtCoins(snapshot.instantBuyPrice - snapshot.instantSellPrice)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">{snapshot.activeBuyOrdersCount}</TableCell>

@@ -67,8 +67,8 @@ const SECTIONS: Section[] = [
       {
         id: 'bazaar-flipping-profit',
         q: 'How much money can you make bazaar flipping?',
-        plain: 'Realistically: single-digit millions per hour semi-AFK at mid budgets, more with a large bank and active management. Returns scale with budget, attention, and item selection. Anyone promising a fixed number is guessing — volume caps and competition are real. The dashboard shows expected profit per hour for each flip so you decide with numbers, not vibes.',
-        a: <>Realistically: single-digit millions per hour semi-AFK at mid budgets, more with a large bank and active management. Returns scale with budget, attention, and item selection. Anyone promising a fixed number is guessing — volume caps and competition are real. The {flipping('dashboard')} shows expected profit per hour for each flip so you decide with numbers, not vibes.</>,
+        plain: 'Double-digit millions per hour is realistic semi-AFK at mid budgets, and it scales up from there with a large bank and active management. Returns depend on budget, attention, and item selection. Anyone promising a fixed number is guessing — volume caps and competition are real. The dashboard shows expected profit per hour for each flip so you decide with numbers, not vibes.',
+        a: <>Double-digit millions per hour is realistic semi-AFK at mid budgets, and it scales up from there with a large bank and active management. Returns depend on budget, attention, and item selection. Anyone promising a fixed number is guessing — volume caps and competition are real. The {flipping('dashboard')} shows expected profit per hour for each flip so you decide with numbers, not vibes.</>,
       },
       {
         id: 'bazaar-flipping-budget',

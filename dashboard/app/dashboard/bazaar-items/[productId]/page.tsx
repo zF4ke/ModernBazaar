@@ -273,7 +273,9 @@ export default function BazaarItemDetailPage({ params }: { params: Promise<{ pro
             <Minus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="font-mono text-2xl font-bold tracking-tight">{snapshot.spread.toFixed(2)}</div>
+            {/* Computed as buy − sell so the gap reads positive (the backend
+                field's sign convention is inverted vs what the label says). */}
+            <div className="font-mono text-2xl font-bold tracking-tight">{(snapshot.instantBuyPrice - snapshot.instantSellPrice).toFixed(2)}</div>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <BarChart3 className="h-3 w-3" />
               <span>Buy-sell spread</span>
