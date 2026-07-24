@@ -43,6 +43,59 @@ const SOON_STRATEGIES = [
   { title: "Auction House", icon: ArrowRightLeft, blurb: "Snipe underpriced listings" },
 ]
 
+/**
+ * FAQ copy, phrased as the searches people actually type. Rendered in the
+ * accordion AND emitted as FAQPage JSON-LD (closed accordion items unmount
+ * from the DOM, so the schema is what search engines reliably read).
+ */
+const FAQ = [
+  {
+    id: "what-is-bazaar-flipping",
+    q: "What is bazaar flipping in Hypixel SkyBlock?",
+    a: "Bazaar flipping is placing a buy order below market price and a sell offer above it on the Hypixel SkyBlock bazaar, and pocketing the spread when both fill. It's one of the most reliable money-making methods in SkyBlock because it works at any budget and doesn't need gear. Modern Bazaar watches every item's spread, volume and competition live and ranks the flips actually worth doing.",
+  },
+  {
+    id: "how-to-bazaar-flip",
+    q: "How do you bazaar flip? (the short version)",
+    a: "Pick a high-volume item with a healthy spread, place a buy order 0.1 coins above the top buy order, wait for it to fill, then sell-offer 0.1 coins under the lowest sell offer. Profit = spread minus the 1.25% bazaar tax. The hard part is picking the right item at the right moment — that's what the flip finder does: open the dashboard, set your budget, and start from the top of the list.",
+  },
+  {
+    id: "best-bazaar-flips",
+    q: "What are the best bazaar flips right now?",
+    a: "It changes by the hour — that's the point. The best flips balance spread, hourly traded volume, competition and price stability, and Modern Bazaar re-ranks all 1,900+ bazaar items on exactly those signals every minute, sized to your coins. The Flipping page shows the live list; the free preview shows you how it looks.",
+  },
+  {
+    id: "what-is-bazaar-manipulation",
+    q: "What is bazaar manipulation?",
+    a: "Bazaar manipulation is trading thin, low-volume markets where a single trader's orders can move the price — buying out cheap sell offers and re-listing higher. It's higher risk and higher skill than flipping: you need order-book depth, cost-to-corner and exit-risk math, which is what the Bazaar Manipulation engine scores. You place every order yourself, in-game, like any other trade.",
+  },
+  {
+    id: "profit",
+    q: "Will it make me money?",
+    a: "Maybe, but it's not magic. It surfaces good setups and does the math; the market still does what it wants. Think of it as a head start, not a guarantee.",
+  },
+  {
+    id: "how-it-ranks",
+    q: "How does the flip finder pick flips?",
+    a: "It looks at the spread, how much actually trades each hour, how crowded the item is, and how jumpy the price has been, then ranks by expected profit per hour after tax. You can sort by raw profit instead if you'd rather.",
+  },
+  {
+    id: "data-refresh",
+    q: "How fresh is the price data?",
+    a: "It pulls from Hypixel's official public Bazaar API about once a minute, so prices are usually within a minute or two of live.",
+  },
+  {
+    id: "is-it-allowed",
+    q: "Is this allowed on Hypixel?",
+    a: "Modern Bazaar only reads Hypixel's official public API and does not automate, bot or modify the game in any way — you make every trade yourself, in-game. Trading the bazaar with buy and sell orders is a normal part of SkyBlock.",
+  },
+  {
+    id: "roadmap",
+    q: "What's coming next?",
+    a: "Craft and NPC flipping, a budget planner, and auction-house tools. What I build next mostly comes down to what people ask for.",
+  },
+]
+
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [billing, setBilling] = useState<BillingInterval>("monthly")
@@ -411,6 +464,9 @@ export default function LandingPage() {
       <div className="mx-auto max-w-6xl px-6"><div className="h-px bg-border/70" /></div>
 
       {/* FAQ */}
+      {/* Questions are phrased the way people actually search (bazaar flipping,
+          best bazaar flips, bazaar manipulation, how to bazaar flip) — the
+          section doubles as the landing page's organic-search surface. */}
       <section className="mx-auto max-w-6xl px-6 py-20">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.6fr]">
           <div className="space-y-3">
@@ -421,43 +477,30 @@ export default function LandingPage() {
             </p>
           </div>
           <Accordion type="multiple" className="rounded-xl border bg-card px-6">
-            <AccordionItem value="what-it-is">
-              <AccordionTrigger>What is this?</AccordionTrigger>
-              <AccordionContent>
-                A dashboard that watches Hypixel Bazaar prices and points out flips actually worth doing. I got tired of eyeballing prices and tabbing in and out of the game, so I built this.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="profit">
-              <AccordionTrigger>Will it make me money?</AccordionTrigger>
-              <AccordionContent>
-                Maybe, but it's not magic. It surfaces good setups and does the math; the market still does what it wants. Think of it as a head start, not a guarantee.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="how-it-ranks">
-              <AccordionTrigger>How does it pick flips?</AccordionTrigger>
-              <AccordionContent>
-                It looks at the spread, how much actually trades each hour, how crowded the item is, and how jumpy the price has been, then ranks by expected profit per hour after tax. You can sort by raw profit instead if you'd rather.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="data-refresh">
-              <AccordionTrigger>How fresh is the data?</AccordionTrigger>
-              <AccordionContent>
-                It pulls from Hypixel about once a minute, so prices are usually within a minute or two of live.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="getting-started">
-              <AccordionTrigger>How do I start?</AccordionTrigger>
-              <AccordionContent>
-                Open the dashboard, set your budget, and look at the top of the Flipping list. Start with items that trade a lot, since they fill faster and are harder to get stuck in.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="roadmap" className="border-b-0">
-              <AccordionTrigger>What's coming?</AccordionTrigger>
-              <AccordionContent>
-                Craft and NPC flipping, a budget planner, and auction-house tools. What I build next mostly comes down to what people ask for.
-              </AccordionContent>
-            </AccordionItem>
+            {FAQ.map((f, i) => (
+              <AccordionItem key={f.id} value={f.id} className={i === FAQ.length - 1 ? "border-b-0" : undefined}>
+                <AccordionTrigger>{f.q}</AccordionTrigger>
+                <AccordionContent>{f.a}</AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
+          {/* FAQPage structured data: the accordion unmounts closed answers from
+              the DOM, so this carries the full Q&A text for search engines and
+              makes the questions eligible for rich results. */}
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                mainEntity: FAQ.map((f) => ({
+                  "@type": "Question",
+                  name: f.q,
+                  acceptedAnswer: { "@type": "Answer", text: f.a },
+                })),
+              }),
+            }}
+          />
         </div>
       </section>
 
