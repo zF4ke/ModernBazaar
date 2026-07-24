@@ -75,3 +75,4 @@ out/
 .claude/
 .tools/
 .pnpm-store/
+dashboard/public/*.old.png
