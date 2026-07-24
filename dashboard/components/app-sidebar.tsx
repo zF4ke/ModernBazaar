@@ -1,6 +1,6 @@
 "use client"
 
-import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User, Crosshair, Share2, MessageSquareText } from "lucide-react"
+import { BarChart3, Home, Package, Settings, Shuffle, Layers, Compass, Shield, Code, User, Crosshair, Share2, MessageSquareText, Wallet } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useMemo, useRef, useState } from "react"
@@ -56,6 +56,7 @@ export function AppSidebar() {
       label: "Admin",
       items: [
         { title: "Analytics", url: "/dashboard/admin/analytics", icon: BarChart3 },
+        { title: "Finances", url: "/dashboard/admin/finances", icon: Wallet },
         { title: "Users", url: "/dashboard/admin/users", icon: User },
         { title: "Referrals", url: "/dashboard/admin/referrals", icon: Share2 },
         { title: "Churn feedback", url: "/dashboard/admin/cancellations", icon: MessageSquareText },

@@ -46,7 +46,7 @@ You asked "how/when" to auto-shutdown. Recommended posture:
 ## Cost guardrails (tie-in to the money-loss audit)
 - Clamp expensive params (done: `limit` capped at 200 in `BazaarItemsQueryService`).
 - Cache/limit `/api/metrics` (audit finding 8).
-- Watch Auth0 MAU (free to ~25k, then expensive) and Stripe fee drag; the cost model is docs/private/costs.xlsx.
+- Watch Auth0 MAU (free to ~25k, then expensive) and Stripe fee drag; the cost model is the admin Finances page (/dashboard/admin/finances).
 
 ## Incident quick-runbook
 1. Flip **Maintenance mode** on (Settings).
