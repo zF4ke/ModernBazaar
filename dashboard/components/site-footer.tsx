@@ -47,8 +47,9 @@ export function SiteFooter() {
         </div>
 
         <p className="text-xs leading-relaxed text-muted-foreground/80 border-t pt-6">
-          Modern Bazaar is an independent, read-only analytics tool for Hypixel SkyBlock. It reads
-          market data from Hypixel&apos;s official, public Bazaar API and does not automate, bot, or
+          Modern Bazaar is an independent bazaar tracker and trading toolkit for Hypixel SkyBlock:
+          live prices, flip finding and market analysis for 1,900+ items, built on Hypixel&apos;s
+          official, public Bazaar API. It does not automate, bot, or
           modify the game in any way: you make every trade yourself, in-game. It deals only with
           virtual in-game currency and items; there is no real-money trading of game assets. Modern
           Bazaar is <strong className="font-medium text-muted-foreground">not affiliated with,
