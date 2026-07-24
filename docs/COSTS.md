@@ -1,5 +1,11 @@
 # Running costs & unit economics
 
+> **STALE (June 2026 snapshot).** Payments moved to Stripe Managed Payments and
+> Flipper is now $5.99 with annual plans. The live, editable cost model is
+> `docs/private/modern-bazaar-costs.xlsx` (gitignored; syncs via OneDrive; opens
+> in Google Sheets by dragging into Drive). This file is kept for the Auth0 MAU
+> analysis, which is still accurate.
+
 What it costs to run Modern Bazaar as it grows, and how Auth0 + Lemon Squeezy fees
 eat into revenue. All third-party numbers were checked June 2026 — **pricing changes,
 so re-verify on the vendors' pages before making decisions** (sources at the bottom).
