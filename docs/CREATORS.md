@@ -11,8 +11,14 @@ plan-mix/usage/revenue/owed, and a payout ledger with due dates.
 1. **30% recurring revenue share** on every subscriber who signs up through
    their code, for as long as that subscriber stays. Paid monthly via PayPal,
    $20 minimum payout (rolls over).
-2. **Free Elite** for the creator, forever. Their footage of the tool IS the ad.
-3. **A vanity code** (their name, e.g. `KUVDRA`) minted in admin -> Referrals.
+2. **Free Elite for the creator** — grant it in admin -> Users -> "Grant
+   30-day comp" (auto-expires; re-grant while the partnership is alive, or use
+   Change plan for a permanent grant if they're a long-term partner).
+3. **A vanity code** (their name, e.g. `KUVDRA`) minted in admin -> Referrals,
+   plus optionally a **10% viewer discount**: create a promotion code with the
+   same name in the Stripe dashboard (Product catalog -> Coupons -> 10% off ->
+   Promotion code). Checkout already accepts promo codes; viewers type it at
+   payment. Their /r link tracks, their code discounts - one name, two hooks.
 4. No exclusivity, no scripts, no obligations. If they say the tool honestly
    helped a video, that is worth more than any sponsored read.
 
