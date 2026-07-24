@@ -22,11 +22,11 @@ const SITE = process.env.APP_BASE_URL || "http://localhost:3001"
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   title: {
-    default: "Modern Bazaar - The Hypixel SkyBlock Bazaar Tracker & Flip Finder",
+    default: "Modern Bazaar - The #1 Bazaar Flipping & Manipulation Toolkit",
     template: "%s | Modern Bazaar",
   },
   description:
-    "SkyBlock's best trading toolkit: live bazaar price tracking for 1,900+ items, flips ranked by profit and sized to your coins, and a clear play for every trade. Free live prices, no account needed.",
+    "The best bazaar flipping and bazaar manipulation toolkit for Hypixel SkyBlock: live price tracking for 1,900+ items, flips ranked by profit and sized to your coins, thin-market analysis, and a clear play for every trade. Free live prices, no account needed.",
   // Per-page canonical (resolved against metadataBase) — one canonical URL per
   // page so legacy hosts and query-param variants don't split ranking signals.
   alternates: { canonical: "./" },
@@ -40,15 +40,15 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Modern Bazaar",
     url: SITE,
-    title: "Modern Bazaar - The Hypixel SkyBlock Bazaar Tracker & Flip Finder",
+    title: "Modern Bazaar - The #1 Bazaar Flipping & Manipulation Toolkit",
     description:
-      "SkyBlock's best trading toolkit: live prices for 1,900+ items, ranked flips, and a clear play for every trade.",
+      "The best bazaar flipping and manipulation toolkit for Hypixel SkyBlock: live prices for 1,900+ items, ranked flips, and a clear play for every trade.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Modern Bazaar - The Hypixel SkyBlock Bazaar Tracker & Flip Finder",
+    title: "Modern Bazaar - The #1 Bazaar Flipping & Manipulation Toolkit",
     description:
-      "SkyBlock's best trading toolkit: live prices for 1,900+ items, ranked flips, and a clear play for every trade.",
+      "The best bazaar flipping and manipulation toolkit for Hypixel SkyBlock: live prices for 1,900+ items, ranked flips, and a clear play for every trade.",
   },
 }
 

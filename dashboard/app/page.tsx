@@ -475,6 +475,10 @@ export default function LandingPage() {
               I built Modern Bazaar to learn, and to trade more informed, not
               blind. If you have ideas, I'd love to hear them.
             </p>
+            <Link href="/faq" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
+              Read the full FAQ
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
           <Accordion type="multiple" className="rounded-xl border bg-card px-6">
             {FAQ.map((f, i) => (

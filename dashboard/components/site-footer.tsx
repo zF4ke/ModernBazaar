@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useBackendHealthContext } from '@/components/backend-health-provider'
 
 const LEGAL_LINKS = [
+  { href: '/faq', label: 'FAQ' },
   { href: '/terms', label: 'Terms of Service' },
   { href: '/privacy', label: 'Privacy Policy' },
   { href: '/refund', label: 'Refund Policy' },
